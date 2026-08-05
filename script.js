@@ -66,6 +66,24 @@ function defaultState() {
   return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z" };
 }
 
+/* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
+   读取后必须做反向映射，否则便利贴/日历标记/GH到岗读不出来，且一旦触发保存会被空值覆盖清空。 */
+function mapRow(row) {
+  if (!row || typeof row !== "object") return row;
+  const r = Object.assign({}, row);
+  if (Array.isArray(row.sticky_notes)) r.stickyNotes = row.sticky_notes;
+  else if (Array.isArray(row.stickyNotes)) r.stickyNotes = row.stickyNotes;
+  else r.stickyNotes = [];
+  if (row.calendar_marks && typeof row.calendar_marks === "object") r.calendarMarks = row.calendar_marks;
+  else if (row.calendarMarks && typeof row.calendarMarks === "object") r.calendarMarks = row.calendarMarks;
+  else r.calendarMarks = {};
+  if (typeof row.gh_arrival === "string") r.ghArrival = row.gh_arrival;
+  else if (typeof row.ghArrival === "string") r.ghArrival = row.ghArrival;
+  else r.ghArrival = "";
+  delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival;
+  return r;
+}
+
 let state = defaultState();
 let userId = null;
 let saveTimer = null;
@@ -98,7 +116,7 @@ async function loadData() {
   try {
     const data = await fetchState();
     if (data) {
-      state = Object.assign(defaultState(), data);
+      state = Object.assign(defaultState(), mapRow(data));
     } else {
       // 后端无记录（首次使用）：写入初始状态
       state = defaultState();
@@ -602,7 +620,7 @@ $("#syncNow").addEventListener("click", async () => {
   setStatus("刷新中…", "syncing");
   try {
     const data = await fetchState();
-    if (data) { state = Object.assign(defaultState(), data); applyState(); }
+    if (data) { state = Object.assign(defaultState(), mapRow(data)); applyState(); }
     setStatus("已刷新 ✓", "ok");
   } catch (e) { setStatus("刷新失败", "err"); }
 });
