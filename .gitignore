@@ -1,0 +1,16 @@
+# 备份文件（旧代码，无需进版本库）
+*.bak
+*.bak2
+
+# 数据库 schema / SQL（本地维护即可）
+*.sql
+
+# supabase 本地配置与 Edge Function（可能含密钥引用，勿公开）
+supabase/
+
+# 内部恢复页
+recover.html
+
+# 系统文件
+.DS_Store
+Thumbs.db
