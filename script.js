@@ -30,6 +30,24 @@ async function saveState() {
     setStatus("保存跳过 · 数据未加载", "warn");
     return;
   }
+  /* 乐观并发锁：写入前先核对云端更新时间。
+     若云端已有比本地"载入时刻"更新的数据，说明云端被别的端更新过（或旧实例刚清空过），
+     此时放弃本次保存以免用过期/空本地数据覆盖云端，并提示先刷新。这是防误清空的最后一道闸。 */
+  try {
+    const chk = await fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&select=updated_at&limit=1`, { headers: API_HEADERS });
+    if (chk.ok) {
+      const carr = await chk.json();
+      if (carr && carr[0]) {
+        const cloudT = new Date(carr[0].updated_at).getTime();
+        const localT = new Date(state.updated_at || 0).getTime();
+        if (cloudT > localT) {
+          console.warn("[workbench] 云端数据较新，放弃保存以免覆盖，请先刷新");
+          setStatus("保存跳过 · 云端有更新，请刷新", "warn");
+          return;
+        }
+      }
+    }
+  } catch (e) { /* 核对失败不阻断，交给下方正式写入的错误处理 */ }
   state.updated_at = new Date().toISOString();
   const res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
