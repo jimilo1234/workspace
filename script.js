@@ -118,9 +118,9 @@ async function loadData() {
     if (data) {
       state = Object.assign(defaultState(), mapRow(data));
     } else {
-      // 后端无记录（首次使用）：写入初始状态
+      // 后端无记录（或本次读取未拿到数据）：先用默认状态渲染，不主动写回后端，
+      // 避免把已有数据误清空。用户首次改动时 scheduleSave 会被动写入。
       state = defaultState();
-      try { await saveState(); } catch (e) {}
     }
     applyState();
     setStatus(data ? "已就绪 ✓" : "ok");
