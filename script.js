@@ -24,6 +24,12 @@ async function fetchState() {
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
 async function saveState() {
+  if (!dataConfirmed) {
+    // 数据未从后端成功加载，禁止用可能的空状态覆盖云端，避免误清空
+    console.warn("[workbench] 数据未从后端确认，跳过本次保存以防误清空");
+    setStatus("保存跳过 · 数据未加载", "warn");
+    return;
+  }
   state.updated_at = new Date().toISOString();
   const res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
@@ -88,6 +94,7 @@ let state = defaultState();
 let userId = null;
 let saveTimer = null;
 let editingLinks = false;
+let dataConfirmed = false; // loadData 成功从后端确认过数据后才允许保存，防误清空
 
 /* ---------- 工具 ---------- */
 function setStatus(text, cls) {
@@ -115,17 +122,13 @@ async function loadData() {
   setStatus("加载中…", "syncing");
   try {
     const data = await fetchState();
-    if (data) {
-      state = Object.assign(defaultState(), mapRow(data));
-    } else {
-      // 后端无记录（或本次读取未拿到数据）：先用默认状态渲染，不主动写回后端，
-      // 避免把已有数据误清空。用户首次改动时 scheduleSave 会被动写入。
-      state = defaultState();
-    }
+    state = Object.assign(defaultState(), mapRow(data || {}));
+    dataConfirmed = true; // 读取成功（无论有无记录），后续保存才被允许
     applyState();
-    setStatus(data ? "已就绪 ✓" : "ok");
+    setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
   } catch (e) {
     setStatus("读取失败 · 请检查网络", "err");
+    dataConfirmed = false; // 读取异常：禁止保存，避免用空白覆盖云端
     applyState();
   }
 }
