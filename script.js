@@ -48,6 +48,22 @@ async function saveState() {
       }
     }
   } catch (e) { /* 核对失败不阻断，交给下方正式写入的错误处理 */ }
+  /* 防误清空·基线保护（前端兜底）：若三个核心字段同时为空——典型是逻辑异常导致 state 被 default 覆盖——
+     而载入基线中本来有内容，则回退到基线值，绝不向云端提交空数据。真正的“旧链接清不掉”靠后端触发器。 */
+  try {
+    const base = window.__loadBase;
+    if (base) {
+      const nowEmpty = (!state.todos || !state.todos.length) && (!state.stickyNotes || !state.stickyNotes.length) && (!state.notes || !state.notes.trim());
+      const baseHas = (base.todos && base.todos.length) || (base.stickyNotes && base.stickyNotes.length) || (base.notes && base.notes.trim());
+      if (nowEmpty && baseHas) {
+        console.warn("[workbench] 检测到三核心字段同时为空（异常），回退到载入基线，不提交空数据");
+        setStatus("保存拦截 · 异常空数据已拦截", "warn");
+        state.todos = base.todos || [];
+        state.stickyNotes = base.stickyNotes || [];
+        state.notes = base.notes || "";
+      }
+    }
+  } catch (e2) {}
   state.updated_at = new Date().toISOString();
   const res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
@@ -142,6 +158,8 @@ async function loadData() {
     const data = await fetchState();
     state = Object.assign(defaultState(), mapRow(data || {}));
     dataConfirmed = true; // 读取成功（无论有无记录），后续保存才被允许
+    // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
+    try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
     applyState();
     setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
   } catch (e) {
