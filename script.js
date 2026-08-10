@@ -16,7 +16,9 @@ const API_HEADERS = {
 
 /* 直接从后端读取整条记录 */
 async function fetchState() {
-  const res = await fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&limit=1`, { headers: API_HEADERS });
+  // 每次请求都带唯一时间戳 + no-store，强制从后端取最新，杜绝浏览器/CDN 缓存导致“不同浏览器不一样”
+  const url = `${REST_BASE}/${TABLE}?user_id=eq.${userId}&limit=1&cb=${Date.now()}`;
+  const res = await fetch(url, { headers: API_HEADERS, cache: "no-store" });
   if (!res.ok) throw new Error("fetch " + res.status);
   const arr = await res.json();
   return arr && arr[0] ? arr[0] : null;
@@ -34,7 +36,7 @@ async function saveState() {
      若云端已有比本地"载入时刻"更新的数据，说明云端被别的端更新过（或旧实例刚清空过），
      此时放弃本次保存以免用过期/空本地数据覆盖云端，并提示先刷新。这是防误清空的最后一道闸。 */
   try {
-    const chk = await fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&select=updated_at&limit=1`, { headers: API_HEADERS });
+    const chk = await fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&select=updated_at&limit=1&cb=${Date.now()}`, { headers: API_HEADERS, cache: "no-store" });
     if (chk.ok) {
       const carr = await chk.json();
       if (carr && carr[0]) {
