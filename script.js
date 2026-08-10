@@ -25,6 +25,7 @@ async function fetchState() {
 }
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
+let notesHistoryColReady = true; // notes_history 列就绪标志；列未建好时降级跳过，防整行 400
 
 async function saveState() {
   if (!dataConfirmed) {
@@ -68,17 +69,29 @@ async function saveState() {
     }
   } catch (e2) {}
   state.updated_at = new Date().toISOString();
-  const body = {
+  const buildBody = (withHist) => ({
     user_id: userId, name: state.name, todos: state.todos,
     links: state.links, notes: state.notes, theme: state.theme,
     sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
     gh_arrival: state.ghArrival, updated_at: state.updated_at,
-  };
-  const res = await fetch(`${REST_BASE}/${TABLE}`, {
+    ...(withHist ? { notes_history: state.notesHistory } : {}),
+  });
+  let res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-    body: JSON.stringify(body),
+    body: JSON.stringify(buildBody(notesHistoryColReady)),
   });
+  /* notes_history 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 notes_history，
+     保证待办/笔记/便利贴等核心数据可正常保存，历史暂只存本机 localStorage，加列后自动恢复。 */
+  if (!res.ok && notesHistoryColReady) {
+    notesHistoryColReady = false;
+    console.warn("[workbench] notes_history 列尚不存在，本次及之后保存暂不含历史；加列后将自动恢复");
+    res = await fetch(`${REST_BASE}/${TABLE}`, {
+      method: "POST",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+      body: JSON.stringify(buildBody(false)),
+    });
+  }
   if (!res.ok) throw new Error("save " + res.status);
   return true;
 }
@@ -107,7 +120,7 @@ const DEFAULT_LINKS = [
 ];
 
 function defaultState() {
-  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z" };
+  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [] };
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -124,7 +137,13 @@ function mapRow(row) {
   if (typeof row.gh_arrival === "string") r.ghArrival = row.gh_arrival;
   else if (typeof row.ghArrival === "string") r.ghArrival = row.ghArrival;
   else r.ghArrival = "";
-  delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival;
+  if (Array.isArray(row.notes_history) && row.notes_history.length) r.notesHistory = row.notes_history;
+  else if (Array.isArray(row.notesHistory) && row.notesHistory.length) r.notesHistory = row.notesHistory;
+  else {
+    /* 后端尚无历史（列未建或本机更早存的）→ 退回本机 localStorage 兜底，保证历史不丢 */
+    try { const lh = JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]"); if (Array.isArray(lh)) r.notesHistory = lh; else r.notesHistory = []; } catch (e) { r.notesHistory = []; }
+  }
+  delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival; delete r.notes_history;
   return r;
 }
 
@@ -141,15 +160,15 @@ function setStatus(text, cls) {
   el.className = "sync-pill" + (cls ? " " + cls : "");
 }
 /* 防抖保存：500ms 内连续操作只写一次后端，直读直写无本地缓存 */
-function scheduleSave() {
+function scheduleSave(silent) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    setStatus("保存中…", "syncing");
+    if (!silent) setStatus("保存中…", "syncing");
     try {
       await saveState();
-      setStatus("已保存 ✓", "ok");
+      if (!silent) setStatus("已保存 ✓", "ok");
     } catch (e) {
-      setStatus("保存失败 · 请检查网络", "err");
+      if (!silent) setStatus("保存失败 · 请检查网络", "err");
       console.warn("[workbench] 保存失败：", e);
     }
   }, 500);
@@ -165,6 +184,16 @@ async function loadData() {
     // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
     try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
     applyState();
+    /* 迁移：本机 localStorage 有历史但后端尚无（列未建或尚未同步）→ 静默尝试上云；
+       列就绪后自动生效，列未就绪时静默失败、不影响使用。 */
+    try {
+      const lsHist = JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]");
+      if (Array.isArray(lsHist) && lsHist.length && (!state.notesHistory || !state.notesHistory.length)) {
+        state.notesHistory = lsHist;
+        renderNotesHistory();
+        scheduleSave(true);
+      }
+    } catch (e2) {}
     setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
   } catch (e) {
     setStatus("读取失败 · 请检查网络", "err");
@@ -695,12 +724,9 @@ const NOTES_HISTORY_KEY = "wb_notes_history";
 const NOTES_MAX_HISTORY = 50;
 let lastArchivedNotes = (state.notes || "").toString();
 let notesArchiveTimer = null;
-function loadNotesHistory() {
-  try { return JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]") || []; } catch (e) { return []; }
-}
 function pushNotesHistory(text) {
   text = (text || "").toString();
-  const list = loadNotesHistory();
+  const list = state.notesHistory || (state.notesHistory = []);
   if (list.length && list[0].text === text) return; /* 与最近一条完全相同则跳过，避免连续重复存档 */
   const now = new Date();
   const item = {
@@ -712,14 +738,16 @@ function pushNotesHistory(text) {
   };
   list.unshift(item);
   while (list.length > NOTES_MAX_HISTORY) list.pop();
-  try { localStorage.setItem(NOTES_HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
   lastArchivedNotes = text;
+  /* 本机先存一份兜底，保证即使后端列未建好也不丢；后端列就绪后 scheduleSave 会一并同步 */
+  try { localStorage.setItem(NOTES_HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
   renderNotesHistory();
+  scheduleSave(); /* 触发（防抖）保存，把历史一并写入后端，跨设备可回看 */
 }
 function renderNotesHistory() {
   const box = $("#notesHistoryList");
   if (!box) return;
-  const list = loadNotesHistory();
+  const list = state.notesHistory || [];
   if (!list.length) { box.innerHTML = '<p class="fh-empty">暂无记录</p>'; return; }
   box.innerHTML = list.map((it) =>
     `<details class="fh-item">` +
@@ -737,9 +765,11 @@ function scheduleNotesArchive() {
 }
 const notesHistoryClear = $("#notesHistoryClear");
 if (notesHistoryClear) notesHistoryClear.addEventListener("click", () => {
+  state.notesHistory = [];
   try { localStorage.removeItem(NOTES_HISTORY_KEY); } catch (e) {}
   lastArchivedNotes = (state.notes || "").toString();
   renderNotesHistory();
+  scheduleSave();
 });
 
 /* ---------- 主题 ---------- */
