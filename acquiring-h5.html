@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>外卡收单知识库 · 学习</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f4f1ea; color: #222; }
+.app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #2b3a55; color: #fff; flex: 0 0 auto; }
+.topbar .icon { background: rgba(255,255,255,.15); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; cursor: pointer; }
+.progress { flex: 1; height: 6px; background: rgba(255,255,255,.2); border-radius: 4px; overflow: hidden; }
+#progBar { height: 100%; width: 0; background: #4fd1a5; transition: width .2s; }
+.pos { font-size: 13px; opacity: .9; white-space: nowrap; }
+.viewer { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 16px 28px; touch-action: pan-y; }
+.page { max-width: 760px; margin: 0 auto; }
+.chap { font-size: 12px; letter-spacing: 2px; color: #8a7f6d; text-transform: uppercase; margin-bottom: 4px; }
+.sec { font-size: 22px; line-height: 1.3; margin: 0 0 14px; color: #1a1a1a; }
+.body { font-size: 16px; line-height: 1.85; color: #2a2a2a; }
+.body p { margin: 0 0 12px; }
+.body h3 { font-size: 18px; margin: 20px 0 8px; color: #244; }
+.body h4 { font-size: 16px; margin: 16px 0 6px; color: #345; }
+.body ul, .body ol { margin: 0 0 12px; padding-left: 22px; }
+.body li { margin: 4px 0; }
+.body strong { color: #b35c00; }
+.body code { background: #eee; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+.body pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+.body pre code { background: none; padding: 0; color: inherit; }
+.body blockquote { margin: 0 0 14px; padding: 10px 14px; background: #f0ece1; border-left: 4px solid #cbb994; color: #5a5142; border-radius: 0 8px 8px 0; }
+.tbl-wrap { overflow-x: auto; margin: 0 0 14px; -webkit-overflow-scrolling: touch; }
+.body table { border-collapse: collapse; width: 100%; font-size: 13.5px; background: #fff; }
+.body th, .body td { border: 1px solid #ddd; padding: 7px 9px; text-align: left; vertical-align: top; }
+.body th { background: #eef2f7; color: #334; font-weight: 600; white-space: nowrap; }
+.nav { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #2b3a55; color: #fff; flex: 0 0 auto; }
+.nav button { flex: 1; background: #3c5070; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 15px; cursor: pointer; }
+.nav button:active { background: #4a618a; }
+.nav button:disabled { opacity: .4; }
+.toc-mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); opacity: 0; visibility: hidden; transition: .25s; z-index: 20; }
+.toc-mask.show { opacity: 1; visibility: visible; }
+.toc { position: fixed; top: 0; left: 0; bottom: 0; width: 84%; max-width: 340px; background: #fff; transform: translateX(-105%); transition: .25s; z-index: 21; display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(0,0,0,.2); }
+.toc.show { transform: translateX(0); }
+.toc-head { padding: 16px; font-size: 17px; font-weight: 700; border-bottom: 1px solid #eee; color: #2b3a55; }
+.toc-list { overflow-y: auto; padding: 8px 0 30px; flex: 1; }
+.toc-chap { padding: 12px 16px; font-weight: 600; color: #2b3a55; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.toc-chap .caret { transition: .2s; color: #999; }
+.toc-chap.open .caret { transform: rotate(90deg); }
+.toc-secs { display: none; padding: 0 0 6px; }
+.toc-secs.open { display: block; }
+.toc-sec { padding: 9px 16px 9px 30px; font-size: 14px; color: #555; cursor: pointer; border-left: 2px solid #eee; margin-left: 16px; }
+.toc-sec:active { background: #f3f6fb; }
+@media (prefers-color-scheme: dark) {
+  body { background: #15181d; color: #d8dde3; }
+  .sec { color: #f0f3f6; }
+  .body { color: #c2c8cf; }
+  .body strong { color: #f0ad4e; }
+  .body blockquote { background: #1d2229; color: #a9b0b8; border-left-color: #3a4250; }
+  .body table { background: #1b1f25; }
+  .body th { background: #222831; color: #cdd; }
+  .body td, .body th { border-color: #2c333c; }
+  .body code { background: #222; }
+  .toc { background: #1b1f25; }
+  .toc-head { color: #cfe; border-color: #2c333c; }
+  .toc-chap { color: #cfe; }
+  .toc-sec { color: #aab; border-color: #2c333c; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<button id="tocBtn" class="icon">☰ 目录</button>
+<div class="progress"><div id="progBar"></div></div>
+<div class="pos" id="posLabel">1 / 1</div>
+</header>
+<main class="viewer" id="viewer">
+<article class="page">
+<div class="chap" id="chapLabel"></div>
+<h1 class="sec" id="secLabel"></h1>
+<div class="body" id="bodyHtml"></div>
+</article>
+</main>
+<footer class="nav">
+<button id="prevBtn">↑ 上一页</button>
+<button id="nextBtn">下一页 ↓</button>
+</footer>
+</div>
+<div class="toc-mask" id="tocMask"></div>
+<aside class="toc" id="toc">
+<div class="toc-head">目录</div>
+<div class="toc-list" id="tocList"></div>
+</aside>
+<script>
+const PAGES = [{"intro": true, "title": "关于本知识库", "html": "<blockquote>本文档为《外卡收单全体系知识库（含名词、场景、新生支付业务、产品岗知识）》，系统梳理外卡收单的基础名词、线上/线下业务知识、新生支付专属业务体系，以及外卡收单产品经理必备岗位知识，适用于跨境支付行业新人与产品 / 运营 / 商务岗标准化培训。更新时间 2026 年。</blockquote>\n<p>全文共 4 大模块，覆盖从核心名词（基础 / 线下 / 线上 / 风控拒付 / 费率清算 / 合规安全）、线上 + 线下业务知识、新生支付专属业务体系（场景 + 案例 + 优势），到产品经理岗位知识（合规资质、卡组织规则、产品能力、风控治理、费率清算、商户运营、避坑清单、核心 KPI）的完整链路。</p>\n<p>操作提示：上下滑动屏幕或点底部按钮翻页；左上角「目录」可快速跳转到任意章节；每章开头有导言页给出本章概览。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "chapIntro": true, "html": "<blockquote>本章建立外卡收单的完整词汇表：从基础收单名词（外卡 / 外卡收单 / 收单行 / 发卡行 / 卡组织 / 交易授权）出发，延伸到线下专属、线上专属、风控拒付、费率清算、合规安全六类关键名词，是后续所有业务理解的基础。</blockquote>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.1", "st": "基础收单名词", "html": "<p><strong>1. 外卡</strong>：中国大陆境外银行发行的银行卡，包含 Visa、Mastercard、JCB、AE、Discover 等，是跨境收单核心交易载体，不含境内纯银联卡。</p>\n<p><strong>2. 外卡收单</strong>：持牌支付机构为境内商户提供的境外银行卡受理、跨境清算、多币种结汇的跨境外汇支付服务，区别于境内银联人民币收单。</p>\n<p><strong>3. 收单行（Acquirer）</strong>：持牌支付机构，对接商户、提供支付通道、负责交易清算与商户资金结算，分为线下 POS 收单行、线上网关收单行。</p>\n<p><strong>4. 发卡行（Issuer）</strong>：境外发卡银行，负责持卡人账户扣款、交易授权、发起拒付争议，是交易上游审核主体。</p>\n<p><strong>5. 卡组织（Card Scheme）</strong>：全球银行卡清算组织，统一制定交易规则、费率、风控、拒付仲裁标准，主流为 Visa、Mastercard、JCB、AE。</p>\n<p><strong>6. 交易授权（Authorization）</strong>：发卡行实时校验卡片余额、风控状态后下发扣款许可，授权成功代表交易初步生效，授权失败直接拦截交易。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.2", "st": "线下外卡收单专属名词", "html": "<p><strong>1. 双币种 POS 机</strong>：同时支持境内银联人民币、境外国际卡组织交易的专用机具，是国内线下涉外门店主流设备。</p>\n<p><strong>2. 纯外卡 POS 机</strong>：仅受理 Visa/Master 等外卡交易、不支持银联的专用机具，多用于高星酒店、免税店。</p>\n<p><strong>3. DCC 动态货币转换</strong>：线下专属功能，刷卡时将人民币自动转换为持卡人本国货币结算，商户可赚取汇兑差价，未主动告知持卡人将引发批量拒付。</p>\n<p><strong>4. 签购单</strong>：外卡交易法定凭证（纸质/电子），含交易金额、卡号尾号、时间、商户信息、持卡人签名，法定留存≥18 个月，是拒付胜诉核心举证材料。</p>\n<p><strong>5. IC 插卡交易</strong>：读取银行卡芯片完成交易，线下安全等级最高、拒付率最低，卡组织优先认可的交易方式。</p>\n<p><strong>6. 磁条交易</strong>：读取磁条完成交易，安全等级极低、盗刷风险高，卡组织严格限额，逐步淘汰。</p>\n<p><strong>7. NFC 非接闪付</strong>：外卡或境外手机 Pay 贴近机具免密支付，是线下主流便捷交易方式。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.3", "st": "线上外卡收单专属名词", "html": "<p><strong>1. 支付网关</strong>：线上外卡收单核心载体，通过 API 对接商户独立站、跨境商城，实现卡号录入、交易校验、跨境清算，替代线下 POS 机具。</p>\n<p><strong>2. 3DS 验证（3D Secure）</strong>：卡组织强制线上安全验证机制，通过发卡行短信、生物识别核验持卡人身份，完成 3DS 验证的交易，伪卡盗刷拒付风险由发卡行承担。</p>\n<p><strong>3. 3DS2.0</strong>：新一代验证标准，适配移动端，支持无感静默验证，大幅降低用户跳转流失，为当前主流方案。</p>\n<p><strong>4. CVV2</strong>：银行卡背面三位安全验证码，线上交易核心凭证，盗刷风险高发，商户禁止储存完整 CVV 信息。</p>\n<p><strong>5. AVS 地址校验</strong>：发卡行比对用户填写账单地址与银行卡预留地址的风控机制，地址不匹配自动拦截交易，降低盗刷率。</p>\n<p><strong>6. 预授权</strong>：航旅、租赁、酒店行业专属功能，先冻结卡片额度，履约完成后正式扣款，未服务需及时解冻，否则引发拒付。</p>\n<p><strong>7. 交易令牌 Token</strong>：替代完整卡号的加密字符，用于合规留存交易信息，规避 PCI 数据违规风险。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.4", "st": "风控与拒付类名词", "html": "<p><strong>1. 拒付 Chargeback</strong>：持卡人向发卡行发起交易争议，单方面撤销扣款、追回资金，是外卡收单核心风险。</p>\n<p><strong>2. 拒付率</strong>：统计周期内拒付笔数 / 成功交易笔数，卡组织设红线阈值，超标将限流、涨价、罚款、关停通道。</p>\n<p><strong>3. 争议仲裁</strong>：卡组织对商户与持卡人纠纷进行最终判责，判责核心依据为商户举证材料完整性。</p>\n<p><strong>4. 伪卡交易</strong>：不法分子复制卡片信息、线上盗刷产生的非本人交易，属于高风险违规交易。</p>\n<p><strong>5. 套现交易</strong>：无真实消费场景，通过外卡交易变相套取外汇现金，属于监管严打行为。</p>\n<p><strong>6. 高风险国家/地区</strong>：诈骗、战乱高发区域，交易盗刷、拒付率极高，机构普遍拦截或限额。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.5", "st": "费率、清算与外汇名词", "html": "<p><strong>1. 交换费</strong>：卡组织统一规定的刚性成本，收单行结算给发卡行，按国家、卡种、场景差异化定价，不可议价。</p>\n<p><strong>2. 通道服务费</strong>：支付机构收取的系统运维、风控、通道对接服务费，属于商户可协商费率。</p>\n<p><strong>3. 货币转换费</strong>：外币与人民币汇兑产生的手续费，分为 DCC 汇兑费、商户本位币汇兑费。</p>\n<p><strong>4. T+N 结算</strong>：交易成功后 N 个工作日回款，国内持牌机构多为 T+1/T+3，境外网关多为 T+7/T+14。</p>\n<p><strong>5. 结汇</strong>：将外币交易资金按实时汇率兑换为人民币，入账商户对公账户的合规外汇操作。</p>\n<p><strong>6. 贸易申报</strong>：商户对外汇收入进行货物/服务贸易备案，提交订单、物流、合同凭证，是合规结汇的必要流程。</p>"}, {"c": 1, "ct": "核心名词解释（全覆盖、标准化）", "s": "1.6", "st": "合规安全名词", "html": "<p><strong>1. PCI DSS 认证</strong>：全球银行卡数据安全标准，POS 机具、线上网关必须持证合规，禁止储存完整卡号、CVV 等敏感信息。</p>\n<p><strong>2. 外卡收单资质</strong>：合法开展业务必备，含央行支付牌照、外汇跨境支付资质、卡组织会员资质，无证属于非法跨境支付。</p>\n<p><strong>3. MCC 商户类别码</strong>：卡组织划分的行业代码，直接决定商户费率、风控等级、准入门槛。</p>\n<p><strong>4. 交易台账</strong>：留存每笔交易的时间、金额、用户信息、消费凭证，用于监管核查和拒付举证。</p>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "chapIntro": true, "html": "<blockquote>本章讲解线上与线下两条收单主线的核心要点：线下依赖实体卡与签购单、线上依赖网关与 3DS；并给出两者核心差异对比、全场景通用规则、行业风险分级与常见误区，是业务实操的必读章节。</blockquote>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.1", "st": "线下外卡收单核心要点", "html": "<ol>\n<li><strong>交易设备与方式</strong>：采用合规双币种/纯外卡 POS 机具，支持 IC 插卡、NFC 闪付、磁条刷卡、手动压单；IC 交易优先级最高、风险最低，磁条交易严格限额。</li>\n<li><strong>合规硬性要求</strong>：所有线下交易必须留存持卡人签名、电子/纸质签购单，留存时长≥18 个月；大额交易需核验境外证件并登记。</li>\n<li><strong>DCC 合规规则</strong>：必须主动告知持卡人、展示双币种金额，由用户自主选择，禁止默认勾选，违规将引发大规模拒付与卡组织处罚。</li>\n<li><strong>费率构成</strong>：卡组织交换费 + 通道服务费 + 汇兑手续费。</li>\n<li><strong>核心风险</strong>：无签名凭证、DCC 违规、磁条盗刷、重复扣款为主要拒付原因。</li>\n</ol>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.2", "st": "线上外卡收单核心要点", "html": "<ol>\n<li><strong>产品形态</strong>：依托线上支付网关，API 对接商户站点，无硬件机具。</li>\n<li><strong>核心交易流程</strong>：用户填卡信息 → 3DS2.0 验证 → 发卡行授权 → 卡组织跨境清算 → 资金入账结汇。</li>\n<li><strong>核心机制</strong>：小额静默验证、大额强制 3DS 核验，搭配 AVS 地址校验；航旅服务类支持预授权冻结与解冻。</li>\n<li><strong>风险特点</strong>：无实体卡片核验，盗刷、拒付率是线下的 3-5 倍；高频风险点：账单名称模糊、未履约发货、私自订阅扣费、无 3DS 验证。</li>\n<li><strong>结算特点</strong>：国内持牌机构 T+1/T+3 快速结汇，境外网关结算周期更长；所有外汇收入必须完成贸易申报。</li>\n</ol>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.3", "st": "线上线下外卡收单核心差异对比", "html": "<ol>\n<li><strong>交易介质</strong>：线下为实体卡片、手机闪付；线上为卡号+CVV 录入。</li>\n<li><strong>安全核验</strong>：线下依靠芯片、签名、证件核验；线上依靠 3DS、AVS 校验。</li>\n<li><strong>拒付率</strong>：线下低（有实物凭证）；线上高（无刷卡凭证）。</li>\n<li><strong>DCC 业务</strong>：线下成熟可盈利；线上极少使用。</li>\n<li><strong>适用场景</strong>：线下适配入境实体消费；线上适配出海电商、服务贸易、订阅付费。</li>\n<li><strong>监管要求</strong>：线下侧重交易台账、签购单留存；线上侧重订单、物流、服务凭证归集申报。</li>\n</ol>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.4", "st": "全场景通用规则", "html": "<ol>\n<li>卡组织 18 个月凭证留存规则、拒付仲裁规则线上线下统一。</li>\n<li>所有交易数据严禁储存完整银行卡敏感信息，必须合规令牌化。</li>\n<li>外卡收款属于跨境外汇收入，必须具备真实贸易场景，无证经营违规。</li>\n<li>拒付统一流程：用户发起争议 → 机构接收通知 → 商户举证 → 卡组织最终仲裁。</li>\n</ol>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.5", "st": "行业风险分级", "html": "<p><strong>线下高风险行业</strong>：珠宝、奢侈品、大额零售（套现、伪卡高发）。</p>\n<p><strong>线上高风险行业</strong>：虚拟产品、订阅付费、游戏充值、跨境医美、仿品贸易（拒付率极高）。</p>\n<p><strong>全域风险</strong>：战乱、金融诈骗高危国家交易，普遍被风控拦截。</p>"}, {"c": 2, "ct": "线上 + 线下外卡收单核心业务知识", "s": "2.6", "st": "行业常见误区（避坑知识点）", "html": "<p>❌ 误区：普通银联 POS 可刷外卡 ｜ ✅ 纠正：无卡组织授权，无法受理外卡，必须专用外卡 POS。</p>\n<p>❌ 误区：线上无需留存凭证 ｜ ✅ 纠正：线上交易凭证同样需留存 18 个月，无举证直接败诉。</p>\n<p>❌ 误区：DCC 只有收益无风险 ｜ ✅ 纠正：未告知 DCC 会批量拒付、触发卡组织罚款。</p>\n<p>❌ 误区：个体户可随意开通外卡通道 ｜ ✅ 纠正：仅对合规企业开放，需资质 + 真实贸易场景。</p>"}, {"c": 3, "ct": "新生支付外卡收单专属业务体系", "chapIntro": true, "html": "<blockquote>本章聚焦新生支付（海南自贸港本土持牌机构，具备支付牌照 + 跨境外汇资质 + 卡组织会员资质）的线上 + 线下全场景外卡收单业务，通过场景 + 案例 + 优势，呈现差异化核心能力、标准业务链路，便于商务与产品对外讲解与落地。</blockquote>"}, {"c": 3, "ct": "新生支付外卡收单专属业务体系", "s": "3.1", "st": "线下入境外卡收单（服务境外来华消费者）", "html": "<ol>\n<li><strong>业务定位</strong>：解决国内涉外门店无法受理外卡的痛点，服务入境游客、外籍商务人士，助力入境消费支付便利化。</li>\n<li><strong>产品支撑</strong>：合规双币种外卡 POS 机具，全机具过 PCI 认证，支持全主流外卡、IC/闪付交易。</li>\n<li><strong>核心优势</strong>：合规 DCC 汇兑增值、低拒付、全台账合规、T+1/T+3 结汇回款。</li>\n<li><strong>落地案例</strong>：\n<ul>\n<li>① 涉外高星酒店：境外游客刷卡支付房费、押金、餐饮费，可选本国货币结算，酒店赚取汇兑收益，交易合规无拒付。</li>\n<li>② 景区/机场涉外零售：文创店、涉外餐饮店接入机具，免去游客换汇麻烦，提升消费体验，满足监管涉外交易备案要求。</li>\n</ul>\n</li>\n</ol>"}, {"c": 3, "ct": "新生支付外卡收单专属业务体系", "s": "3.2", "st": "线上出海外卡收单（服务国内出海商户）", "html": "<ol>\n<li><strong>业务定位</strong>：帮助国内企业、跨境卖家面向全球消费者收款，覆盖货物贸易、服务贸易出海场景。</li>\n<li><strong>产品支撑</strong>：线上外卡支付网关，支持 API 对接，搭载 3DS2.0、AVS 校验、全链路反欺诈风控。</li>\n<li><strong>核心优势</strong>：覆盖南美、俄罗斯等小众市场；支持预授权服务；原币留存/自动结汇双模式；一键贸易申报。</li>\n<li><strong>落地案例</strong>：\n<ul>\n<li>① 跨境独立站小商品：义乌、深圳卖家独立站出海，海外用户外卡线上付款，系统无感核验、拦截盗刷，合规回款结汇。</li>\n<li>② 航旅/研学服务：通过预授权功能，先冻结海外用户额度，履约后扣款、取消可解冻，解决服务类先付款后履约的高拒付痛点。</li>\n<li>③ 数字订阅服务：软件、课程会员订阅出海，清晰账单命名+设备 IP 风控，降低陌生账单拒付与批量盗刷风险。</li>\n<li>④ 自贸港批量外贸收单：依托本土政策，为自贸港企业提供批量收单、自动台账、一键申报，流程精简、合规容错率高。</li>\n</ul>\n</li>\n</ol>"}, {"c": 3, "ct": "新生支付外卡收单专属业务体系", "s": "3.3", "st": "新生支付差异化核心能力（带实操案例）", "html": "<p><strong>1. 自贸港政策专属优势（落地案例）</strong><br>普通支付机构做海南外贸，需逐笔人工上传物流、合同凭证申报，流程繁琐、时效慢。新生支付作为海南本土持牌机构，适配自贸港跨境便利化政策，针对海南小商品跨境、旅游服务贸易商户，系统支持批量交易自动归集、一键汇总申报，无需商户逐笔上传材料，大幅降低商户运维成本，同时监管合规容错率更高，极少出现申报驳回。</p>\n<p><strong>2. 线上线下一体化全覆盖（对比案例）</strong><br>市面上多数支付机构只能单做线上出海收单，或单做线下入境刷卡。而新生支付可服务同一类商户的全场景需求：例如某海南涉外文旅企业，线下有景区门店接待外国游客刷卡，线上有跨境官网售卖旅游套餐、研学产品，新生支付可一站式开通线下 POS 外卡收单 + 线上网关出海收单，统一商户后台、统一台账、统一结汇，商户无需对接多家支付机构。</p>\n<p><strong>3. 资金模式灵活（实操案例）</strong><br>针对两类商户痛点：①大型外贸商户：需要留存美元、欧元外币，用于境外上游采购付款，新生支付支持原币留存不强制结汇，节省汇兑损耗；②中小卖家：需要快速回款周转，支持交易完成后自动结汇为人民币，T+1 入账对公账户，适配不同商户资金周转需求。</p>\n<p><strong>4. 全链路合规风控（落地案例）</strong><br>针对南美、俄罗斯等高风险小众市场，普通网关盗刷、拒付率极高，容易导致整条通道被卡组织关停。新生支付针对区域定制风控策略：例如拦截俄罗斯高危代理 IP、限制南美大额匿名交易、新商户设置 7 天静默小额交易期，有效压低整体通道拒付率，保障通道长期稳定可用。</p>"}, {"c": 3, "ct": "新生支付外卡收单专属业务体系", "s": "3.4", "st": "标准业务链路", "html": "<p><strong>线下链路</strong>：境外用户刷卡/闪付 → POS 授权清算 → 可选 DCC 汇兑 → 凭证台账留存 → 合规结汇 → T+1/T+3 回款</p>\n<p><strong>线上链路</strong>：海外用户外卡付款 + 3DS 核验 → 网关风控拦截 → 卡组织跨境清算 → 资金归集 → 自动贸易申报 → 结汇/原币回款</p>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "chapIntro": true, "html": "<blockquote>本章面向外卡收单产品经理岗位，覆盖合规资质体系、卡组织核心规则、线上线下产品能力、风控与拒付治理、费率清算资金知识、商户与通道运营、高频避坑清单、核心 KPI 八大模块，是产品岗从入门到能独立负责的系统指引。</blockquote>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.1", "st": "合规资质体系（产品第一红线）", "html": "<p><strong>1. 机构三资质硬性要求（通俗举例）</strong><br>很多小公司、二清机构只持有普通支付牌照，没有外汇跨境资质 + 卡组织会员资质。举例：某小型科技公司想做跨境外卡收单，只能挂靠大机构通道，属于二清违规；而新生支付三证齐全，可直接对接 Visa/Master 总部、直接申报外汇，属于合规持牌展业。</p>\n<p><strong>2. 双重合规约束（场景案例）</strong><br>国内监管案例：商户做跨境服装贸易，无真实物流单号、无订单凭证，产品后台未拦截，被外汇局核查，判定为虚假贸易，直接关停商户通道、机构被约谈。国际卡组织案例：线下商户大量默认勾选 DCC 汇兑，未告知持卡人，Visa 后台检测到批量争议，对支付机构开出罚单、降低通道评级。</p>\n<p><strong>3. 产品合规设计红线（逐条举例）</strong></p>\n<ol>\n<li>禁止存完整卡信息：产品后台绝对不能留存用户 16 位卡号+CVV，只能留存令牌，举例：用户支付后，系统只展示加密 Token，不展示完整卡片信息，避免 PCI 违规；</li>\n<li>凭证留存 18 个月：2026 年的每一笔线上订单、线下签购单，必须自动归档保存至 2028 年，中途不可删除，用于监管抽查和拒付举证；</li>\n<li>高危国家限流：产品后台配置黑名单，例如也门、叙利亚等高危地区 IP，直接拦截交易，杜绝高坏账；</li>\n<li>DCC 禁止默认勾选：线下 POS 页面默认\"本币结算\"，DCC 外币转换需要收银员手动点击选择，杜绝批量违规；</li>\n<li>贸易凭证绑定：货物贸易商户，交易必须关联物流单号，无物流凭证无法完成结汇申报。</li>\n</ol>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.2", "st": "卡组织核心规则（产品底层逻辑）", "html": "<p><strong>1. 统一规则（带落地案例）</strong><br>卡组织统一制定交换费、报文标准、3DS 规则、拒付码、通道处罚机制。举例：Visa 规定欧美普通消费者卡交换费固定比例，高端白金卡交换费更高，产品定价时必须分层，不能统一费率。</p>\n<p><strong>2. 四大核心红线违规案例（高频踩坑）</strong></p>\n<ol>\n<li>拒付率超标：某商户做跨境数字课程，售后缺失，拒付率超 1% 阈值，卡组织直接对机构该通道限流，所有商户交易成功率下降；</li>\n<li>违规 DCC 罚款：大量线下交易默认外币结算，用户回国后集体申诉，Mastercard 对机构批量罚单；</li>\n<li>PCI 违规：后台日志泄露用户完整卡号，直接暂停机构卡组织会员权限，暂停新业务接入；</li>\n<li>高伪卡交易降级：某商户长期接收盗刷伪卡交易，产品未及时风控拦截，导致机构整体商户评级降级，后续费率上浮。</li>\n</ol>\n<p><strong>3. 拒付 Reason Code 落地案例（产品核心工作）</strong><br>产品不需要死记代码，需要按码改产品：</p>\n<ul>\n<li>案例1：频繁出现「未授权交易」拒付码 → 产品动作：对该行业强制开启全额 3DS2.0 验证、加高 IP 风控；</li>\n<li>案例2：频繁出现「未收到货物」拒付码 → 产品动作：上线物流凭证强制上传模块，无物流不可结算；</li>\n<li>案例3：频繁出现「账单陌生扣费」拒付码 → 产品动作：优化商户账单展示名，从乱码改为清晰的店铺品牌名。</li>\n</ul>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.3", "st": "线上线下产品核心能力（岗位实操）", "html": "<p><strong>线下产品能力（落地场景）</strong></p>\n<ol>\n<li>机具权限配置：针对奢侈品门店，产品后台关闭磁条交易权限，只保留 IC 插卡+NFC 闪付，降低伪卡风险；</li>\n<li>DCC 合规流程：产品设计双页面确认，先弹窗提示\"是否切换外币结算\"，必须人工确认，杜绝默认勾选；</li>\n<li>签购单电子化：线下交易完成后，自动推送电子签购单至商户后台，自动归档 18 个月，替代人工纸质留存；</li>\n<li>商户风控分级：新开酒店商户，前 30 天单笔限额 5000 元，成熟期商户放开大额限额。</li>\n</ol>\n<p><strong>线上产品能力（日常迭代案例）</strong></p>\n<ol>\n<li>3DS2.0 路由优化：欧美用户走强制 3DS 验证、东南亚低风险用户走静默验证，平衡安全与转化率；</li>\n<li>预授权时效逻辑：针对机票行业，产品设置「预授权 30 天自动解冻」，避免航班取消后用户被莫名扣款引发拒付；</li>\n<li>黑白名单运营：将高频盗刷的银行卡 BIN、代理 IP 批量加入黑名单，系统自动拦截；</li>\n<li>对账申报功能迭代：针对中小商户，优化批量导出台账功能，一键导出外汇申报表格，减少商户人工操作。</li>\n</ol>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.4", "st": "风控与拒付治理（产品核心价值）", "html": "<p><strong>1. 五大风控维度（逐条通俗举例）</strong></p>\n<ol>\n<li>设备指纹风控：同一手机设备频繁切换不同境外银行卡付款，系统判定为盗刷批量操作，直接拦截；</li>\n<li>IP 属地风控：商户客户标注为美国，但交易 IP 为高危翻墙 IP，直接拦截；</li>\n<li>交易行为风控：新商户凌晨一次性产生 20 笔大额交易，判定为套现风险，临时冻结交易；</li>\n<li>卡片 BIN 风控：识别卡片 BIN 段为高危诈骗卡段，直接拦截授权；</li>\n<li>商户 MCC 分层风控：虚拟产品 MCC，风控最严、限额最低；实物贸易 MCC，风控适度放宽。</li>\n</ol>\n<p><strong>2. 拒付治理落地案例（产品迭代闭环）</strong><br>场景：某跨境课程商户，月度拒付率飙升，原因是用户订阅后忘记取消，次月自动扣费引发争议。产品解决方案：①产品后台新增「订阅到期提前 3 天短信提醒」功能；②新增「自动续费可随时关闭」前台按钮；③针对订阅类商户，降低自动扣费额度，设置二次确认弹窗。迭代后拒付率下降 60%。</p>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.5", "st": "费率、清算、资金产品知识（算账 + 实操）", "html": "<p><strong>1. 综合成本公式（实战算账举例）</strong><br>某普通欧美实物外贸交易：卡组织交换费 1.2% + 通道服务费 0.3% + 汇兑成本 0.1% + 预留拒付坏账 0.2%，综合成本约 1.8%，产品对外定价 2.2%，保障机构利润同时覆盖风险。高风险虚拟行业，坏账预留成本更高，定价必须上浮。</p>\n<p><strong>2. 清算 vs 结算（通俗场景区分）</strong><br>清算：每晚新生支付和 Visa 对账、轧差、核对全天交易数据，属于机构和卡组织之间的资金核对；结算：对账完成后，新生支付第二天把扣除手续费后的人民币，打到商户对公账户，属于商户感知的回款。</p>\n<p><strong>3. 贸易申报差异案例</strong><br>货物贸易：必须上传物流单号、报关凭证，证明真实发货；服务贸易（研学、咨询、课程）：无物流，必须留存服务合同、聊天履约记录、课程开通记录，否则无法合规结汇。</p>\n<p><strong>4. 资金模式风险案例</strong><br>T+0 即时结汇：商户资金最快到账，但风险最高，一旦出现批量拒付，机构需要兜底赔付；T+3 结汇：预留风险观察期，可有效规避短期盗刷、拒付风险，是外卡收单主流稳健模式。</p>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.6", "st": "商户与通道运营能力（工作日常案例）", "html": "<p><strong>1. 商户全生命周期管理案例</strong><br>商户准入：某商户申请开通外卡通道，自称做服装外贸，但后台审核发现官网展示虚拟充值产品，MCC 风险不匹配，产品直接驳回准入，杜绝高风险商户入场。</p>\n<p><strong>2. 商户分层运营案例</strong></p>\n<ul>\n<li>新商户：静默期 7 天，单日限额 1 万，严控风险；</li>\n<li>普通商户：正常限额、标准费率；</li>\n<li>优质商户：长期零拒付、交易稳定，给予费率优惠、大额权限；</li>\n<li>高危商户：频繁争议、高危交易，直接限流或关停通道。</li>\n</ul>\n<p><strong>3. 通道健康度管控（PM 核心 KPI 案例）</strong><br>产品每日监控看板：整体拒付率、盗刷交易占比、争议率。例如发现某日南美区域盗刷交易暴涨，立即手动临时限流、更新 IP 黑名单，防止整条通道超标被卡组织处罚。</p>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.7", "st": "产品高频避坑清单（真实踩坑案例）", "html": "<p><strong>① 账单名称模糊 → 陌生账单拒付</strong><br>踩坑：商户后台账单名默认\"跨境支付扣费\"，海外用户看不懂，误以为被盗刷，批量发起拒付；优化：产品强制商户配置品牌专属账单名，如\"XX Store Official\"。</p>\n<p><strong>② 高危行业未强制 3DS → 盗刷坏账全赔</strong><br>踩坑：虚拟课程商户未强制 3DS 验证，黑产盗刷大量境外卡片，所有损失由商户+机构承担，无法向发卡行追责；优化：高风险行业产品后台强制开启 100% 3DS 核验。</p>\n<p><strong>③ DCC 默认勾选 → 卡组织批量罚款</strong><br>踩坑：线下 POS 默认外币结算，未告知用户，大量游客回国申诉，卡组织对机构处以单笔高额罚款；优化：产品层面锁死默认本币结算，DCC 必须手动确认。</p>\n<p><strong>④ 预授权到期未自动解冻 → 投诉 + 拒付</strong><br>踩坑：用户预订酒店未入住、取消订单，系统预授权一直冻结额度，用户投诉拒付；优化：产品新增预授权时效机制，到期自动解冻、取消订单即时解冻。</p>\n<p><strong>⑤ 凭证留存不足 → 拒付败诉、监管违规</strong><br>踩坑：商户未留存物流、服务凭证，用户发起拒付后，无材料举证，100% 败诉赔付；优化：产品强制交易凭证归档，无凭证无法完成结算。</p>"}, {"c": 4, "ct": "外卡收单产品经理必备岗位知识", "s": "4.8", "st": "外卡产品经理核心 KPI（考核场景）", "html": "<ol>\n<li><strong>通道拒付率/争议率</strong>：考核核心，产品迭代风控后，整体拒付率从 0.8% 压降至 0.3%，通道评级提升；</li>\n<li><strong>坏账赔付率</strong>：拦截高危交易、优化 3DS 策略，减少机构兜底赔付金额；</li>\n<li><strong>卡组织合规评分</strong>：无 PCI 违规、无 DCC 违规、凭证合规，保持高分，避免降级罚款；</li>\n<li><strong>交易拦截准确率</strong>：精准拦截盗刷交易，不误伤正常用户，平衡安全与转化率；</li>\n<li><strong>商户申诉胜诉率</strong>：优化举证模板、自动归档凭证，提升商户拒付申诉胜诉概率；</li>\n<li><strong>通道稳定性与交易规模</strong>：保障通道不被关停、不限流，支撑商户交易规模稳步增长。</li>\n</ol>"}];
+const TOC = [{"num": 1, "title": "核心名词解释（全覆盖、标准化）", "sections": [{"s": "", "st": "本章导言", "idx": 1}, {"s": "1.1", "st": "基础收单名词", "idx": 2}, {"s": "1.2", "st": "线下外卡收单专属名词", "idx": 3}, {"s": "1.3", "st": "线上外卡收单专属名词", "idx": 4}, {"s": "1.4", "st": "风控与拒付类名词", "idx": 5}, {"s": "1.5", "st": "费率、清算与外汇名词", "idx": 6}, {"s": "1.6", "st": "合规安全名词", "idx": 7}]}, {"num": 2, "title": "线上 + 线下外卡收单核心业务知识", "sections": [{"s": "", "st": "本章导言", "idx": 8}, {"s": "2.1", "st": "线下外卡收单核心要点", "idx": 9}, {"s": "2.2", "st": "线上外卡收单核心要点", "idx": 10}, {"s": "2.3", "st": "线上线下外卡收单核心差异对比", "idx": 11}, {"s": "2.4", "st": "全场景通用规则", "idx": 12}, {"s": "2.5", "st": "行业风险分级", "idx": 13}, {"s": "2.6", "st": "行业常见误区（避坑）", "idx": 14}]}, {"num": 3, "title": "新生支付外卡收单专属业务体系", "sections": [{"s": "", "st": "本章导言", "idx": 15}, {"s": "3.1", "st": "线下入境外卡收单", "idx": 16}, {"s": "3.2", "st": "线上出海外卡收单", "idx": 17}, {"s": "3.3", "st": "新生支付差异化核心能力", "idx": 18}, {"s": "3.4", "st": "标准业务链路", "idx": 19}]}, {"num": 4, "title": "外卡收单产品经理必备岗位知识", "sections": [{"s": "", "st": "本章导言", "idx": 20}, {"s": "4.1", "st": "合规资质体系", "idx": 21}, {"s": "4.2", "st": "卡组织核心规则", "idx": 22}, {"s": "4.3", "st": "线上线下产品核心能力", "idx": 23}, {"s": "4.4", "st": "风控与拒付治理", "idx": 24}, {"s": "4.5", "st": "费率、清算、资金产品知识", "idx": 25}, {"s": "4.6", "st": "商户与通道运营能力", "idx": 26}, {"s": "4.7", "st": "产品高频避坑清单", "idx": 27}, {"s": "4.8", "st": "外卡产品经理核心 KPI", "idx": 28}]}];
+
+var cur = 0;
+var N = PAGES.length;
+var viewer = document.getElementById('viewer');
+var bodyHtml = document.getElementById('bodyHtml');
+var chapLabel = document.getElementById('chapLabel');
+var secLabel = document.getElementById('secLabel');
+var posLabel = document.getElementById('posLabel');
+var progBar = document.getElementById('progBar');
+var prevBtn = document.getElementById('prevBtn');
+var nextBtn = document.getElementById('nextBtn');
+
+function render() {
+  var p = PAGES[cur];
+  if (p.intro) { chapLabel.textContent = '前言'; secLabel.textContent = p.title; }
+  else if (p.chapIntro) { chapLabel.textContent = '第' + p.c + '章 · ' + p.ct; secLabel.textContent = '本章导言'; }
+  else { chapLabel.textContent = '第' + p.c + '章 · ' + p.ct; secLabel.textContent = p.s + ' ' + p.st; }
+  bodyHtml.innerHTML = p.html;
+  posLabel.textContent = (cur + 1) + ' / ' + N;
+  progBar.style.width = ((cur + 1) / N * 100) + '%';
+  viewer.scrollTop = 0;
+  prevBtn.disabled = (cur === 0);
+  nextBtn.disabled = (cur === N - 1);
+}
+function go(d) { cur = Math.max(0, Math.min(N - 1, cur + d)); render(); }
+prevBtn.onclick = function () { go(-1); };
+nextBtn.onclick = function () { go(1); };
+
+var sy = 0, sT = 0;
+viewer.addEventListener('touchstart', function (e) { sy = e.touches[0].clientY; sT = Date.now(); }, { passive: true });
+viewer.addEventListener('touchend', function (e) {
+  var dy = e.changedTouches[0].clientY - sy;
+  var dt = Date.now() - sT;
+  if (Math.abs(dy) > 50 && dt < 800) { go(dy < 0 ? 1 : -1); }
+}, { passive: true });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(-1); }
+});
+
+var tocEl = document.getElementById('tocList');
+var tocMask = document.getElementById('tocMask');
+var toc = document.getElementById('toc');
+function buildToc() {
+  var html = '';
+  for (var i = 0; i < TOC.length; i++) {
+    var ch = TOC[i];
+    html += '<div class="toc-chap" data-i="' + i + '"><span>第' + ch.num + '章 ' + ch.title + '</span><span class="caret">›</span></div>';
+    html += '<div class="toc-secs" data-secs="' + i + '">';
+    for (var j = 0; j < ch.sections.length; j++) {
+      var sec = ch.sections[j];
+      html += '<div class="toc-sec" data-idx="' + sec.idx + '">' + (sec.s ? sec.s + ' ' : '') + sec.st + '</div>';
+    }
+    html += '</div>';
+  }
+  tocEl.innerHTML = html;
+  var chaps = tocEl.querySelectorAll('.toc-chap');
+  chaps.forEach(function (c) {
+    c.onclick = function () {
+      c.classList.toggle('open');
+      var si = c.getAttribute('data-i');
+      var secs = tocEl.querySelector('.toc-secs[data-secs="' + si + '"]');
+      secs.classList.toggle('open');
+    };
+  });
+  var secsBtns = tocEl.querySelectorAll('.toc-sec');
+  secsBtns.forEach(function (s) {
+    s.onclick = function () { cur = parseInt(s.getAttribute('data-idx'), 10); render(); closeToc(); };
+  });
+}
+function openToc() { toc.classList.add('show'); tocMask.classList.add('show'); }
+function closeToc() { toc.classList.remove('show'); tocMask.classList.remove('show'); }
+document.getElementById('tocBtn').onclick = openToc;
+tocMask.onclick = closeToc;
+buildToc();
+render();
+
+</script>
+</body>
+</html>
