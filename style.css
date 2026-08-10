@@ -618,38 +618,6 @@ body {
 .import-status.ok { color: #2ecc71; }
 .import-status.err { color: #ff6b6b; }
 
-/* ===== 基金涨幅模块 ===== */
-.fund-wrap { padding: 8px 4px; }
-.fund-summary { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
-.fs-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; min-width: 220px; }
-.fs-label { display: block; font-size: 12px; color: var(--text-soft); margin-bottom: 6px; }
-.fs-value { font-size: 24px; font-weight: 700; }
-.fund-day-profit.up { color: #f53f3f; }
-.fund-day-profit.down { color: #2ba471; }
-.fund-form { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.ff-input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 13px; min-width: 130px; background: var(--card); color: var(--text); }
-.ff-input:focus { outline: none; border-color: var(--accent); }
-.ff-add { padding: 9px 16px; border: none; border-radius: 9px; background: #47b849; color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; }
-.ff-add:hover { filter: brightness(1.06); }
-.fund-table { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.fund-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1.3fr 1.3fr 1.3fr 30px; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); gap: 6px; }
-.fund-row:last-child { border-bottom: none; }
-.fund-head { background: var(--card-hover, var(--card)); font-size: 12px; color: var(--text-soft); font-weight: 600; }
-.fr-name { font-weight: 600; }
-.fr-code { display: block; font-size: 11px; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
-.fr-num { text-align: right; font-variant-numeric: tabular-nums; }
-.fr-num.up { color: #f53f3f; }
-.fr-num.down { color: #2ba471; }
-.fr-del { border: none; background: transparent; color: var(--text-faint); cursor: pointer; font-size: 18px; line-height: 1; }
-.fr-del:hover { color: #f53f3f; }
-.fund-empty { padding: 22px; text-align: center; color: var(--text-soft); font-size: 13px; }
-.fund-trend-wrap { margin-top: 18px; }
-.ft-title { font-size: 13px; color: var(--text-soft); margin-bottom: 8px; }
-.fund-svg { width: 100%; height: 160px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
-.ft-axis { stroke: var(--border); stroke-width: 1; }
-.ft-line { stroke-linejoin: round; stroke-linecap: round; }
-.ft-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--text-soft); }
-.ft-leg::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--c, #888); margin-right: 5px; vertical-align: middle; }
 
 /* 快捷链接：高度减半（内部滚动，链接不丢失） */
 .links-grid { max-height: 82px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
