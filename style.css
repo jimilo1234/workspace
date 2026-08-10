@@ -283,6 +283,19 @@ body {
 .focus-card .timer { font-size: 32px; margin: 6px 0 8px; }
 .focus-card .timer-controls { margin-top: 0; }
 
+/* 迷你卡统一高度（专注计时 / GH时间 / 日历 / 每日运势）= 280px；随手笔记 = 专注+GH 总高 */
+:root { --mini-h: 280px; }
+.focus-card, .gh-card, .cal-card, .quote {
+  height: var(--mini-h);
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.cal-card .cal-grid { flex: 1; overflow-y: auto; min-height: 0; }
+.quote .fortune-history { flex: 1; min-height: 0; overflow: hidden; }
+.quote .fh-list { max-height: none; flex: 1; min-height: 0; }
+.note-card { height: calc(var(--mini-h) * 2 + 16px); }
+.note-card .panel { height: auto; flex: 1; min-height: 0; }
+
 /* GH时间（到岗 / GH 计算） */
 .gh-body { display: flex; flex-direction: column; gap: 12px; padding: 2px 2px 4px; }
 .gh-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
