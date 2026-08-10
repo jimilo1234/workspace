@@ -78,6 +78,9 @@
           <button class="nav-item nav-child" data-page="sticky">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg></span><span class="nav-label">便利贴</span>
           </button>
+          <button class="nav-item nav-child" data-page="fund">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M21 7v5h-5"/></svg></span><span class="nav-label">基金</span>
+          </button>
         </div>
       </nav>
     </aside>
@@ -319,6 +322,46 @@
         </div>
         <div id="stickyBoard" class="sticky-board"></div>
       </div>
+
+      <!-- 基金（自动抓取净值 + 涨幅记录） -->
+      <div id="pageFund" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">💰 基金涨幅</span>
+            <span class="page-bar-hint">录入持仓后点「刷新净值」自动抓取当日净值与涨幅 · 数据存后端跨设备一致</span>
+          </div>
+          <button id="fundRefresh" class="open-new" type="button">🔄 刷新净值</button>
+        </div>
+        <div class="fund-wrap">
+          <div class="fund-summary">
+            <div class="fs-item"><span class="fs-label">总资产</span><span id="fundTotalMarket" class="fs-value">¥0.00</span></div>
+            <div class="fs-item"><span class="fs-label">当日盈亏</span><span id="fundDayProfit" class="fs-value fund-day-profit up">+¥0.00 (0.00%)</span></div>
+          </div>
+          <form id="fundForm" class="fund-form">
+            <input id="fundCode" class="ff-input" placeholder="基金代码" maxlength="12" />
+            <input id="fundName" class="ff-input" placeholder="名称（可选）" maxlength="20" />
+            <input id="fundShares" class="ff-input" type="number" step="0.01" min="0" placeholder="持有份额" />
+            <input id="fundCost" class="ff-input" type="number" step="0.0001" min="0" placeholder="成本净值" />
+            <button type="submit" class="ff-add">＋ 添加持仓</button>
+          </form>
+          <div class="fund-table">
+            <div class="fund-row fund-head">
+              <div class="fr-name">基金</div>
+              <div class="fr-num">当日净值</div>
+              <div class="fr-num">当日涨幅</div>
+              <div class="fr-num">当日盈亏</div>
+              <div class="fr-num">累计盈亏</div>
+              <div class="fr-num">市值</div>
+              <div class="fr-num"></div>
+            </div>
+            <div id="fundList"></div>
+          </div>
+          <div class="fund-trend-wrap">
+            <div class="ft-title">历史净值趋势</div>
+            <div id="fundTrend" class="fund-trend"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -354,6 +397,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260810c"></script>
+  <script src="script.js?v=20260810e"></script>
 </body>
 </html>
