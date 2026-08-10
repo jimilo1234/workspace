@@ -206,6 +206,8 @@ function exitSpace() {
 function applyState() {
   document.documentElement.setAttribute("data-theme", state.theme || "dark");
   $("#notes").value = state.notes || "";
+  lastArchivedNotes = (state.notes || "").toString();
+  renderNotesHistory();
   renderTodos();
   renderLinks();
   renderStickyBoard();
@@ -686,7 +688,59 @@ renderCalendar();
 
 /* ---------- 笔记 ---------- */
 const notes = $("#notes");
-notes.addEventListener("input", () => { state.notes = notes.value; scheduleSave(); });
+notes.addEventListener("input", () => { state.notes = notes.value; scheduleSave(); scheduleNotesArchive(); });
+
+/* ---------- 随手笔记 · 历史存档（每次修改自动留痕，类似每日运势历史） ---------- */
+const NOTES_HISTORY_KEY = "wb_notes_history";
+const NOTES_MAX_HISTORY = 50;
+let lastArchivedNotes = (state.notes || "").toString();
+let notesArchiveTimer = null;
+function loadNotesHistory() {
+  try { return JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]") || []; } catch (e) { return []; }
+}
+function pushNotesHistory(text) {
+  text = (text || "").toString();
+  const list = loadNotesHistory();
+  if (list.length && list[0].text === text) return; /* 与最近一条完全相同则跳过，避免连续重复存档 */
+  const now = new Date();
+  const item = {
+    ts: now.toISOString(),
+    dateStr: `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`,
+    weekStr: WEEK[now.getDay()],
+    timeStr: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+    text: text,
+  };
+  list.unshift(item);
+  while (list.length > NOTES_MAX_HISTORY) list.pop();
+  try { localStorage.setItem(NOTES_HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
+  lastArchivedNotes = text;
+  renderNotesHistory();
+}
+function renderNotesHistory() {
+  const box = $("#notesHistoryList");
+  if (!box) return;
+  const list = loadNotesHistory();
+  if (!list.length) { box.innerHTML = '<p class="fh-empty">暂无记录</p>'; return; }
+  box.innerHTML = list.map((it) =>
+    `<details class="fh-item">` +
+      `<summary><span class="fh-time">${it.dateStr} ${it.weekStr} ${it.timeStr}</span></summary>` +
+      `<p class="fh-text">${esc(it.text)}</p>` +
+    `</details>`
+  ).join("");
+}
+function scheduleNotesArchive() {
+  clearTimeout(notesArchiveTimer);
+  if ((state.notes || "").toString() === lastArchivedNotes) return; /* 内容没变就不排程 */
+  notesArchiveTimer = setTimeout(() => {
+    if ((state.notes || "").toString() !== lastArchivedNotes) pushNotesHistory(state.notes);
+  }, 1500);
+}
+const notesHistoryClear = $("#notesHistoryClear");
+if (notesHistoryClear) notesHistoryClear.addEventListener("click", () => {
+  try { localStorage.removeItem(NOTES_HISTORY_KEY); } catch (e) {}
+  lastArchivedNotes = (state.notes || "").toString();
+  renderNotesHistory();
+});
 
 /* ---------- 主题 ---------- */
 $("#themeToggle").addEventListener("click", () => {
