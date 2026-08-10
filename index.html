@@ -57,6 +57,9 @@
           <button class="nav-item nav-child" data-page="vcc">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span><span class="nav-label">VCC账户</span>
           </button>
+          <button class="nav-item nav-child" data-page="acquiring">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M2 10h20"/><circle cx="16" cy="14" r="2.2"/></svg></span><span class="nav-label">外卡收单</span>
+          </button>
         </div>
         <button class="nav-item nav-parent open" data-toggle="ai">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.4c.8 3.6 2 4.8 5.6 5.6-3.6.8-4.8 2-5.6 5.6-.8-3.6-2-4.8-5.6-5.6 3.6-.8 4.8-2 5.6-5.6z"/><path d="M18.5 14.2c.3 1.5.9 2.1 2.4 2.4-1.5.3-2.1.9-2.4 2.4-.3-1.5-.9-2.1-2.4-2.4 1.5-.3 2.1-.9 2.4-2.4z"/></svg></span><span class="nav-label">AI</span>
@@ -269,6 +272,18 @@
         <iframe class="page-iframe" data-src="vcc-h5.html" title="VCC 账户学习" loading="lazy"></iframe>
       </div>
 
+      <!-- 外卡收单学习（本地 H5 · 目录导航 + 上下翻页） -->
+      <div id="pageAcquiring" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">💳 外卡收单学习</span>
+            <span class="page-bar-hint">目录导航 + 上下翻页 · 手机端随时查阅</span>
+          </div>
+          <a class="open-new" href="acquiring-h5.html" target="_blank" rel="noopener">新窗口打开 ↗</a>
+        </div>
+        <iframe class="page-iframe" data-src="acquiring-h5.html" title="外卡收单学习" loading="lazy"></iframe>
+      </div>
+
       <!-- 豆姐（豆包内嵌 · 懒加载 + 离开自动释放） -->
       <div id="pageDoujie" class="page hidden">
         <div class="page-bar">
@@ -374,6 +389,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260810j"></script>
+  <script src="script.js?v=20260810k"></script>
 </body>
 </html>
