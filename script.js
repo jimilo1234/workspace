@@ -404,6 +404,44 @@ $("#addLink").addEventListener("click", () => {
   renderLinks(); scheduleSave();
 });
 
+/* ---------- 喝水提醒（仅本机存储，不写后端） ---------- */
+const WATER_KEY = "wb_water_v1";
+const WATER_TOTAL = 8;
+const waterCupsEl = $("#waterCups");
+const waterCountEl = $("#waterCount");
+function todayKey() { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+function loadWater() {
+  try {
+    const raw = localStorage.getItem(WATER_KEY);
+    if (raw) { const o = JSON.parse(raw); if (o && o.date === todayKey() && Array.isArray(o.cups)) return o; }
+  } catch (e) {}
+  return { date: todayKey(), cups: new Array(WATER_TOTAL).fill(false) };
+}
+let waterState = loadWater();
+function saveWater() { try { localStorage.setItem(WATER_KEY, JSON.stringify(waterState)); } catch (e) {} }
+function renderWater() {
+  if (!waterCupsEl) return;
+  waterCupsEl.innerHTML = "";
+  waterState.cups.forEach((filled, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "cup" + (filled ? " filled" : "");
+    b.setAttribute("aria-label", "第" + (i + 1) + "杯水");
+    b.innerHTML = '<span class="cup-water"></span>';
+    b.addEventListener("click", () => {
+      waterState.cups[i] = !waterState.cups[i];
+      saveWater(); renderWater();
+    });
+    waterCupsEl.appendChild(b);
+  });
+  if (waterCountEl) waterCountEl.textContent = waterState.cups.filter(Boolean).length + "/" + WATER_TOTAL;
+}
+function initWater() {
+  if (waterState.date !== todayKey()) waterState = loadWater(); // 打开时已跨天则重置
+  renderWater();
+  onTick(() => { if (waterState.date !== todayKey()) { waterState = loadWater(); renderWater(); } }); // 每天0点自动重置
+}
+
 /* ---------- 每日运势（基于八字，调 DeepSeek） ---------- */
 const BAZI = "癸酉 乙卯 丙申 丙申";
 const FORTUNE_CACHE_KEY = "wb_fortune_v1";
@@ -674,6 +712,7 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
 
 /* ---------- 启动：恢复登录态 ---------- */
 (async function boot() {
+  initWater();
   if (localStorage.getItem(SESSION_KEY)) {
     enterWorkbench();
   } else {
