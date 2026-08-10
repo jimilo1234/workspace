@@ -149,16 +149,33 @@
             <p class="water-tip">点击杯子记录一杯水 · 每天 0 点自动重置</p>
           </section>
 
-          <!-- 每日运势 -->
-          <section class="card quote">
-            <div class="card-head"><h2>🔮 每日运势</h2><button id="fortuneBtn" class="text-btn">手动推算</button></div>
-            <blockquote id="quoteText">正在为你推算今日运势…</blockquote>
-            <cite id="quoteAuthor">— 八字：癸酉 乙卯 丙申 丙申 · DeepSeek</cite>
-            <div class="fortune-history">
-              <div class="fh-head"><span>历史记录</span><button id="fortuneClear" class="text-btn">清空</button></div>
-              <div id="fortuneList" class="fh-list"></div>
-            </div>
-          </section>
+          <!-- 日历 + 每日运势（竖向堆叠，类似专注和GH时间） -->
+          <div class="stack-col">
+            <!-- 日历 -->
+            <section class="card">
+              <div class="card-head"><h2>📅 日历</h2></div>
+              <div class="cal-toolbar">
+                <button id="calPrevYear" class="cal-nav" title="上一年">«</button>
+                <button id="calPrev" class="cal-nav" title="上一月">‹</button>
+                <div id="calHead" class="cal-head"></div>
+                <button id="calNext" class="cal-nav" title="下一月">›</button>
+                <button id="calNextYear" class="cal-nav" title="下一年">»</button>
+              </div>
+              <div id="calGrid" class="cal-grid"></div>
+              <div class="cal-legend"><span class="cal-dot"></span>有标记的日子</div>
+            </section>
+
+            <!-- 每日运势 -->
+            <section class="card quote">
+              <div class="card-head"><h2>🔮 每日运势</h2><button id="fortuneBtn" class="text-btn">手动推算</button></div>
+              <blockquote id="quoteText">正在为你推算今日运势…</blockquote>
+              <cite id="quoteAuthor">— 八字：癸酉 乙卯 丙申 丙申 · DeepSeek</cite>
+              <div class="fortune-history">
+                <div class="fh-head"><span>历史记录</span><button id="fortuneClear" class="text-btn">清空</button></div>
+                <div id="fortuneList" class="fh-list"></div>
+              </div>
+            </section>
+          </div>
 
           <!-- 专注计时 + GH时间（竖向堆叠，专注计时缩小一半） -->
           <div class="stack-col">
@@ -188,20 +205,6 @@
               </div>
             </section>
           </div>
-
-          <!-- 日历 -->
-          <section class="card">
-            <div class="card-head"><h2>📅 日历</h2></div>
-            <div class="cal-toolbar">
-              <button id="calPrevYear" class="cal-nav" title="上一年">«</button>
-              <button id="calPrev" class="cal-nav" title="上一月">‹</button>
-              <div id="calHead" class="cal-head"></div>
-              <button id="calNext" class="cal-nav" title="下一月">›</button>
-              <button id="calNextYear" class="cal-nav" title="下一年">»</button>
-            </div>
-            <div id="calGrid" class="cal-grid"></div>
-            <div class="cal-legend"><span class="cal-dot"></span>有标记的日子</div>
-          </section>
 
           <!-- 笔记 / 新闻 合并切换卡片 -->
           <section class="card">
