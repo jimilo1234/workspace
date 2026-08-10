@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>VCC 账户知识库 · 学习</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f4f1ea; color: #222; }
+.app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #2b3a55; color: #fff; flex: 0 0 auto; }
+.topbar .icon { background: rgba(255,255,255,.15); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; cursor: pointer; }
+.progress { flex: 1; height: 6px; background: rgba(255,255,255,.2); border-radius: 4px; overflow: hidden; }
+#progBar { height: 100%; width: 0; background: #4fd1a5; transition: width .2s; }
+.pos { font-size: 13px; opacity: .9; white-space: nowrap; }
+.viewer { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 16px 28px; touch-action: pan-y; }
+.page { max-width: 760px; margin: 0 auto; }
+.chap { font-size: 12px; letter-spacing: 2px; color: #8a7f6d; text-transform: uppercase; margin-bottom: 4px; }
+.sec { font-size: 22px; line-height: 1.3; margin: 0 0 14px; color: #1a1a1a; }
+.body { font-size: 16px; line-height: 1.85; color: #2a2a2a; }
+.body p { margin: 0 0 12px; }
+.body h3 { font-size: 18px; margin: 20px 0 8px; color: #244; }
+.body h4 { font-size: 16px; margin: 16px 0 6px; color: #345; }
+.body ul, .body ol { margin: 0 0 12px; padding-left: 22px; }
+.body li { margin: 4px 0; }
+.body strong { color: #b35c00; }
+.body code { background: #eee; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+.body pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+.body pre code { background: none; padding: 0; color: inherit; }
+.body blockquote { margin: 0 0 14px; padding: 10px 14px; background: #f0ece1; border-left: 4px solid #cbb994; color: #5a5142; border-radius: 0 8px 8px 0; }
+.tbl-wrap { overflow-x: auto; margin: 0 0 14px; -webkit-overflow-scrolling: touch; }
+.body table { border-collapse: collapse; width: 100%; font-size: 13.5px; background: #fff; }
+.body th, .body td { border: 1px solid #ddd; padding: 7px 9px; text-align: left; vertical-align: top; }
+.body th { background: #eef2f7; color: #334; font-weight: 600; white-space: nowrap; }
+.nav { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #2b3a55; color: #fff; flex: 0 0 auto; }
+.nav button { flex: 1; background: #3c5070; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 15px; cursor: pointer; }
+.nav button:active { background: #4a618a; }
+.nav button:disabled { opacity: .4; }
+.toc-mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); opacity: 0; visibility: hidden; transition: .25s; z-index: 20; }
+.toc-mask.show { opacity: 1; visibility: visible; }
+.toc { position: fixed; top: 0; left: 0; bottom: 0; width: 84%; max-width: 340px; background: #fff; transform: translateX(-105%); transition: .25s; z-index: 21; display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(0,0,0,.2); }
+.toc.show { transform: translateX(0); }
+.toc-head { padding: 16px; font-size: 17px; font-weight: 700; border-bottom: 1px solid #eee; color: #2b3a55; }
+.toc-list { overflow-y: auto; padding: 8px 0 30px; flex: 1; }
+.toc-chap { padding: 12px 16px; font-weight: 600; color: #2b3a55; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.toc-chap .caret { transition: .2s; color: #999; }
+.toc-chap.open .caret { transform: rotate(90deg); }
+.toc-secs { display: none; padding: 0 0 6px; }
+.toc-secs.open { display: block; }
+.toc-sec { padding: 9px 16px 9px 30px; font-size: 14px; color: #555; cursor: pointer; border-left: 2px solid #eee; margin-left: 16px; }
+.toc-sec:active { background: #f3f6fb; }
+@media (prefers-color-scheme: dark) {
+  body { background: #15181d; color: #d8dde3; }
+  .sec { color: #f0f3f6; }
+  .body { color: #c2c8cf; }
+  .body strong { color: #f0ad4e; }
+  .body blockquote { background: #1d2229; color: #a9b0b8; border-left-color: #3a4250; }
+  .body table { background: #1b1f25; }
+  .body th { background: #222831; color: #cdd; }
+  .body td, .body th { border-color: #2c333c; }
+  .body code { background: #222; }
+  .toc { background: #1b1f25; }
+  .toc-head { color: #cfe; border-color: #2c333c; }
+  .toc-chap { color: #cfe; }
+  .toc-sec { color: #aab; border-color: #2c333c; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<button id="tocBtn" class="icon">☰ 目录</button>
+<div class="progress"><div id="progBar"></div></div>
+<div class="pos" id="posLabel">1 / 1</div>
+</header>
+<main class="viewer" id="viewer">
+<article class="page">
+<div class="chap" id="chapLabel"></div>
+<h1 class="sec" id="secLabel"></h1>
+<div class="body" id="bodyHtml"></div>
+</article>
+</main>
+<footer class="nav">
+<button id="prevBtn">↑ 上一页</button>
+<button id="nextBtn">下一页 ↓</button>
+</footer>
+</div>
+<div class="toc-mask" id="tocMask"></div>
+<aside class="toc" id="toc">
+<div class="toc-head">目录</div>
+<div class="toc-list" id="tocList"></div>
+</aside>
+<script>
+const PAGES = [{"intro": true, "title": "关于本知识库", "html": "<blockquote>本文档为《跨境支付 VCC 标准化知识库（电商 + OTA 培训教材版）》，统一解答跨境 VCC 基础定义、业务价值、资金结算逻辑、费率成本、清算体系差异、行业场景落地等全链路知识，为跨境电商、OTA 企业财务 / 运营 / 投放 / 支付岗位新人提供标准化培训依据。适用场景：跨境电商、OTA 企业财务、运营、投放、支付岗位新人培训；更新时间 2026 年。</blockquote>\n<p>全文共 10 章，覆盖从 VCC 基础定义、核心价值、结算模式差异、费率成本、风险避坑、选型标准、背诵总结、资金池答疑、卡组织 vs SWIFT 清算，到 OTA 行业场景落地的完整知识链路。</p>\n<p>操作提示：上下滑动屏幕或点底部按钮翻页；左上角「目录」可快速跳转到任意章节；每章开头有导言页给出本章概览。</p>"}, {"c": 1, "ct": "VCC 基础核心定义", "chapIntro": true, "html": "<blockquote>本章建立对 VCC 的整体认知：从「什么是 VCC」出发，延伸到其底层业务链路（资质 / 资金 / 记账 / 清算），以及必须牢记的核心基础认知——VCC 仅用于跨境对外付款，不可收款、不可透支。</blockquote>"}, {"c": 1, "ct": "VCC 基础核心定义", "s": "1.1", "st": "什么是 VCC？", "html": "<p><strong>VCC</strong> 全称 Virtual Credit Card（虚拟信用卡），是依托 Visa / Mastercard 卡组织网络发行的纯数字无实体卡片。<strong>跨境企业使用的 VCC 均为预付型虚拟卡</strong>，无银行授信、不可透支，遵循「先充值、后消费」规则。</p>\n<p>卡片仅包含卡号、有效期、CVV 安全码，无实体介质，支持批量开通、独立额度管控、API 智能化管理，是跨境矩阵运营专属支付工具。</p>"}, {"c": 1, "ct": "VCC 基础核心定义", "s": "1.2", "st": "VCC 底层业务链路", "html": "<ol>\n<li><strong>资质链路</strong>：国内服务商对接海外持牌 BIN 发卡机构，获取正规卡段发行权限；</li>\n<li><strong>资金链路</strong>：企业充值至服务商<strong>海外监管主资金池</strong>（真实资金存放账户）；</li>\n<li><strong>记账链路</strong>：从主资金池划拨额度，生成多张独立子 VCC，子卡仅为平台虚拟账本，无独立银行账户；</li>\n<li><strong>清算链路</strong>：消费时卡组织实时授权冻结额度，T+1~T+3 完成真实资金清算划付。</li>\n</ol>"}, {"c": 1, "ct": "VCC 基础核心定义", "s": "1.3", "st": "核心基础认知（必记）", "html": "<p>✅ VCC 核心用途：<strong>仅用于跨境对外付款</strong>（广告费、店铺月租、工具订阅、运营支出）</p>\n<p>❌ VCC 不可用：店铺货款收款、透支消费、对公大额货款结算</p>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "chapIntro": true, "html": "<blockquote>本章讲解 VCC 作为多店铺、矩阵投放跨境卖家刚需工具的四大痛点解决能力：账号防关联、分钟级批量开卡、精细化资金风险管控、全场景自动代扣、财务自动化对账。</blockquote>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "s": "2.1", "st": "核心价值1：账号防关联（第一刚需）", "html": "<p>亚马逊、TikTok Shop、Google / Meta 广告等平台风控严格，同一卡号绑定多个店铺 / 广告账号，会直接判定关联，导致封店、封账号、冻结资金。</p>\n<p>VCC 实现<strong>一店一卡、一号一卡</strong>，单张卡片、单个账号风险独立隔离，某一账号违规、被封，仅对应 VCC 额度受损，主资金池及其他店铺、账号完全不受影响。</p>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "s": "2.2", "st": "核心价值2：分钟级批量开卡，适配矩阵模式", "html": "<p>传统实体外币信用卡审批周期长、单人 / 企业持卡数量有限，无法适配几十、上百店铺的矩阵运营。</p>\n<p>企业版 VCC 支持 API 批量生成卡号，几分钟即可产出上百张独立卡片，快速完成多店铺、多广告账号的支付配置，适配规模化运营。</p>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "s": "2.3", "st": "核心价值3：精细化资金风险管控", "html": "<p>VCC 为预付模式，无透支风险，支持单卡自定义权限：总消费限额、单笔限额、单日限额、卡片有效期。</p>\n<ol>\n<li>运营人员仅可使用分配额度，无法触碰企业主资金池；</li>\n<li>杜绝平台超额扣费、盗刷带来的大额资金损失；</li>\n<li>店铺停用、账号废弃后，可直接冻结 / 注销 VCC，杜绝自动续费扣费。</li>\n</ol>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "s": "2.4", "st": "核心价值4：适配全场景海外自动代扣", "html": "<p>绝大多数海外电商平台、广告平台、SaaS 工具<strong>仅支持 Visa / Mastercard 绑卡自动续费</strong>，不支持对公 TT 转账。</p>\n<p>适配场景：店铺月租、FBA 仓储佣金、广告消耗、ERP / 选品工具订阅、海外服务商服务费、样品采购等高频小额支出。</p>"}, {"c": 2, "ct": "跨境电商使用 VCC 的核心价值", "s": "2.5", "st": "核心价值5：财务自动化对账，降低人工成本", "html": "<p>企业 VCC 提供完整 API 接口，支持开卡、冻卡、调额、交易流水实时回调，可对接企业 ERP、财务系统。</p>\n<p>实现「一卡对应一个店铺 / 账号」，流水自动归属业务单元，无需人工拆分混单账单，解决传统信用卡账单混乱、对账低效问题。</p>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "chapIntro": true, "html": "<blockquote>本章对比跨境主流付款渠道——VCC 虚拟卡、企业实体外币信用卡、离岸 / 香港 TT 电汇、第三方对公代付——四类渠道的底层结算逻辑、资金规则与核心特点，并给出差异总结。</blockquote>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "s": "3.1", "st": "VCC（预付虚拟信用卡）结算模式", "html": "<ul>\n<li><strong>资金流转</strong>：国内对公购汇 → 海外监管主资金池 → 子卡额度划拨 → 商户授权冻结 → 卡组织批量清算扣款</li>\n<li><strong>清算通道</strong>：Visa / Mastercard 卡组织网络（非 SWIFT）</li>\n<li><strong>资金占用</strong>：全额预付占用，资金锁定海外资金池，不消费不释放，额度隔离、风险可控</li>\n<li><strong>对账体系</strong>：双层对账（主资金池银行流水 + 单卡独立业务流水），天然按店铺 / 账号拆分成本</li>\n<li><strong>核心特点</strong>：支持自动代扣、批量开卡、风险隔离、自动化对账</li>\n</ul>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "s": "3.2", "st": "企业实体外币信用卡（授信卡）结算模式", "html": "<ul>\n<li><strong>资金流转</strong>：银行授信垫资 → 消费实时清算 → 账单日企业购汇还款</li>\n<li><strong>清算通道</strong>：Visa / Mastercard 卡组织网络</li>\n<li><strong>资金占用</strong>：零预付占用，银行授信垫付，次月还款</li>\n<li><strong>对账体系</strong>：单一总账单，多店铺、多业务流水混杂，需人工分摊成本</li>\n<li><strong>核心特点</strong>：无资金占用、退款简单，但无法批量开卡、无风险隔离、极易账号关联</li>\n</ul>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "s": "3.3", "st": "离岸 / 香港账户 TT 电汇结算模式", "html": "<ul>\n<li><strong>资金流转</strong>：国内购汇入离岸账户 → 手动 SWIFT 电汇至海外对公账户</li>\n<li><strong>清算通道</strong>：SWIFT 国际银行清算系统</li>\n<li><strong>资金占用</strong>：资金自由留存，付款时全额划出，无额度隔离机制</li>\n<li><strong>对账体系</strong>：单笔转账对应单条水单，无天然业务拆分，依赖人工备注对账</li>\n<li><strong>核心特点</strong>：仅支持主动转账，<strong>不支持平台自动代扣</strong>，小额付款成本极高</li>\n</ul>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "s": "3.4", "st": "第三方跨境对公代付结算模式", "html": "<ul>\n<li><strong>资金流转</strong>：国内充值第三方监管账户 → 平台轧差清算 → SWIFT / 本地清算代付至海外商户</li>\n<li><strong>清算通道</strong>：SWIFT + 海外本地清算（ACH / SEPA）</li>\n<li><strong>资金占用</strong>：充值资金可提现，付款全额划出，无业务额度隔离</li>\n<li><strong>对账体系</strong>：统一付款流水，仅可备注区分，无法精细化归属业务单元</li>\n<li><strong>核心特点</strong>：大额付款成本低，不支持广告、店铺月租自动绑卡扣费</li>\n</ul>"}, {"c": 3, "ct": "VCC 与各类跨境支付渠道结算模式差异", "s": "3.5", "st": "四大渠道核心结算差异总结", "html": "<ol>\n<li><strong>风险隔离</strong>：仅 VCC 实现账本级隔离，其余渠道风险集中、无隔离；</li>\n<li><strong>代扣能力</strong>：VCC / 实体卡支持自动订阅代扣，TT / 对公代付仅支持主动转账；</li>\n<li><strong>资金逻辑</strong>：VCC 预付锁资、实体卡授信垫资、TT / 代付随用随付；</li>\n<li><strong>对账颗粒度</strong>：VCC 精细化单业务对账，其余渠道均需人工处理；</li>\n<li><strong>自动化能力</strong>：仅 VCC 支持 API 批量操作，适配矩阵规模化运营。</li>\n</ol>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "chapIntro": true, "html": "<blockquote>本章给出 2026 年市场官方标准费率：VCC 按交易额百分比收费；TT / 代付以固定笔费为主；实体卡以年费 + 固定汇兑费为主。理解费率规律是选型与控本的基础。</blockquote>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "s": "4.1.1", "st": "头部合规 VCC（专属 BIN）", "html": "<ul>\n<li>开卡费：0 元 ｜ 管理费：0 元 ｜ 充值手续费：0%</li>\n<li>综合交易费率：<strong>0.4%–1.2%</strong>（月消耗越高，费率越低）</li>\n<li>换汇点差：0.2%–0.6%</li>\n<li>综合总成本：<strong>0.6%–1.8%</strong></li>\n<li>增值：部分支持广告返现，可抵扣部分成本；专属 BIN 风控稳定，不易封卡封号</li>\n</ul>\n<p>（代表：万里汇 / 空中云汇 / 派安盈企业版）</p>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "s": "4.1.2", "st": "中小低价 VCC（共享 BIN）", "html": "<ul>\n<li>开卡费：$1–$5 / 张 ｜ 部分含开户保证金</li>\n<li>充值手续费：0.5%–2% ｜ 交易费率：1.5%–3.5% ｜ 换汇点差：0.8%–2%</li>\n<li>综合总成本：<strong>2.5%–5%</strong></li>\n<li>缺点：共享 BIN 易被平台风控拦截、绑卡失败、账号受限，隐性成本极高</li>\n</ul>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "s": "4.2", "st": "企业实体外币信用卡费率", "html": "<ul>\n<li>年费：1000–3000 元 / 年 / 卡</li>\n<li>固定货币转换费：1.5%（卡组织标准，不可减免）</li>\n<li>换汇点差：0.3%–0.8%</li>\n<li>综合总成本：1.8%–2.3%</li>\n</ul>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "s": "4.3", "st": "离岸 / 香港 TT 电汇费率", "html": "<ul>\n<li>账户管理费：300–1000 港币 / 年（达标可免）</li>\n<li>汇出手续费：$15–30 / 笔 ｜ 中间行扣费：$15–30 / 笔（必扣）</li>\n<li>换汇点差：0.18%–0.6%</li>\n<li>成本特点：大额划算（万元美金级占比 0.4%），小额极贵（千元美金级占比 4%+）</li>\n</ul>"}, {"c": 4, "ct": "全渠道费率成本标准（2026 市场官方标准）", "s": "4.4", "st": "第三方对公代付费率", "html": "<ul>\n<li>开户管理费：0 元</li>\n<li>SWIFT 代付：$25–35 / 笔 ｜ 本地清算：$0–$5 / 笔</li>\n<li>换汇点差：0.2%–0.8%</li>\n<li>综合成本：大额 0.3%–1%，小额 3%–5%</li>\n</ul>"}, {"c": 5, "ct": "VCC 核心风险与避坑要点", "chapIntro": true, "html": "<blockquote>本章梳理 VCC 使用中的四类核心风险与避坑要点：合规风险、BIN 质量风险、退款财务风险、资金占用风险，帮助业务与财务避开最常见的坑。</blockquote>"}, {"c": 5, "ct": "VCC 核心风险与避坑要点", "s": "5.1", "st": "合规风险", "html": "<p>国内无机构可直接发行 Visa / Mastercard 虚拟卡，所有 VCC 均依托海外持牌 BIN 机构。非合规小服务商易出现 BIN 封禁、资金冻结、无法提现问题。</p>"}, {"c": 5, "ct": "VCC 核心风险与避坑要点", "s": "5.2", "st": "BIN 质量风险（最常见坑）", "html": "<ul>\n<li><strong>共享 BIN</strong>：大量卖家共用同一段卡段，极易被广告平台、电商平台标记为风险卡，导致绑卡失败、账号限流封禁；</li>\n<li><strong>专属 BIN</strong>：独立卡段，风控通过率高，是矩阵卖家刚需。</li>\n</ul>"}, {"c": 5, "ct": "VCC 核心风险与避坑要点", "s": "5.3", "st": "退款财务风险", "html": "<p>VCC 退款原路返回子卡，若子卡已注销，退款会滞留主资金池，形成挂账，需要人工调账，增加财务对账工作量。</p>"}, {"c": 5, "ct": "VCC 核心风险与避坑要点", "s": "5.4", "st": "资金占用风险", "html": "<p>VCC 为预付模式，资金长期锁定海外资金池，存在一定机会成本，不适合低频、小额偶尔付款场景。</p>"}, {"c": 6, "ct": "支付渠道选型标准（跨境电商专用）", "chapIntro": true, "html": "<blockquote>本章给出跨境电商支付渠道的选型标准，按业务场景匹配最优渠道，兼顾风险隔离、自动化与成本。</blockquote>"}, {"c": 6, "ct": "支付渠道选型标准（跨境电商专用）", "s": "6.1", "st": "支付渠道选型标准", "html": "<ol>\n<li><strong>多店铺矩阵、广告投放、高频订阅扣费</strong>：首选头部专属 BIN VCC（隔离风险、自动对账、综合成本可控）</li>\n<li><strong>单店小规模运营、低频海外消费</strong>：首选实体外币信用卡（零预付资金占用）</li>\n<li><strong>大额货款、物流、供应商 B2B 对公结算</strong>：首选离岸 TT 电汇（大额成本最低）</li>\n<li><strong>偶尔小额对公转账、无代扣需求</strong>：首选第三方跨境代付</li>\n</ol>"}, {"c": 7, "ct": "核心知识点极简总结（背诵版）", "chapIntro": true, "html": "<blockquote>本章为全文档核心知识点的极简背诵版，五条要点建议全员熟记。</blockquote>"}, {"c": 7, "ct": "核心知识点极简总结（背诵版）", "s": "7.1", "st": "核心知识点极简总结", "html": "<ol>\n<li><strong>VCC 本质</strong>：预付型虚拟卡，<strong>只付款、不收款</strong>，无透支、纯数字介质，依托卡组织网络完成境外扣费。</li>\n<li><strong>核心优势</strong>：一店一卡防关联、批量开卡、单卡精细化额度管控、适配海外自动代扣、财务对账自动化。</li>\n<li><strong>结算区别</strong>：走 Visa / Mastercard 卡组织清算而非 SWIFT，子卡仅为虚拟记账隔离，所有真实资金统一归集主资金池。</li>\n<li><strong>成本梯队</strong>：大额对公 TT 结算 ＜ 头部专属 BIN VCC ＜ 企业实体外币信用卡 ＜ 小额对公代付 / 杂牌共享 BIN VCC。</li>\n<li><strong>核心避坑点</strong>：矩阵多店铺、广告投放业务，必选<strong>专属 BIN</strong>，坚决拒绝风控不稳定的低价共享 BIN。</li>\n</ol>"}, {"c": 8, "ct": "VCC 资金池与子卡额度核心答疑（业务实操必懂）", "chapIntro": true, "html": "<blockquote>本章针对企业实操最常问的「子卡额度与主池本金关系、资金可提现性」做标准化定义，统一全员认知。</blockquote>"}, {"c": 8, "ct": "VCC 资金池与子卡额度核心答疑（业务实操必懂）", "s": "8.1", "st": "问题1：子账户授权金额是否等于主池本金？", "html": "<p><strong>结论：不等同、完全不相等（核心误区）。</strong> VCC 体系是「一本金池、多层虚拟额度」，子卡授权额度是记账数字，不是真实本金。</p>\n<p><strong>详细规则：</strong></p>\n<ol>\n<li>真实本金唯一载体：只有<strong>主资金池</strong>的充值金额是真实可提现、可清算的本金；所有子 VCC 无独立资金、无独立账户。</li>\n<li>子卡授权额度为「虚拟记账额度」：企业可自由给多张子卡分配额度，<strong>多张子卡额度累加可以大于主池本金</strong>（超额授信记账模式）。</li>\n<li>实际清算限制：无论子卡额度设置多高，<strong>最终实际扣款总额，无法超过主资金池真实本金余额</strong>。若主池本金不足，子卡会交易失败、授权报错。</li>\n</ol>\n<p><strong>通俗举例</strong>：主池真实本金 10000 美金，可给 10 张子卡各分配 2000 额度（总授权额度 20000 美金），账面超额授权，但所有子卡实际消费合计最多只能扣 10000 美金。</p>"}, {"c": 8, "ct": "VCC 资金池与子卡额度核心答疑（业务实操必懂）", "s": "8.2", "st": "问题2：子卡消费期间主本金可提走 / 转移吗？", "html": "<p><strong>结论：可以提现 / 划转，但存在交易失败、扣款异常风险，业务上禁止随意操作。</strong></p>\n<p><strong>详细规则：</strong></p>\n<ol>\n<li>权限层面：合规企业 VCC 主资金池支持<strong>随时提现、划转、结汇回流</strong>，无锁仓冻结机制，企业拥有完全资金支配权。</li>\n<li>交易机制冲突（关键）：VCC 消费分为「实时授权冻结」和「T+1~T+3 真实清算」两个阶段。\n<ul>\n<li>场景 A：用户消费已授权、资金已冻结在主池，此时提现不会成功，系统会拦截冻结资金转出；</li>\n<li>场景 B：用户已下单授权、但未完成清算、未冻结资金，此时若全额提走主池本金，会出现<strong>空头额度</strong>，后续商户清算扣款失败，导致广告断投、店铺欠费、账号违规。</li>\n</ul>\n</li>\n</ol>\n<p><strong>企业标准化操作规范：</strong></p>\n<ol>\n<li>投放 / 扣费业务进行中、子卡存在未结清授权订单时，<strong>禁止提现、划转主池资金</strong>；</li>\n<li>如需回款，需确认所有子卡「无未完成授权、无待清算交易」后再操作；</li>\n<li>日常运营需预留浮动备付金，避免主池本金清零导致批量交易失败。</li>\n</ol>"}, {"c": 8, "ct": "VCC 资金池与子卡额度核心答疑（业务实操必懂）", "s": "8.3", "st": "两大核心实操总结", "html": "<ol>\n<li>子卡额度是虚拟授权值，可超额分配，真实资金唯一以主池余额为准；</li>\n<li>主池资金可自由提现划转，但消费窗口期操作会引发批量扣款失败、业务中断，属于运营高危操作。</li>\n</ol>"}, {"c": 9, "ct": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "chapIntro": true, "html": "<blockquote>本章辨析「Visa / Mastercard 卡组织清算（VCC 所用通道）」与「SWIFT 银行跨境清算（TT 电汇所用通道）」两套完全独立的全球资金体系，是跨境支付选型的核心底层依据。</blockquote>"}, {"c": 9, "ct": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "s": "9.1", "st": "底层体系定义", "html": "<p><strong>1. VCC：卡组织清算网络（支付消费体系）</strong><br>依托 Visa、Mastercard 全球银行卡清算网络搭建，专为「线上消费、代扣、订阅扣费」设计的零售支付体系，交易主体是<strong>持卡人 → 商户</strong>，主打高频、小额、自动代扣、实时授权。</p>\n<p><strong>2. SWIFT：环球银行金融电信协会（银行对公结算体系）</strong><br>是全球银行间的通信报文系统，连接全球各家银行，专为「对公转账、资金划拨、贸易结算」设计，交易主体是<strong>银行 → 银行、企业对公 → 企业对公</strong>，主打大额、对公、手动主动转账。</p>"}, {"c": 9, "ct": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "s": "9.2", "st": "十大核心维度对比", "html": "<div class=\"tbl-wrap\"><table>\n<thead><tr><th>对比维度</th><th>VCC（卡组织清算）</th><th>SWIFT（银行电汇清算）</th></tr></thead>\n<tbody>\n<tr><td>体系定位</td><td>零售消费支付体系</td><td>银行对公结算体系</td></tr>\n<tr><td>交易场景</td><td>广告扣费、店铺月租、SaaS 订阅、线上小额消费</td><td>货款结算、物流对公付款、大额跨境资金划转</td></tr>\n<tr><td>交易发起方式</td><td>商户主动代扣、自动续费</td><td>我方手动主动发起转账，不支持代扣</td></tr>\n<tr><td>交易时效</td><td>实时授权冻结，T+1~T+3 批量清算落地</td><td>人工提交，6–24 小时到账，节假日顺延</td></tr>\n<tr><td>费用模式</td><td>按交易额百分比收费，小额成本低、大额性价比一般</td><td>固定笔费 + 中间行费，大额划算、小额成本极高</td></tr>\n<tr><td>账号形态</td><td>卡号+CVV 虚拟介质，一业务一卡隔离风险</td><td>对公银行账号、SWIFT 码、开户行信息</td></tr>\n<tr><td>关联风控</td><td>平台强风控，卡号即风控维度，可完美防关联</td><td>无账号关联风控，仅核验对公账户信息</td></tr>\n<tr><td>退款机制</td><td>原路退回子卡/主资金池，自动化程度高</td><td>对公人工退款，周期 3–7 天，流程繁琐</td></tr>\n<tr><td>自动化能力</td><td>支持 API 批量开卡、调额、对账、自动扣费</td><td>纯人工操作，无法批量自动化适配矩阵业务</td></tr>\n<tr><td>资金隔离性</td><td>主池统一资金，子卡虚拟额度隔离，风险可控</td><td>全额划转，无任何业务资金隔离机制</td></tr>\n</tbody></table></div>"}, {"c": 9, "ct": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "s": "9.3", "st": "最关键的业务核心区别（实操必记）", "html": "<p><strong>1. 代扣能力是本质壁垒</strong><br>所有海外广告平台（Meta / Google / TikTok）、电商平台、SaaS 工具，<strong>只认卡组织通道的自动代扣协议，不支持 SWIFT 对公转账绑定自动扣费</strong>。SWIFT 只能手动一笔笔转账，无法实现月租、广告费自动消耗续费，这也是矩阵卖家必须用 VCC 的核心底层原因。</p>\n<p><strong>2. 风控关联逻辑完全不同</strong><br>平台风控识别店铺 / 广告账号关联，核心抓取「支付卡号」，VCC 可无限生成独立卡号实现隔离；SWIFT 对公账户固定，所有店铺共用一个对公户转账，<strong>百分百判定关联</strong>，无法用于多矩阵运营。</p>\n<p><strong>3. 成本适配场景完全相反</strong><br>VCC 适合：高频、小额、持续扣费的运营支出；SWIFT 适合：低频、大额、一次性的对公货款、物流结算。</p>"}, {"c": 9, "ct": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "s": "9.4", "st": "业务选型终极结论", "html": "<p>✅ 店铺运营、广告投放、订阅续费 → 必须用 <strong>VCC 卡组织清算</strong>（唯一适配方案）</p>\n<p>✅ 供应商货款、物流大额对公结算 → 必须用 <strong>SWIFT 电汇清算</strong>（成本最低、合规性最强）</p>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "chapIntro": true, "html": "<blockquote>本章以同程旅游为代表的 OTA 业务为样本，结合境外资源采购、营销投放、运营支出等板块，明确跨境人民币、收结汇 / 购付汇、SWIFT 电汇、VCC 虚拟卡四类工具的精准适用场景与选型逻辑。</blockquote>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.1", "st": "同程旅游核心跨境业务范畴", "html": "<p>同程旅游跨境业务覆盖五大类，结算工具选型核心依据<strong>交易金额、频次、交易主体、代扣需求、合规要求</strong>五大维度判断：</p>\n<ol>\n<li><strong>资源采购类</strong>：境外酒店、国际机票、海外地接、玩乐产品的批量采购结算；</li>\n<li><strong>营销投放类</strong>：海外搜索引擎、社交媒体平台的旅游产品广告投放；</li>\n<li><strong>工具运营类</strong>：境外 SaaS 系统、技术服务、办公差旅等日常运营支出；</li>\n<li><strong>资金往来类</strong>：海外分支机构运营资金拨付、利润回流、保证金收付；</li>\n<li><strong>用户端类</strong>：海外用户预订收款、跨境退改款处理。</li>\n</ol>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.2", "st": "跨境人民币结算 适用场景", "html": "<p>跨境人民币结算是以人民币计价并完成跨境收付的结算方式，依托 CIPS 等通道完成资金划转，无需经过购汇、结汇环节，可直接规避汇率波动风险。</p>\n<p><strong>核心适用场景：</strong></p>\n<ol>\n<li><strong>长期合作供应商的资源采购</strong>：与港澳、东南亚等地区的酒店、地接社、玩乐服务商约定以人民币计价结算时，直接通过跨境人民币通道支付采购款，无需办理购汇，简化财务核销流程，锁定采购成本。</li>\n<li><strong>境外分支机构资金往来</strong>：向海外子公司、合资公司注资、拨付运营资金，或接收境外子公司利润回流时，若双方主体均支持人民币账户，可直接通过跨境人民币完成资金划转。</li>\n<li><strong>支持人民币计价的服务类支出</strong>：部分亚洲地区的营销服务、技术服务、法律咨询等费用，合作方接受人民币收款的场景，优先使用跨境人民币结算。</li>\n</ol>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.3", "st": "收结汇与购付汇 适用场景", "html": "<p>收结汇、购付汇是跨境外汇收支的合规办理流程，而非独立支付通道，是企业开展所有外币跨境业务的必备合规环节，需遵循国家外汇管理规定执行。</p>\n<p><strong>1. 收结汇（外汇收款 → 结汇为人民币）</strong></p>\n<ul>\n<li>海外用户通过国际信用卡、境外本地支付工具预订旅游产品的外币收款，完成外汇申报后结汇为人民币入账；</li>\n<li>境外合作方退回的保证金、预付款项等外汇收入，按监管要求办理结汇；</li>\n<li>境外子公司利润、投资收益汇回国内时的结汇操作。</li>\n</ul>\n<p><strong>2. 购付汇（人民币购汇 → 对外支付）</strong></p>\n<ul>\n<li>向境外供应商支付外币采购款、服务费前，用人民币购买对应币种外汇，再通过 SWIFT 等通道完成对外支付；</li>\n<li>所有外币对公付款、境外运营支出，均需先完成购付汇合规审核与购汇操作，再执行资金划转。</li>\n</ul>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.4", "st": "SWIFT 跨境电汇 适用场景", "html": "<p>SWIFT 是依托全球银行间报文网络的对公跨境转账通道，以固定笔费为核心收费模式，适合大额、低频、对公主体的 B2B 结算，合规性强、可提供正式银行水单。</p>\n<p><strong>核心适用场景：</strong></p>\n<ol>\n<li><strong>大额境外资源对公结算</strong>：与国际酒店集团、境外航司、大型地接社的月度 / 季度采购货款结算，单笔金额大、交易频次低，走 SWIFT 对公电汇综合成本最低，且可提供正规银行水单用于财务核销与税务申报。</li>\n<li><strong>境外机构运营类对公支出</strong>：海外分公司的场地租金、人员工资批量发放、当地合规服务费、审计法律咨询费等对公支出，通过 SWIFT 拨付运营资金至境外对公账户。</li>\n<li><strong>大额保证金、预付款支付</strong>：向核心资源供应商支付的合作保证金、大额预付款，需正规银行转账凭证的场景，均通过 SWIFT 完成。</li>\n</ol>\n<p><strong>选型逻辑</strong>：此类场景金额高、对公主体明确、需合规凭证；若使用 VCC 会产生高额百分比手续费，且无法满足对公结算与财务核销要求。</p>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.5", "st": "VCC 虚拟信用卡 适用场景", "html": "<p>VCC 是预付型虚拟卡，依托 Visa / Mastercard 卡组织网络，支持自动代扣、批量开卡、额度隔离，适合小额、高频、消费类的支出场景。</p>\n<p><strong>核心适用场景：</strong></p>\n<ol>\n<li><strong>海外数字营销投放</strong>：在 Google、Meta、TikTok 等海外平台投放旅游产品广告时，采用「一广告账户一张 VCC」的模式，实现账号风险隔离，支持自动代扣实时扣费，适配广告消耗的高频波动需求，可通过 API 对接内部投放系统实现自动化管理。</li>\n<li><strong>境外 SaaS 与工具订阅</strong>：海外预订系统、客服工单系统、数据分析工具、风控服务等 SaaS 产品的月度 / 年度订阅续费，绑定 VCC 实现自动扣款，避免订阅中断；单卡对应单工具，便于财务按部门、按业务线归属核算费用。</li>\n<li><strong>小额零散采购与临时支出</strong>：海外当地临时物料采购、小额地接服务补款、紧急票务采购等零散、小额、高频的支出场景，无需走繁琐的对公电汇审批流程，用 VCC 支付效率更高，且可管控单笔、单日额度，防范超额支出。</li>\n<li><strong>海外员工差旅与办公零星支出</strong>：为境外运营、出差人员分配独立子 VCC，设置单卡月度额度，用于差旅酒店、交通、办公零星消费，无需员工个人垫资；财务可实时查看流水，费用管控更精细，对账更高效。</li>\n</ol>\n<p><strong>选型逻辑</strong>：此类场景小额、高频、需自动代扣；若使用 SWIFT 电汇，固定手续费占比高、流程长、效率低，无法满足自动续费与实时扣费需求。</p>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.6", "st": "同程场景选型速查表", "html": "<div class=\"tbl-wrap\"><table>\n<thead><tr><th>结算方式</th><th>核心适用场景</th><th>选型核心原因</th><th>不适用场景</th></tr></thead>\n<tbody>\n<tr><td>跨境人民币</td><td>港澳东南亚人民币计价采购、境外子公司人民币资金往来</td><td>无需购汇结汇，规避汇率风险，流程简便</td><td>不接受人民币计价的境外供应商</td></tr>\n<tr><td>收结汇 / 购付汇</td><td>所有外汇收支的合规办理</td><td>外汇监管强制流程，配套其他支付通道使用</td><td>非独立支付通道，不可单独完成资金划转</td></tr>\n<tr><td>SWIFT 电汇</td><td>大额酒店 / 航司采购、境外分公司运营资金、保证金支付</td><td>大额成本低、合规性强、有正式银行水单</td><td>小额高频支出、需自动代扣的订阅 / 广告场景</td></tr>\n<tr><td>VCC 虚拟卡</td><td>海外广告投放、SaaS 工具订阅、零星采购、员工差旅</td><td>自动代扣、批量开卡、风险隔离、精细化额度管控</td><td>大额对公采购、需银行水单核销的 B2B 结算</td></tr>\n</tbody></table></div>"}, {"c": 10, "ct": "OTA 行业场景落地：同程旅游业务结算选型", "s": "10.7", "st": "OTA 行业结算选型核心原则", "html": "<ol>\n<li>大额 B2B 对公结算优先选择「购付汇 + SWIFT 电汇」，综合成本最低、合规性最强；</li>\n<li>小额高频、需自动代扣的运营类支出优先选择 VCC，兼顾效率、风险隔离与财务核算；</li>\n<li>合作方支持人民币结算时优先使用跨境人民币，直接规避汇率波动风险；</li>\n<li>所有外汇收支严格遵循收结汇、购付汇合规流程，满足外汇监管要求。</li>\n</ol>"}];
+const TOC = [{"num": 1, "title": "VCC 基础核心定义", "sections": [{"s": "", "st": "本章导言", "idx": 1}, {"s": "1.1", "st": "什么是 VCC？", "idx": 2}, {"s": "1.2", "st": "VCC 底层业务链路", "idx": 3}, {"s": "1.3", "st": "核心基础认知（必记）", "idx": 4}]}, {"num": 2, "title": "跨境电商使用 VCC 的核心价值", "sections": [{"s": "", "st": "本章导言", "idx": 5}, {"s": "2.1", "st": "核心价值1：账号防关联", "idx": 6}, {"s": "2.2", "st": "核心价值2：分钟级批量开卡", "idx": 7}, {"s": "2.3", "st": "核心价值3：精细化资金风险管控", "idx": 8}, {"s": "2.4", "st": "核心价值4：适配全场景海外自动代扣", "idx": 9}, {"s": "2.5", "st": "核心价值5：财务自动化对账", "idx": 10}]}, {"num": 3, "title": "VCC 与各类跨境支付渠道结算模式差异", "sections": [{"s": "", "st": "本章导言", "idx": 11}, {"s": "3.1", "st": "VCC（预付虚拟信用卡）结算模式", "idx": 12}, {"s": "3.2", "st": "企业实体外币信用卡（授信卡）结算模式", "idx": 13}, {"s": "3.3", "st": "离岸 / 香港账户 TT 电汇结算模式", "idx": 14}, {"s": "3.4", "st": "第三方跨境对公代付结算模式", "idx": 15}, {"s": "3.5", "st": "四大渠道核心结算差异总结", "idx": 16}]}, {"num": 4, "title": "全渠道费率成本标准（2026 市场官方标准）", "sections": [{"s": "", "st": "本章导言", "idx": 17}, {"s": "4.1.1", "st": "头部合规 VCC（专属 BIN）", "idx": 18}, {"s": "4.1.2", "st": "中小低价 VCC（共享 BIN）", "idx": 19}, {"s": "4.2", "st": "企业实体外币信用卡费率", "idx": 20}, {"s": "4.3", "st": "离岸 / 香港 TT 电汇费率", "idx": 21}, {"s": "4.4", "st": "第三方对公代付费率", "idx": 22}]}, {"num": 5, "title": "VCC 核心风险与避坑要点", "sections": [{"s": "", "st": "本章导言", "idx": 23}, {"s": "5.1", "st": "合规风险", "idx": 24}, {"s": "5.2", "st": "BIN 质量风险（最常见坑）", "idx": 25}, {"s": "5.3", "st": "退款财务风险", "idx": 26}, {"s": "5.4", "st": "资金占用风险", "idx": 27}]}, {"num": 6, "title": "支付渠道选型标准（跨境电商专用）", "sections": [{"s": "", "st": "本章导言", "idx": 28}, {"s": "6.1", "st": "支付渠道选型标准", "idx": 29}]}, {"num": 7, "title": "核心知识点极简总结（背诵版）", "sections": [{"s": "", "st": "本章导言", "idx": 30}, {"s": "7.1", "st": "核心知识点极简总结", "idx": 31}]}, {"num": 8, "title": "VCC 资金池与子卡额度核心答疑（业务实操必懂）", "sections": [{"s": "", "st": "本章导言", "idx": 32}, {"s": "8.1", "st": "问题1：子账户授权金额是否等于主池本金？", "idx": 33}, {"s": "8.2", "st": "问题2：子卡消费期间主本金可提走 / 转移吗？", "idx": 34}, {"s": "8.3", "st": "两大核心实操总结", "idx": 35}]}, {"num": 9, "title": "VCC 卡组织清算 vs SWIFT 清算核心区别（必懂底层差异）", "sections": [{"s": "", "st": "本章导言", "idx": 36}, {"s": "9.1", "st": "底层体系定义", "idx": 37}, {"s": "9.2", "st": "十大核心维度对比", "idx": 38}, {"s": "9.3", "st": "最关键的业务核心区别（实操必记）", "idx": 39}, {"s": "9.4", "st": "业务选型终极结论", "idx": 40}]}, {"num": 10, "title": "OTA 行业场景落地：同程旅游业务结算选型", "sections": [{"s": "", "st": "本章导言", "idx": 41}, {"s": "10.1", "st": "同程旅游核心跨境业务范畴", "idx": 42}, {"s": "10.2", "st": "跨境人民币结算 适用场景", "idx": 43}, {"s": "10.3", "st": "收结汇与购付汇 适用场景", "idx": 44}, {"s": "10.4", "st": "SWIFT 跨境电汇 适用场景", "idx": 45}, {"s": "10.5", "st": "VCC 虚拟信用卡 适用场景", "idx": 46}, {"s": "10.6", "st": "同程场景选型速查表", "idx": 47}, {"s": "10.7", "st": "OTA 行业结算选型核心原则", "idx": 48}]}];
+
+var cur = 0;
+var N = PAGES.length;
+var viewer = document.getElementById('viewer');
+var bodyHtml = document.getElementById('bodyHtml');
+var chapLabel = document.getElementById('chapLabel');
+var secLabel = document.getElementById('secLabel');
+var posLabel = document.getElementById('posLabel');
+var progBar = document.getElementById('progBar');
+var prevBtn = document.getElementById('prevBtn');
+var nextBtn = document.getElementById('nextBtn');
+
+function render() {
+  var p = PAGES[cur];
+  if (p.intro) { chapLabel.textContent = '前言'; secLabel.textContent = p.title; }
+  else if (p.chapIntro) { chapLabel.textContent = '第' + p.c + '章 · ' + p.ct; secLabel.textContent = '本章导言'; }
+  else { chapLabel.textContent = '第' + p.c + '章 · ' + p.ct; secLabel.textContent = p.s + ' ' + p.st; }
+  bodyHtml.innerHTML = p.html;
+  posLabel.textContent = (cur + 1) + ' / ' + N;
+  progBar.style.width = ((cur + 1) / N * 100) + '%';
+  viewer.scrollTop = 0;
+  prevBtn.disabled = (cur === 0);
+  nextBtn.disabled = (cur === N - 1);
+}
+function go(d) { cur = Math.max(0, Math.min(N - 1, cur + d)); render(); }
+prevBtn.onclick = function () { go(-1); };
+nextBtn.onclick = function () { go(1); };
+
+var sy = 0, sT = 0;
+viewer.addEventListener('touchstart', function (e) { sy = e.touches[0].clientY; sT = Date.now(); }, { passive: true });
+viewer.addEventListener('touchend', function (e) {
+  var dy = e.changedTouches[0].clientY - sy;
+  var dt = Date.now() - sT;
+  if (Math.abs(dy) > 50 && dt < 800) { go(dy < 0 ? 1 : -1); }
+}, { passive: true });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(-1); }
+});
+
+var tocEl = document.getElementById('tocList');
+var tocMask = document.getElementById('tocMask');
+var toc = document.getElementById('toc');
+function buildToc() {
+  var html = '';
+  for (var i = 0; i < TOC.length; i++) {
+    var ch = TOC[i];
+    html += '<div class="toc-chap" data-i="' + i + '"><span>第' + ch.num + '章 ' + ch.title + '</span><span class="caret">›</span></div>';
+    html += '<div class="toc-secs" data-secs="' + i + '">';
+    for (var j = 0; j < ch.sections.length; j++) {
+      var sec = ch.sections[j];
+      html += '<div class="toc-sec" data-idx="' + sec.idx + '">' + (sec.s ? sec.s + ' ' : '') + sec.st + '</div>';
+    }
+    html += '</div>';
+  }
+  tocEl.innerHTML = html;
+  var chaps = tocEl.querySelectorAll('.toc-chap');
+  chaps.forEach(function (c) {
+    c.onclick = function () {
+      c.classList.toggle('open');
+      var si = c.getAttribute('data-i');
+      var secs = tocEl.querySelector('.toc-secs[data-secs="' + si + '"]');
+      secs.classList.toggle('open');
+    };
+  });
+  var secsBtns = tocEl.querySelectorAll('.toc-sec');
+  secsBtns.forEach(function (s) {
+    s.onclick = function () { cur = parseInt(s.getAttribute('data-idx'), 10); render(); closeToc(); };
+  });
+}
+function openToc() { toc.classList.add('show'); tocMask.classList.add('show'); }
+function closeToc() { toc.classList.remove('show'); tocMask.classList.remove('show'); }
+document.getElementById('tocBtn').onclick = openToc;
+tocMask.onclick = closeToc;
+buildToc();
+render();
+
+</script>
+</body>
+</html>
