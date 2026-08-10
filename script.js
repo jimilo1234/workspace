@@ -25,7 +25,6 @@ async function fetchState() {
 }
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
-let fundLogColReady = true;
 
 async function saveState() {
   if (!dataConfirmed) {
@@ -69,29 +68,17 @@ async function saveState() {
     }
   } catch (e2) {}
   state.updated_at = new Date().toISOString();
-  const buildBody = (withFund) => ({
+  const body = {
     user_id: userId, name: state.name, todos: state.todos,
     links: state.links, notes: state.notes, theme: state.theme,
     sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
     gh_arrival: state.ghArrival, updated_at: state.updated_at,
-    ...(withFund ? { fund_log: state.fundLog } : {}),
-  });
-  let res = await fetch(`${REST_BASE}/${TABLE}`, {
+  };
+  const res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-    body: JSON.stringify(buildBody(fundLogColReady)),
+    body: JSON.stringify(body),
   });
-  /* fund_log 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 fund_log，
-     保证现有待办/笔记/便利贴可正常保存，基金数据暂存不进后端，加列后自动恢复。 */
-  if (!res.ok && fundLogColReady) {
-    fundLogColReady = false;
-    console.warn("[workbench] fund_log 列尚不存在，本次及之后保存暂不含基金数据；加列后将自动恢复");
-    res = await fetch(`${REST_BASE}/${TABLE}`, {
-      method: "POST",
-      headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-      body: JSON.stringify(buildBody(false)),
-    });
-  }
   if (!res.ok) throw new Error("save " + res.status);
   return true;
 }
@@ -120,7 +107,7 @@ const DEFAULT_LINKS = [
 ];
 
 function defaultState() {
-  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", fundLog: { holdings: [], daily: {} } };
+  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z" };
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -137,10 +124,7 @@ function mapRow(row) {
   if (typeof row.gh_arrival === "string") r.ghArrival = row.gh_arrival;
   else if (typeof row.ghArrival === "string") r.ghArrival = row.ghArrival;
   else r.ghArrival = "";
-  if (row.fund_log && typeof row.fund_log === "object") r.fundLog = row.fund_log;
-  else if (row.fundLog && typeof row.fundLog === "object") r.fundLog = row.fundLog;
-  else r.fundLog = { holdings: [], daily: {} };
-  delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival; delete r.fund_log;
+  delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival;
   return r;
 }
 
@@ -228,7 +212,6 @@ function applyState() {
   marksData = state.calendarMarks || {};
   renderCalendar();
   if (state.ghArrival) { const g = $("#ghArrival"); if (g) { g.value = state.ghArrival; computeGH(); } }
-  renderFund();
   updateGreeting();
 }
 function updateGreeting() {
@@ -1059,7 +1042,6 @@ function currentSnapshot() {
     stickyNotes: state.stickyNotes,
     calendarMarks: state.calendarMarks,
     ghArrival: state.ghArrival,
-    fundLog: state.fundLog,
   };
 }
 const exBtn = $("#exportData");
@@ -1110,162 +1092,3 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
   setTimeout(closeImport, 1000);
 });
 
-/* ---------- 基金涨幅记录（自动抓取净值 + 展示，数据存后端 fund_log） ---------- */
-const FUND_PROXY = SUPABASE_URL + "/functions/v1/fund-proxy";
-function fundTodayKey() { return new Date().toISOString().slice(0, 10); }
-function fmtMoney(n) {
-  if (n == null || isNaN(n)) return "0.00";
-  return Number(n).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fundPrevNet(code, today) {
-  const days = Object.keys(state.fundLog.daily || {}).filter((d) => d < today).sort();
-  for (let i = days.length - 1; i >= 0; i--) {
-    const rec = state.fundLog.daily[days[i]][code];
-    if (rec && rec.net != null) return rec.net;
-  }
-  return null;
-}
-function fundTotals() {
-  const today = fundTodayKey();
-  const dToday = (state.fundLog.daily && state.fundLog.daily[today]) || {};
-  let market = 0, dayProfit = 0;
-  (state.fundLog.holdings || []).forEach((h) => {
-    const t = dToday[h.code];
-    if (!t || t.net == null) return;
-    market += t.net * h.shares;
-    const y = fundPrevNet(h.code, today);
-    if (y != null) dayProfit += (t.net - y) * h.shares;
-  });
-  const base = market - dayProfit;
-  return { market, dayProfit, dayRate: base ? (dayProfit / base) * 100 : 0 };
-}
-function renderFund() {
-  const list = $("#fundList"); if (!list) return;
-  const today = fundTodayKey();
-  const dToday = (state.fundLog.daily && state.fundLog.daily[today]) || {};
-  const holdings = state.fundLog.holdings || [];
-  const tot = fundTotals();
-  const tm = $("#fundTotalMarket"); if (tm) tm.textContent = "¥" + fmtMoney(tot.market);
-  const dp = $("#fundDayProfit");
-  if (dp) {
-    dp.textContent = (tot.dayProfit >= 0 ? "+¥" : "-¥") + fmtMoney(Math.abs(tot.dayProfit)) +
-      " (" + (tot.dayProfit >= 0 ? "+" : "") + tot.dayRate.toFixed(2) + "%)";
-    dp.className = "fs-value fund-day-profit " + (tot.dayProfit >= 0 ? "up" : "down");
-  }
-  if (!holdings.length) {
-    list.innerHTML = '<div class="fund-empty">还没有持仓，先在上方「添加持仓」录入基金（代码 / 名称 / 份额 / 成本净值）。</div>';
-  } else {
-    list.innerHTML = "";
-    holdings.forEach((h) => {
-      const t = dToday[h.code];
-      const net = t ? t.net : null;
-      const growth = t ? (t.growth != null ? t.growth : 0) : null;
-      const y = fundPrevNet(h.code, today);
-      const dayProfit = (net != null && y != null) ? (net - y) * h.shares : null;
-      const cum = (net != null && h.cost != null) ? (net - h.cost) * h.shares : null;
-      const mkt = net != null ? net * h.shares : null;
-      const row = document.createElement("div");
-      row.className = "fund-row";
-      row.innerHTML =
-        '<div class="fr-name">' + esc(h.name || h.code) + '<span class="fr-code">' + esc(h.code) + '</span></div>' +
-        '<div class="fr-num">' + (net != null ? net.toFixed(4) : "—") + '</div>' +
-        '<div class="fr-num ' + (growth != null ? (growth >= 0 ? "up" : "down") : "") + '">' + (growth != null ? (growth >= 0 ? "+" : "") + growth.toFixed(2) + "%" : "—") + '</div>' +
-        '<div class="fr-num ' + (dayProfit != null ? (dayProfit >= 0 ? "up" : "down") : "") + '">' + (dayProfit != null ? (dayProfit >= 0 ? "+" : "") + "¥" + fmtMoney(Math.abs(dayProfit)) : "—") + '</div>' +
-        '<div class="fr-num ' + (cum != null ? (cum >= 0 ? "up" : "down") : "") + '">' + (cum != null ? (cum >= 0 ? "+" : "") + "¥" + fmtMoney(Math.abs(cum)) : "—") + '</div>' +
-        '<div class="fr-num">' + (mkt != null ? "¥" + fmtMoney(mkt) : "—") + '</div>' +
-        '<button class="fr-del" data-code="' + esc(h.code) + '" title="删除该基金">×</button>';
-      row.querySelector(".fr-del").addEventListener("click", () => {
-        state.fundLog.holdings = state.fundLog.holdings.filter((x) => x.code !== h.code);
-        scheduleSave(); renderFund();
-      });
-      list.appendChild(row);
-    });
-  }
-  renderFundTrend();
-}
-function renderFundTrend() {
-  const box = $("#fundTrend"); if (!box) return;
-  const days = Object.keys(state.fundLog.daily || {}).sort();
-  const holdings = state.fundLog.holdings || [];
-  if (days.length < 1) { box.innerHTML = '<div class="fund-empty">点「刷新净值」后，这里显示各基金历史净值趋势。</div>'; return; }
-  let all = [];
-  holdings.forEach((h) => days.forEach((d) => { const r = state.fundLog.daily[d][h.code]; if (r && r.net != null) all.push(r.net); }));
-  if (!all.length) { box.innerHTML = '<div class="fund-empty">暂无净值记录。</div>'; return; }
-  const W = 640, H = 160, pad = 24;
-  const min = Math.min.apply(null, all), max = Math.max.apply(null, all);
-  const range = (max - min) || 1;
-  const xStep = days.length > 1 ? (W - pad * 2) / (days.length - 1) : 0;
-  const yOf = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
-  const xOf = (i) => pad + xStep * i;
-  const colors = ["#ff7875", "#5cadff", "#95de64", "#ffc53d", "#b37feb", "#36cfc9", "#ff9c6e", "#d3adf7"];
-  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="fund-svg" preserveAspectRatio="none">';
-  svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" class="ft-axis"/>';
-  holdings.forEach((h, idx) => {
-    let pts = [];
-    days.forEach((d, i) => {
-      const r = state.fundLog.daily[d][h.code];
-      if (r && r.net != null) pts.push(xOf(i) + "," + yOf(r.net));
-    });
-    if (pts.length > 1) svg += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + colors[idx % colors.length] + '" stroke-width="2" class="ft-line"/>';
-  });
-  svg += '</svg>';
-  let legend = '<div class="ft-legend">';
-  holdings.forEach((h, idx) => { legend += '<span class="ft-leg" style="--c:' + colors[idx % colors.length] + '">' + esc(h.name || h.code) + '</span>'; });
-  legend += '</div>';
-  box.innerHTML = svg + legend;
-}
-async function refreshFund() {
-  const btn = $("#fundRefresh");
-  const codes = (state.fundLog.holdings || []).map((h) => h.code).filter(Boolean);
-  if (!codes.length) { setStatus("先添加基金再刷新净值", "warn"); return; }
-  if (btn) { btn.disabled = true; btn.textContent = "刷新中…"; }
-  setStatus("正在抓取净值…", "syncing");
-  try {
-    const res = await fetch(FUND_PROXY, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + API_KEY, "apikey": API_KEY },
-      body: JSON.stringify({ codes }),
-    });
-    const j = await res.json();
-    if (!j.ok) throw new Error(j.error || "proxy error");
-    const today = fundTodayKey();
-    if (!state.fundLog.daily[today]) state.fundLog.daily[today] = {};
-    let got = 0;
-    codes.forEach((code) => {
-      const d = j.data && j.data[code];
-      if (d && d.netValue != null) {
-        state.fundLog.daily[today][code] = { net: d.netValue, growth: d.growth != null ? d.growth : 0, date: d.date || today };
-        got++;
-      }
-    });
-    scheduleSave();
-    renderFund();
-    setStatus(got > 0 ? "已更新 " + got + " 只基金净值 ✓" : "未获取到净值（数据源可能限流，稍后重试）", got > 0 ? "ok" : "warn");
-  } catch (e) {
-    console.warn("[fund] refresh failed", e);
-    setStatus("抓取失败 · 请重试", "err");
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "🔄 刷新净值"; }
-  }
-}
-(function initFund() {
-  const form = $("#fundForm");
-  if (form) form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const code = $("#fundCode").value.trim();
-    const name = $("#fundName").value.trim();
-    const shares = parseFloat($("#fundShares").value);
-    const cost = parseFloat($("#fundCost").value);
-    if (!code) { setStatus("请填写基金代码", "warn"); return; }
-    if (isNaN(shares) || shares <= 0) { setStatus("持有份额需为正数", "warn"); return; }
-    if (isNaN(cost) || cost <= 0) { setStatus("成本净值需为正数", "warn"); return; }
-    state.fundLog.holdings = state.fundLog.holdings || [];
-    const exist = state.fundLog.holdings.find((x) => x.code === code);
-    if (exist) { exist.name = name || exist.name; exist.shares = shares; exist.cost = cost; }
-    else state.fundLog.holdings.push({ code, name: name || code, shares, cost });
-    scheduleSave(); renderFund();
-    form.reset();
-    setStatus("已保存持仓 ✓", "ok");
-  });
-  const rf = $("#fundRefresh"); if (rf) rf.addEventListener("click", refreshFund);
-})();
