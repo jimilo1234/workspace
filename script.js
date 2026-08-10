@@ -25,6 +25,8 @@ async function fetchState() {
 }
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
+let fundLogColReady = true;
+
 async function saveState() {
   if (!dataConfirmed) {
     // 数据未从后端成功加载，禁止用可能的空状态覆盖云端，避免误清空
@@ -67,16 +69,29 @@ async function saveState() {
     }
   } catch (e2) {}
   state.updated_at = new Date().toISOString();
-  const res = await fetch(`${REST_BASE}/${TABLE}`, {
+  const buildBody = (withFund) => ({
+    user_id: userId, name: state.name, todos: state.todos,
+    links: state.links, notes: state.notes, theme: state.theme,
+    sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
+    gh_arrival: state.ghArrival, updated_at: state.updated_at,
+    ...(withFund ? { fund_log: state.fundLog } : {}),
+  });
+  let res = await fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-    body: JSON.stringify({
-      user_id: userId, name: state.name, todos: state.todos,
-      links: state.links, notes: state.notes, theme: state.theme,
-      sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
-      gh_arrival: state.ghArrival, fund_log: state.fundLog, updated_at: state.updated_at,
-    }),
+    body: JSON.stringify(buildBody(fundLogColReady)),
   });
+  /* fund_log 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 fund_log，
+     保证现有待办/笔记/便利贴可正常保存，基金数据暂存不进后端，加列后自动恢复。 */
+  if (!res.ok && fundLogColReady) {
+    fundLogColReady = false;
+    console.warn("[workbench] fund_log 列尚不存在，本次及之后保存暂不含基金数据；加列后将自动恢复");
+    res = await fetch(`${REST_BASE}/${TABLE}`, {
+      method: "POST",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+      body: JSON.stringify(buildBody(false)),
+    });
+  }
   if (!res.ok) throw new Error("save " + res.status);
   return true;
 }
