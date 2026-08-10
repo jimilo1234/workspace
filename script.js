@@ -137,12 +137,9 @@ function mapRow(row) {
   if (typeof row.gh_arrival === "string") r.ghArrival = row.gh_arrival;
   else if (typeof row.ghArrival === "string") r.ghArrival = row.ghArrival;
   else r.ghArrival = "";
-  if (Array.isArray(row.notes_history) && row.notes_history.length) r.notesHistory = row.notes_history;
-  else if (Array.isArray(row.notesHistory) && row.notesHistory.length) r.notesHistory = row.notesHistory;
-  else {
-    /* 后端尚无历史（列未建或本机更早存的）→ 退回本机 localStorage 兜底，保证历史不丢 */
-    try { const lh = JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]"); if (Array.isArray(lh)) r.notesHistory = lh; else r.notesHistory = []; } catch (e) { r.notesHistory = []; }
-  }
+  if (Array.isArray(row.notes_history)) r.notesHistory = row.notes_history; /* 列存在时后端为准（含空数组） */
+  else if (Array.isArray(row.notesHistory)) r.notesHistory = row.notesHistory;
+  else r.notesHistory = []; /* 列未建：PostgREST 不返回该键，回退空，由 loadData 合并本机 localStorage */
   delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival; delete r.notes_history;
   return r;
 }
@@ -184,14 +181,20 @@ async function loadData() {
     // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
     try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
     applyState();
-    /* 迁移：本机 localStorage 有历史但后端尚无（列未建或尚未同步）→ 静默尝试上云；
-       列就绪后自动生效，列未就绪时静默失败、不影响使用。 */
+    /* 迁移/合并：把本机 localStorage 的历史并入内存（以后端为准、按 ts 去重），
+       若有本机独占的历史则静默补传上云；列未建时静默失败、不影响使用，本机不丢。 */
     try {
       const lsHist = JSON.parse(localStorage.getItem(NOTES_HISTORY_KEY) || "[]");
-      if (Array.isArray(lsHist) && lsHist.length && (!state.notesHistory || !state.notesHistory.length)) {
-        state.notesHistory = lsHist;
+      if (Array.isArray(lsHist) && lsHist.length) {
+        const bd = Array.isArray(state.notesHistory) ? state.notesHistory : [];
+        const seen = new Set(bd.map((x) => x && x.ts));
+        const merged = bd.slice();
+        for (const it of lsHist) { if (it && it.ts && !seen.has(it.ts)) { merged.push(it); seen.add(it.ts); } }
+        merged.sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+        while (merged.length > NOTES_MAX_HISTORY) merged.pop();
+        state.notesHistory = merged;
         renderNotesHistory();
-        scheduleSave(true);
+        if (merged.length > bd.length) scheduleSave(true); // 本机有未上云历史 → 静默补传
       }
     } catch (e2) {}
     setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
