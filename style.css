@@ -440,12 +440,26 @@ body {
   .hero { flex-direction: column; align-items: flex-start; gap: 14px; }
   .hero-right { text-align: left; }
   .news-frame { height: 420px; }
-  .sidebar { width: 68px; }
-  .sidebar .nav-label, .sidebar .brand-text { display: none; }
-  .sidebar .sidebar-top { justify-content: center; }
-  .sidebar .sidebar-toggle { display: none; }
+  /* 侧边栏改为左侧抽屉：默认滑出屏幕外，点 ☰ 滑入覆盖主内容，文字标签恢复显示 */
+  .sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0;
+    width: min(280px, 82vw); z-index: 45;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    box-shadow: var(--shadow);
+  }
+  .app:not(.nav-collapsed) .sidebar { transform: translateX(0); }
+  .sidebar.collapsed {
+    width: min(280px, 82vw); padding: 18px 14px;
+    border-right: 1px solid var(--border);
+    transform: translateX(-100%);
+  }
+  .sidebar .nav-label { display: inline; }
+  .sidebar .brand-text { display: block; }
+  .sidebar .sidebar-top { justify-content: space-between; }
+  .sidebar .sidebar-toggle { display: flex; }   /* 显示“收起”按钮 */
   .sidebar .nav-sub.open { display: flex; }
-  .sidebar .nav-child { padding-left: 0; justify-content: center; }
+  .sidebar .nav-child { padding-left: 44px; justify-content: flex-start; }
 }
 
 /* ===== 侧边导航 ===== */
@@ -505,6 +519,14 @@ body {
 }
 .menu-fab:hover { color: var(--text); border-color: var(--border-strong); }
 .app.nav-collapsed .menu-fab { display: flex; }
+/* 移动端抽屉遮罩：展开时显示，点击即可收起 */
+.sidebar-overlay {
+  position: fixed; inset: 0; z-index: 44;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.sidebar-overlay.show { opacity: 1; visibility: visible; }
 .sidebar.collapsed .nav-caret { display: none; }
 
 /* ===== 主区域 / 页面切换 ===== */
@@ -645,3 +667,30 @@ body {
 .cup.filled { border-color: var(--accent); }
 .cup.filled .cup-water { height: 100%; }
 .water-tip { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+/* ===== 移动端适配（手机 · 方案A 轻量救急） ===== */
+/* 手机（≤600px）：卡片强制单列、去掉 300px 最小宽，消除横向溢出与错位换行 */
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 14px;
+  }
+  .card { padding: 16px; }
+  .card-head h2 { overflow-wrap: break-word; word-break: break-word; }
+  .links-grid { grid-template-columns: 1fr; }
+  .link-item { min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+  .hero h1 { overflow-wrap: break-word; }
+  .page-bar { padding: 14px 14px; }
+  .page-bar-title { overflow-wrap: break-word; }
+  .topbar { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+}
+
+/* 超窄屏（≤420px）：进一步收敛留白，避免边缘溢出 */
+@media (max-width: 420px) {
+  .grid { padding-left: 8px; padding-right: 8px; }
+  .card { padding: 14px; }
+  .clock { font-size: 32px; }
+}
