@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260811a" />
+  <link rel="stylesheet" href="style.css?v=20260811b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -77,6 +77,9 @@
         <div class="nav-sub open" id="subWork">
           <button class="nav-item nav-child" data-page="mobile">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手机端</span>
+          </button>
+          <button class="nav-item nav-child" data-page="coffee">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 3c0 1-1 1.4-1 2.4M12 3c0 1-1 1.4-1 2.4"/></svg></span><span class="nav-label">咖啡机</span>
           </button>
           <button class="nav-item nav-child" data-page="miaoda">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18.5" cy="17" r="2.2"/></svg></span><span class="nav-label">妙搭</span>
@@ -339,6 +342,28 @@
         </div>
       </div>
 
+      <!-- 咖啡机（移动端 H5 内嵌 · 手机视图） -->
+      <div id="pageCoffee" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">☕ 咖啡机</span>
+            <span class="page-bar-hint">移动端视图 · 内嵌若异常，点右侧按钮新窗口打开</span>
+          </div>
+          <a class="open-new" href="https://mh5.bl.com/bl-front-end/subpack/coffee/home" target="_blank" rel="noopener">新窗口打开 ↗</a>
+        </div>
+        <div class="mobile-stage">
+          <div class="mobile-col">
+            <div class="mobile-col-bar">
+              <span class="mobile-col-title">咖啡机</span>
+              <a class="open-new" href="https://mh5.bl.com/bl-front-end/subpack/coffee/home" target="_blank" rel="noopener">新窗口打开 ↗</a>
+            </div>
+            <div class="mobile-frame">
+              <iframe data-src="https://mh5.bl.com/bl-front-end/subpack/coffee/home" title="咖啡机" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 便利贴（可拖动 / 增删改 / 多端同步） -->
       <div id="pageSticky" class="page hidden">
         <div class="page-bar">
@@ -391,6 +416,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260811a"></script>
+  <script src="script.js?v=20260811b"></script>
 </body>
 </html>
