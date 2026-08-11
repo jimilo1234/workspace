@@ -812,28 +812,50 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
 /* ---------- 侧边栏折叠 + 页面切换 ---------- */
 const sidebar = $("#sidebar");
 const sidebarToggle = $("#sidebarToggle");
-function updateToggleIcon() {
-  sidebarToggle.textContent = sidebar.classList.contains("collapsed") ? "»" : "«";
-}
+const sidebarOverlay = $("#sidebarOverlay");
 const appEl = document.querySelector(".app");
-if (localStorage.getItem("wb_sb_collapsed") === "1" || window.innerWidth < 860) {
+const isMobile = () => window.innerWidth < 860;
+
+function updateToggleIcon() {
+  // 移动端抽屉用 ✕ 表示“收起”，桌面端用 « / »
+  sidebarToggle.textContent = isMobile()
+    ? "✕"
+    : (sidebar.classList.contains("collapsed") ? "»" : "«");
+}
+function syncSidebarUI() {
+  const collapsed = sidebar.classList.contains("collapsed");
+  // 移动端且展开时显示遮罩，点击遮罩即可收起
+  if (isMobile() && !collapsed) sidebarOverlay.classList.add("show");
+  else sidebarOverlay.classList.remove("show");
+  updateToggleIcon();
+}
+if (localStorage.getItem("wb_sb_collapsed") === "1" || isMobile()) {
   sidebar.classList.add("collapsed");
   appEl.classList.add("nav-collapsed");
 }
-updateToggleIcon();
+syncSidebarUI();
 sidebarToggle.addEventListener("click", () => {
   const c = sidebar.classList.toggle("collapsed");
   appEl.classList.toggle("nav-collapsed", c);
   localStorage.setItem("wb_sb_collapsed", c ? "1" : "0");
-  updateToggleIcon();
+  syncSidebarUI();
 });
 const menuFab = $("#menuFab");
 menuFab.addEventListener("click", () => {
   sidebar.classList.remove("collapsed");
   appEl.classList.remove("nav-collapsed");
   localStorage.setItem("wb_sb_collapsed", "0");
-  updateToggleIcon();
+  syncSidebarUI();
 });
+// 移动端：点击遮罩收起抽屉
+sidebarOverlay.addEventListener("click", () => {
+  sidebar.classList.add("collapsed");
+  appEl.classList.add("nav-collapsed");
+  localStorage.setItem("wb_sb_collapsed", "1");
+  syncSidebarUI();
+});
+// 跨断点（旋转屏幕 / 缩放窗口）时刷新图标与遮罩
+window.addEventListener("resize", syncSidebarUI);
 /* ---------- 侧边栏：一级菜单折叠 + 页面切换 ---------- */
 // 一级菜单（如 AI）点击展开/收起其子项
 document.querySelectorAll(".nav-parent").forEach((btn) => {
