@@ -74,6 +74,7 @@ async function saveState() {
     links: state.links, notes: state.notes, theme: state.theme,
     sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
     gh_arrival: state.ghArrival, updated_at: state.updated_at,
+    homeModules: state.homeModules,
     ...(withHist ? { notes_history: state.notesHistory } : {}),
   });
   let res = await fetch(`${REST_BASE}/${TABLE}`, {
@@ -120,7 +121,30 @@ const DEFAULT_LINKS = [
 ];
 
 function defaultState() {
-  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [] };
+  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules() };
+}
+
+/* 首页模块注册表：新增首页模块只需在此加一项，即自动出现在「首页管理」配置中 */
+const MODULE_REGISTRY = [
+  { id: "hero",     label: "问候与时钟" },
+  { id: "todo",     label: "每日待办" },
+  { id: "links",    label: "快捷链接" },
+  { id: "water",    label: "喝水提醒" },
+  { id: "calendar", label: "日历" },
+  { id: "fortune",  label: "每日运势" },
+  { id: "focus",    label: "专注计时" },
+  { id: "gh",       label: "GH时间" },
+  { id: "notes",    label: "笔记 / 新闻" },
+];
+function defaultHomeModules() {
+  return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true }));
+}
+/* 归一化已存配置：保留自定义顺序、丢弃未知模块、补齐新增模块（后续新增可配置） */
+function normalizeHomeModules(arr) {
+  const saved = (Array.isArray(arr) ? arr : []).filter((m) => m && m.id && MODULE_REGISTRY.some((r) => r.id === m.id));
+  const savedIds = new Set(saved.map((m) => m.id));
+  const added = MODULE_REGISTRY.filter((m) => !savedIds.has(m.id)).map((m) => ({ id: m.id, visible: true }));
+  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false }));
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -140,6 +164,10 @@ function mapRow(row) {
   if (Array.isArray(row.notes_history)) r.notesHistory = row.notes_history; /* 列存在时后端为准（含空数组） */
   else if (Array.isArray(row.notesHistory)) r.notesHistory = row.notesHistory;
   else r.notesHistory = []; /* 列未建：PostgREST 不返回该键，回退空，由 loadData 合并本机 localStorage */
+  /* 首页模块配置：读取后端数组（兼容 home_modules 命名），无则留空交给 applyState 归一 */
+  if (Array.isArray(row.homeModules)) r.homeModules = row.homeModules;
+  else if (Array.isArray(row.home_modules)) r.homeModules = row.home_modules;
+  else r.homeModules = null;
   delete r.sticky_notes; delete r.calendar_marks; delete r.gh_arrival; delete r.notes_history;
   return r;
 }
@@ -247,6 +275,10 @@ function applyState() {
   renderCalendar();
   if (state.ghArrival) { const g = $("#ghArrival"); if (g) { g.value = state.ghArrival; computeGH(); } }
   updateGreeting();
+  // 首页模块显隐 + 顺序（可配置）
+  state.homeModules = normalizeHomeModules(state.homeModules);
+  applyHomeLayout();
+  renderHomeManage();
 }
 function updateGreeting() {
   const now = new Date();
@@ -939,6 +971,99 @@ document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
     });
   });
 });
+/* ---------- 首页模块显隐 + 顺序（注册表驱动，可配置） ---------- */
+function applyHomeLayout() {
+  const grid = document.querySelector("#pageHome .grid");
+  if (!grid) return;
+  const order = Array.isArray(state.homeModules) ? state.homeModules : defaultHomeModules();
+  const vis = {};
+  order.forEach((m) => { if (m && m.id) vis[m.id] = m.visible !== false; });
+  const cards = {};
+  grid.querySelectorAll(":scope > [data-module]").forEach((el) => { cards[el.dataset.module] = el; });
+  // 按配置顺序重排（appendChild 自动移到末尾），并应用显隐
+  order.forEach((m) => {
+    const el = cards[m.id];
+    if (!el) return;
+    el.style.display = vis[m.id] ? "" : "none";
+    grid.appendChild(el);
+  });
+  // 兜底：配置里没有的卡片（理论上不会）默认显示并追加到末尾
+  grid.querySelectorAll(":scope > [data-module]").forEach((el) => {
+    if (!order.find((m) => m.id === el.dataset.module)) el.style.display = "";
+  });
+}
+
+/* 首页管理页：可拖拽模块列表 */
+function renderHomeManage() {
+  const list = $("#moduleList");
+  if (!list) return;
+  const cfg = Array.isArray(state.homeModules) ? state.homeModules : defaultHomeModules();
+  list.innerHTML = "";
+  cfg.forEach((m) => {
+    const meta = MODULE_REGISTRY.find((r) => r.id === m.id) || { label: m.id };
+    const li = document.createElement("li");
+    li.className = "module-item";
+    li.draggable = true;
+    li.dataset.id = m.id;
+    li.innerHTML =
+      '<span class="mi-handle" title="拖拽排序">⠿</span>' +
+      '<span class="mi-label">' + meta.label + '</span>' +
+      '<label class="mi-switch"><input type="checkbox" class="mi-toggle"' + (m.visible !== false ? " checked" : "") + ' /><span class="mi-slider"></span></label>';
+    list.appendChild(li);
+  });
+}
+// 显隐开关即时写入 state（不立即保存，等「保存」按钮）
+$("#moduleList").addEventListener("change", (e) => {
+  if (!e.target.classList.contains("mi-toggle")) return;
+  const li = e.target.closest(".module-item");
+  const id = li && li.dataset.id;
+  const item = (state.homeModules || []).find((m) => m.id === id);
+  if (item) item.visible = e.target.checked;
+});
+// 拖拽排序（原生 HTML5 DnD，无第三方依赖）
+(function initHomeManageDnD() {
+  const list = $("#moduleList");
+  if (!list) return;
+  let dragEl = null;
+  list.addEventListener("dragstart", (e) => {
+    const li = e.target.closest(".module-item");
+    if (!li) return;
+    dragEl = li; li.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+  });
+  list.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const li = e.target.closest(".module-item");
+    if (!li || li === dragEl) return;
+    const rect = li.getBoundingClientRect();
+    const after = (e.clientY - rect.top) / rect.height > 0.5;
+    if (dragEl) list.insertBefore(dragEl, after ? li.nextSibling : li);
+  });
+  list.addEventListener("dragend", () => {
+    if (dragEl) dragEl.classList.remove("dragging");
+    dragEl = null;
+  });
+})();
+// 保存：按列表当前顺序 + 开关写入 state 并持久化，首页立即生效
+function saveHomeManage() {
+  const list = $("#moduleList");
+  if (!list) return;
+  const next = [];
+  list.querySelectorAll(".module-item").forEach((li) => {
+    next.push({ id: li.dataset.id, visible: li.querySelector(".mi-toggle").checked });
+  });
+  state.homeModules = next;
+  applyHomeLayout();
+  scheduleSave();
+  setStatus("布局已保存 ✓", "ok");
+}
+const hmSave = $("#hmSave"); if (hmSave) hmSave.addEventListener("click", saveHomeManage);
+const hmReset = $("#hmReset"); if (hmReset) hmReset.addEventListener("click", () => {
+  state.homeModules = defaultHomeModules();
+  renderHomeManage(); applyHomeLayout(); scheduleSave();
+  setStatus("已恢复默认 ✓", "ok");
+});
+
 /* 整个标签页切走超过 5 分钟：释放所有后台内嵌页，回来时当前页自动重新加载 */
 let hiddenReleaseTimer = null;
 document.addEventListener("visibilitychange", () => {

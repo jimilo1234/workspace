@@ -694,3 +694,36 @@ body {
   .card { padding: 14px; }
   .clock { font-size: 32px; }
 }
+
+/* ---------- 首页管理（模块显隐 + 拖拽排序） ---------- */
+.page-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.hm-wrap { padding: 20px 24px; max-width: 720px; margin: 0 auto; }
+.module-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.module-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 14px;
+  background: var(--card); border: 1px solid var(--border);
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease, opacity 0.16s ease;
+}
+.module-item:hover { background: var(--card-hover); border-color: var(--border-strong); }
+.module-item.dragging { opacity: 0.45; transform: scale(0.99); border-color: var(--accent); }
+.mi-handle { cursor: grab; color: var(--text-faint); font-size: 18px; line-height: 1; user-select: none; }
+.mi-handle:active { cursor: grabbing; }
+.mi-label { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: 0.3px; }
+/* 显隐开关（iOS 风格） */
+.mi-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+.mi-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.mi-slider {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: var(--text-faint); transition: background 0.18s ease;
+}
+.mi-slider::before {
+  content: ""; position: absolute; left: 3px; top: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 0.18s ease;
+}
+.mi-switch input:checked + .mi-slider { background: var(--accent); }
+.mi-switch input:checked + .mi-slider::before { transform: translateX(20px); }
+.hm-tip { margin-top: 16px; font-size: 12px; color: var(--text-soft); line-height: 1.6; }
+.hm-reset { background: transparent; color: var(--text-soft); border: 1px solid var(--border-strong); box-shadow: none; }
+.hm-reset:hover { color: var(--text); filter: none; }

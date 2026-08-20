@@ -88,6 +88,16 @@
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg></span><span class="nav-label">便利贴</span>
           </button>
         </div>
+
+        <button class="nav-item nav-parent open" data-toggle="system">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">系统管理</span>
+          <span class="nav-caret">▾</span>
+        </button>
+        <div class="nav-sub open" id="subSystem">
+          <button class="nav-item nav-child" data-page="homeManage">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">首页管理</span>
+          </button>
+        </div>
       </nav>
     </aside>
 
@@ -109,7 +119,7 @@
       <div id="pageHome" class="page">
         <main class="grid">
           <!-- 问候 + 时钟 -->
-          <section class="card hero" style="grid-column: 1 / -1;">
+          <section class="card hero" data-module="hero" style="grid-column: 1 / -1;">
             <div class="hero-left">
               <h1 id="greeting">你好 👋</h1>
               <p id="heroDate" class="hero-date">加载中…</p>
@@ -124,7 +134,7 @@
           </section>
 
           <!-- 待办 -->
-          <section class="card">
+          <section class="card" data-module="todo">
             <div class="card-head">
               <h2>✅ 每日待办</h2>
               <span id="todoCount" class="badge">0</span>
@@ -137,7 +147,7 @@
           </section>
 
           <!-- 快捷链接 -->
-          <section class="card">
+          <section class="card" data-module="links">
             <div class="card-head">
               <h2>🔗 快捷链接</h2>
               <div class="link-actions">
@@ -149,7 +159,7 @@
           </section>
 
           <!-- 喝水提醒 -->
-          <section class="card water-card">
+          <section class="card water-card" data-module="water">
             <div class="card-head">
               <h2>💧 喝水提醒</h2>
               <span id="waterCount" class="badge">0/8</span>
@@ -158,65 +168,61 @@
             <p class="water-tip">点击杯子记录一杯水 · 每天 0 点自动重置</p>
           </section>
 
-          <!-- 日历 + 每日运势（竖向堆叠，类似专注和GH时间） -->
-          <div class="stack-col">
-            <!-- 日历 -->
-            <section class="card cal-card">
-              <div class="card-head"><h2>📅 日历</h2></div>
-              <div class="cal-toolbar">
-                <button id="calPrevYear" class="cal-nav" title="上一年">«</button>
-                <button id="calPrev" class="cal-nav" title="上一月">‹</button>
-                <div id="calHead" class="cal-head"></div>
-                <button id="calNext" class="cal-nav" title="下一月">›</button>
-                <button id="calNextYear" class="cal-nav" title="下一年">»</button>
-              </div>
-              <div id="calGrid" class="cal-grid"></div>
-              <div class="cal-legend"><span class="cal-dot"></span>有标记的日子</div>
-            </section>
+          <!-- 日历 -->
+          <section class="card cal-card" data-module="calendar">
+            <div class="card-head"><h2>📅 日历</h2></div>
+            <div class="cal-toolbar">
+              <button id="calPrevYear" class="cal-nav" title="上一年">«</button>
+              <button id="calPrev" class="cal-nav" title="上一月">‹</button>
+              <div id="calHead" class="cal-head"></div>
+              <button id="calNext" class="cal-nav" title="下一月">›</button>
+              <button id="calNextYear" class="cal-nav" title="下一年">»</button>
+            </div>
+            <div id="calGrid" class="cal-grid"></div>
+            <div class="cal-legend"><span class="cal-dot"></span>有标记的日子</div>
+          </section>
 
-            <!-- 每日运势 -->
-            <section class="card quote">
-              <div class="card-head"><h2>🔮 每日运势</h2><button id="fortuneBtn" class="text-btn">手动推算</button></div>
-              <blockquote id="quoteText">正在为你推算今日运势…</blockquote>
-              <cite id="quoteAuthor">— 八字：癸酉 乙卯 丙申 丙申 · DeepSeek</cite>
-              <div class="fortune-history">
-                <div class="fh-head"><span>历史记录</span><button id="fortuneClear" class="text-btn">清空</button></div>
-                <div id="fortuneList" class="fh-list"></div>
-              </div>
-            </section>
-          </div>
+          <!-- 每日运势 -->
+          <section class="card quote" data-module="fortune">
+            <div class="card-head"><h2>🔮 每日运势</h2><button id="fortuneBtn" class="text-btn">手动推算</button></div>
+            <blockquote id="quoteText">正在为你推算今日运势…</blockquote>
+            <cite id="quoteAuthor">— 八字：癸酉 乙卯 丙申 丙申 · DeepSeek</cite>
+            <div class="fortune-history">
+              <div class="fh-head"><span>历史记录</span><button id="fortuneClear" class="text-btn">清空</button></div>
+              <div id="fortuneList" class="fh-list"></div>
+            </div>
+          </section>
 
-          <!-- 专注计时 + GH时间（竖向堆叠，专注计时缩小一半） -->
-          <div class="stack-col">
-            <section class="card focus-card">
-              <div class="card-head"><h2>⏳ 专注计时</h2></div>
-              <div id="timerDisplay" class="timer">25:00</div>
-              <div class="timer-controls">
-                <button id="timerStart" class="btn btn-primary">开始</button>
-                <button id="timerReset" class="btn">重置</button>
-              </div>
-              <p id="timerMode" class="timer-mode">工作 · 25 分钟</p>
-            </section>
+          <!-- 专注计时 -->
+          <section class="card focus-card" data-module="focus">
+            <div class="card-head"><h2>⏳ 专注计时</h2></div>
+            <div id="timerDisplay" class="timer">25:00</div>
+            <div class="timer-controls">
+              <button id="timerStart" class="btn btn-primary">开始</button>
+              <button id="timerReset" class="btn">重置</button>
+            </div>
+            <p id="timerMode" class="timer-mode">工作 · 25 分钟</p>
+          </section>
 
-            <section class="card gh-card">
-              <div class="card-head"><h2>🕔 GH时间</h2></div>
-              <div class="gh-body">
-                <label class="gh-field">
-                  <span class="gh-label">到岗时间</span>
-                  <input type="time" id="ghArrival" class="gh-input" value="09:00" />
-                </label>
-                <div class="gh-result">
-                  <span class="gh-result-label">今日 GH</span>
-                  <span id="ghOff" class="gh-off">17:30</span>
-                </div>
-                <p id="ghNote" class="gh-note"></p>
-                <p id="ghCountdown" class="gh-countdown"></p>
+          <!-- GH时间 -->
+          <section class="card gh-card" data-module="gh">
+            <div class="card-head"><h2>🕔 GH时间</h2></div>
+            <div class="gh-body">
+              <label class="gh-field">
+                <span class="gh-label">到岗时间</span>
+                <input type="time" id="ghArrival" class="gh-input" value="09:00" />
+              </label>
+              <div class="gh-result">
+                <span class="gh-result-label">今日 GH</span>
+                <span id="ghOff" class="gh-off">17:30</span>
               </div>
-            </section>
-          </div>
+              <p id="ghNote" class="gh-note"></p>
+              <p id="ghCountdown" class="gh-countdown"></p>
+            </div>
+          </section>
 
           <!-- 笔记 / 新闻 合并切换卡片 -->
-          <section class="card note-card">
+          <section class="card note-card" data-module="notes">
             <div class="card-head">
               <h2 id="panelTitle">📝 随手笔记</h2>
               <div class="link-actions">
@@ -377,6 +383,24 @@
           </div>
         </div>
         <div id="stickyBoard" class="sticky-board"></div>
+      </div>
+
+      <!-- 首页管理（模块显隐 + 拖拽排序） -->
+      <div id="pageHomeManage" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">⚙️ 首页管理</span>
+            <span class="page-bar-hint">拖拽调整顺序 · 开关控制显隐 · 保存后首页立即生效</span>
+          </div>
+          <div class="page-bar-right">
+            <button id="hmReset" class="open-new hm-reset" type="button">恢复默认</button>
+            <button id="hmSave" class="open-new btn-primary" type="button">保存</button>
+          </div>
+        </div>
+        <div class="hm-wrap">
+          <ul id="moduleList" class="module-list"></ul>
+          <p class="hm-tip">提示：关闭的模块在首页隐藏，但其数据不会丢失，重新打开即可恢复。后续新增首页模块会自动出现在此列表中。</p>
+        </div>
       </div>
 
     </div>
