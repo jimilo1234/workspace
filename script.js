@@ -135,6 +135,7 @@ const MODULE_REGISTRY = [
   { id: "focus",    label: "专注计时" },
   { id: "gh",       label: "GH时间" },
   { id: "notes",    label: "笔记 / 新闻" },
+  { id: "zhihu",    label: "知乎" },
 ];
 function defaultHomeModules() {
   return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true }));
