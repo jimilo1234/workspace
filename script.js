@@ -204,7 +204,15 @@ async function loadData() {
   setStatus("加载中…", "syncing");
   try {
     const data = await fetchState();
-    state = Object.assign(defaultState(), mapRow(data || {}));
+    const incoming = mapRow(data || {});
+    // 智能比对：云端 updated_at 与本地一致则数据未变，仅同步内存、跳过重渲染（不打断正在编辑的笔记/待办）
+    if (dataConfirmed && state.updated_at && incoming.updated_at && incoming.updated_at === state.updated_at) {
+      state = Object.assign(defaultState(), incoming);
+      try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
+      setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
+      return;
+    }
+    state = Object.assign(defaultState(), incoming);
     dataConfirmed = true; // 读取成功（无论有无记录），后续保存才被允许
     // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
     try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
@@ -239,11 +247,20 @@ const VALID_PASS = "11223345";
 const SESSION_KEY = "wb_logged_in";
 function setMsg(t) { $("#setupMsg").textContent = t; }
 
+let _homePollId = null;
+function startHomePolling() {
+  stopHomePolling();
+  _homePollId = setInterval(() => { if (userId) loadData(); }, 30000); // 每30秒兜底拉取，数据未变则跳过重渲染
+}
+function stopHomePolling() {
+  if (_homePollId) { clearInterval(_homePollId); _homePollId = null; }
+}
 async function enterWorkbench() {
   userId = "jimilo";
   localStorage.setItem(SESSION_KEY, "1");
   $("#setupModal").classList.add("hidden");
   loadData();
+  startHomePolling();
 }
 
 function handleLogin() {
@@ -256,6 +273,7 @@ function handleLogin() {
 
 function exitSpace() {
   userId = null; state = defaultState();
+  stopHomePolling();
   localStorage.removeItem(SESSION_KEY);
   $("#setupModal").classList.remove("hidden");
   $("#setupAccount").value = ""; $("#setupPass").value = "";
@@ -965,6 +983,7 @@ document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
       if (isTarget) {
         clearTimeout(releaseTimers.get(p.id));
         mountFrames(p);           // 进入才加载
+        if (targetId === "pageHome") loadData(); // 切回首页即拉取最新（数据未变则跳过重渲染）
       } else {
         scheduleRelease(p);       // 离开延时释放
       }
