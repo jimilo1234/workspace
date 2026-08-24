@@ -439,7 +439,7 @@ body {
 @media (max-width: 860px) {
   .hero { flex-direction: column; align-items: flex-start; gap: 14px; }
   .hero-right { text-align: left; }
-  .news-frame { height: 280px; }
+  .news-frame { height: 600px; }
   /* 侧边栏改为左侧抽屉：默认滑出屏幕外，点 ☰ 滑入覆盖主内容，文字标签恢复显示 */
   .sidebar {
     position: fixed; top: 0; bottom: 0; left: 0;
