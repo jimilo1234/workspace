@@ -134,8 +134,8 @@ const MODULE_REGISTRY = [
   { id: "fortune",  label: "每日运势" },
   { id: "focus",    label: "专注计时" },
   { id: "gh",       label: "GH时间" },
-  { id: "notes",    label: "笔记 / 新闻" },
-  { id: "zhihu",    label: "知乎" },
+  { id: "notes",    label: "随手笔记" },
+  { id: "news",     label: "新闻" },
 ];
 function defaultHomeModules() {
   return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true }));
@@ -1109,38 +1109,7 @@ $("#memPill") && $("#memPill").addEventListener("click", () => {
 });
 updateMemPill();
 
-/* ---------- 笔记 / 新闻 切换 ---------- */
-let panelMode = "note";
-let newsReleaseTimer = null;
-function setPanel(mode) {
-  panelMode = mode;
-  const isNote = mode === "note";
-  $("#notePanel").classList.toggle("hidden", !isNote);
-  $("#newsPanel").classList.toggle("hidden", isNote);
-  $("#panelTitle").textContent = isNote ? "📝 随手笔记" : "📰 新闻";
-  $("#panelToggle").textContent = isNote ? "切换到新闻 ↻" : "切换到笔记 ↻";
-  $("#newsOpen").hidden = isNote;
-  // 新闻 iframe 同样按需加载 / 离开后释放
-  const news = $("#newsPanel");
-  if (news) {
-    clearTimeout(newsReleaseTimer);
-    if (isNote) newsReleaseTimer = setTimeout(() => releaseFrames(news), FRAME_IDLE_MS);
-    else mountFrames(news);
-  }
-}
-setPanel("note");
-$("#panelToggle").addEventListener("click", () => setPanel(panelMode === "note" ? "news" : "note"));
-
-/* ---------- 整点/十分 自动切回笔记 ---------- */
-const SNAP_MINS = [0, 10, 20, 30, 40, 50];
-let lastSnap = -1;
-onTick(() => {
-  const m = new Date().getMinutes();
-  if (SNAP_MINS.includes(m) && m !== lastSnap) {
-    lastSnap = m;
-    if (panelMode !== "note") setPanel("note");
-  }
-}, 15);
+/* ---------- 笔记 / 新闻 已拆分为两个独立首页模块（data-module=notes / news） ---------- */
 
 
 /* ---------- 便利贴（可拖动 / 增删改） ---------- */

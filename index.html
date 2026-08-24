@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260823b" />
+  <link rel="stylesheet" href="style.css?v=20260824a" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -224,11 +224,7 @@
           <!-- 笔记 / 新闻 合并切换卡片 -->
           <section class="card note-card" data-module="notes">
             <div class="card-head">
-              <h2 id="panelTitle">📝 随手笔记</h2>
-              <div class="link-actions">
-                <button id="panelToggle" class="text-btn">切换到新闻 ↻</button>
-                <a id="newsOpen" class="text-btn" href="https://jimilo1234.github.io/paynews/" target="_blank" rel="noopener" hidden>新窗口打开 ↗</a>
-              </div>
+              <h2>📝 随手笔记</h2>
             </div>
             <div id="notePanel" class="panel">
               <textarea id="notes" class="notes" placeholder="想到什么写什么…（自动保存到后端）"></textarea>
@@ -237,20 +233,17 @@
                 <div id="notesHistoryList" class="fh-list"></div>
               </div>
             </div>
-            <div id="newsPanel" class="panel hidden">
-              <iframe class="news-frame" data-src="https://jimilo1234.github.io/paynews/" title="新闻" loading="lazy"></iframe>
-            </div>
           </section>
 
-          <!-- 知乎 -->
-          <section class="card zhihu-card" data-module="zhihu">
+          <!-- 新闻 -->
+          <section class="card news-card" data-module="news">
             <div class="card-head">
-              <h2>📖 知乎</h2>
+              <h2>📰 新闻</h2>
               <div class="link-actions">
-                <a class="text-btn" href="https://www.zhihu.com/signin?next=%2F" target="_blank" rel="noopener">新窗口打开 ↗</a>
+                <a class="text-btn" href="https://jimilo1234.github.io/paynews/" target="_blank" rel="noopener">新窗口打开 ↗</a>
               </div>
             </div>
-            <iframe class="news-frame" style="height:420px;" data-src="https://www.zhihu.com/signin?next=%2F" title="知乎" loading="lazy"></iframe>
+            <iframe class="news-frame" style="height:420px;" data-src="https://jimilo1234.github.io/paynews/" title="新闻" loading="lazy"></iframe>
           </section>
         </main>
         <footer class="footer">WorkBuddy 个人工作台 · 数据直读直写后端 · 🔒 仅授权账号可登录</footer>
@@ -451,6 +444,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260823b"></script>
+  <script src="script.js?v=20260824a"></script>
 </body>
 </html>
