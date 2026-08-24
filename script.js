@@ -1,6 +1,14 @@
 /* ===== WorkBuddy 个人工作台 · 固定账号版 ===== */
 const $ = (s) => document.querySelector(s);
 
+/* 超时工具：给任意 Promise 加 ms 上限，避免冷启动时请求无限挂起 */
+function withTimeout(p, ms, label) {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error((label || "请求") + " 超时 " + ms + "ms")), ms);
+    p.then((v) => { clearTimeout(id); resolve(v); }, (e) => { clearTimeout(id); reject(e); });
+  });
+}
+
 /* ---------- 后端配置（Supabase REST API 直连，不依赖 supabase-js 库） ----------
    去掉 CDN 加载 supabase-js 的整套逻辑，直接用 fetch 调 PostgREST 接口。
    数据直读直写后端，不再有 localStorage 缓存 / 双写同步 / realtime 订阅。 */
@@ -14,11 +22,28 @@ const API_HEADERS = {
   "Content-Type": "application/json",
 };
 
+/* 预热工作区 Supabase：免费库冷启动首请求会卡 20~30s，
+   保存/加载前先轻量 ping 把它唤醒，失败则重试等待，避免数据存不上。 */
+async function warmupWorkspaceDB(attempts = 3) {
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await withTimeout(
+        fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId || "jimilo"}&select=updated_at&limit=1`, { headers: API_HEADERS, cache: "no-store" }),
+        12000, "唤醒后端"
+      );
+      return true; // 已连通
+    } catch (e) {
+      if (i < attempts) await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+  return false; // 尽力了仍不通，交给后续请求的正常错误处理
+}
+
 /* 直接从后端读取整条记录 */
 async function fetchState() {
   // 每次请求都强制 no-store，从后端取最新，杜绝浏览器缓存导致“不同浏览器不一样”
   const url = `${REST_BASE}/${TABLE}?user_id=eq.${userId}&limit=1`;
-  const res = await fetch(url, { headers: API_HEADERS, cache: "no-store" });
+  const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 20000, "读取后端");
   if (!res.ok) throw new Error("fetch " + res.status);
   const arr = await res.json();
   return arr && arr[0] ? arr[0] : null;
@@ -34,11 +59,14 @@ async function saveState() {
     setStatus("保存跳过 · 数据未加载", "warn");
     return;
   }
+  /* 冷启动兜底：保存前先预热后端，避免免费库休眠时请求超时导致数据没存上 */
+  setStatus("保存中… 唤醒后端", "syncing");
+  await warmupWorkspaceDB();
   /* 乐观并发锁：写入前先核对云端更新时间。
      若云端已有比本地"载入时刻"更新的数据，说明云端被别的端更新过（或旧实例刚清空过），
      此时放弃本次保存以免用过期/空本地数据覆盖云端，并提示先刷新。这是防误清空的最后一道闸。 */
   try {
-    const chk = await fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&select=updated_at&limit=1`, { headers: API_HEADERS, cache: "no-store" });
+    const chk = await withTimeout(fetch(`${REST_BASE}/${TABLE}?user_id=eq.${userId}&select=updated_at&limit=1`, { headers: API_HEADERS, cache: "no-store" }), 15000, "核对云端");
     if (chk.ok) {
       const carr = await chk.json();
       if (carr && carr[0]) {
@@ -77,21 +105,21 @@ async function saveState() {
     homeModules: state.homeModules,
     ...(withHist ? { notes_history: state.notesHistory } : {}),
   });
-  let res = await fetch(`${REST_BASE}/${TABLE}`, {
+  let res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
     body: JSON.stringify(buildBody(notesHistoryColReady)),
-  });
+  }), 20000, "写入后端");
   /* notes_history 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 notes_history，
      保证待办/笔记/便利贴等核心数据可正常保存，历史暂只存本机 localStorage，加列后自动恢复。 */
   if (!res.ok && notesHistoryColReady) {
     notesHistoryColReady = false;
     console.warn("[workbench] notes_history 列尚不存在，本次及之后保存暂不含历史；加列后将自动恢复");
-    res = await fetch(`${REST_BASE}/${TABLE}`, {
+    res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
       method: "POST",
       headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
       body: JSON.stringify(buildBody(false)),
-    });
+    }), 20000, "写入后端(降级)");
   }
   if (!res.ok) throw new Error("save " + res.status);
   return true;
@@ -204,6 +232,7 @@ function scheduleSave(silent) {
 async function loadData() {
   setStatus("加载中…", "syncing");
   try {
+    await warmupWorkspaceDB(); // 冷启动兜底：先把休眠的后端唤醒，避免读取超时
     const data = await fetchState();
     const incoming = mapRow(data || {});
     // 智能比对：云端 updated_at 与本地一致则数据未变，仅同步内存、跳过重渲染（不打断正在编辑的笔记/待办）
