@@ -1,0 +1,29 @@
+name: Keep Workbench Awake
+
+on:
+  schedule:
+    # 每 5 分钟运行一次（UTC），让免费 Supabase 库与 Storage 不休眠
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Workbench Supabase (DB + Storage)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}        # 例：https://xxxx.supabase.co （不要带结尾斜杠）
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}   # 前端 publishable key（本就公开）
+        run: |
+          echo "Pinging DB ${SUPABASE_URL} ..."
+          curl -s -m 20 -o /dev/null -w "DB HTTP %{http_code}\n" \
+            "${SUPABASE_URL}/rest/v1/workbench_data?select=updated_at&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}"
+          echo "Pinging Storage ${SUPABASE_URL} ..."
+          curl -s -m 20 -o /dev/null -w "Storage HTTP %{http_code}\n" \
+            "${SUPABASE_URL}/storage/v1/bucket" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}"
+          echo "Done."
