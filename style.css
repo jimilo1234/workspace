@@ -727,3 +727,53 @@ body {
 .hm-tip { margin-top: 16px; font-size: 12px; color: var(--text-soft); line-height: 1.6; }
 .hm-reset { background: transparent; color: var(--text-soft); border: 1px solid var(--border-strong); box-shadow: none; }
 .hm-reset:hover { color: var(--text); filter: none; }
+
+/* ===== PayNews 资讯：新闻 ===== */
+.news-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 2px 16px; }
+.news-date { font-size: 13px; color: var(--text-soft); }
+.news-cats { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+.news-cat {
+  font-size: 12px; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  background: var(--bg-soft); color: var(--text-soft); border: 1px solid var(--border);
+  transition: all 0.15s ease; user-select: none;
+}
+.news-cat:hover { color: var(--text); }
+.news-cat.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.news-status { font-size: 12px; color: var(--text-faint); }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.news-item {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease; cursor: pointer;
+}
+.news-item:hover { transform: translateY(-2px); border-color: var(--accent); }
+.news-category {
+  align-self: flex-start; font-size: 11px; font-weight: 600; padding: 3px 9px;
+  border-radius: 6px; background: rgba(99,102,241,0.15); color: var(--accent);
+}
+.news-item.read .news-category { background: var(--bg-soft); color: var(--text-faint); }
+.news-item h3 { margin: 0; font-size: 15px; line-height: 1.45; color: var(--text); }
+.news-item.read h3 { color: var(--text-soft); }
+.news-item p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-soft); }
+.news-item.read p { color: var(--text-faint); }
+
+/* ===== PayNews 资讯：论坛 ===== */
+.forum-pane { padding: 4px 2px; }
+.forum-compose { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+.forum-input {
+  width: 100%; min-height: 72px; resize: vertical; border: none; outline: none;
+  background: transparent; color: var(--text); font-size: 14px; line-height: 1.6;
+}
+.forum-compose-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.forum-img { flex: 1; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; outline: none; }
+.forum-board { display: flex; flex-direction: column; gap: 12px; }
+.forum-post { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.forum-post-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.forum-post-author { font-size: 13px; font-weight: 600; color: var(--accent); }
+.forum-post-time { font-size: 11px; color: var(--text-faint); }
+.forum-post-text { font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.forum-post-img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+.forum-post-del { font-size: 11px; color: var(--text-faint); cursor: pointer; background: none; border: none; }
+.forum-post-del:hover { color: #f87171; }
+.forum-empty { text-align: center; color: var(--text-faint); font-size: 13px; padding: 30px 0; }
+
