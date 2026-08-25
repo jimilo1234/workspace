@@ -780,6 +780,7 @@ body {
 
 /* ===== PayNews 嵌入：限高 + 滚动轴 ===== */
 #paynewsHost {
+  position: relative; /* 评论浮窗等 absolute 子元素定位到卡片内 */
   max-height: 640px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
