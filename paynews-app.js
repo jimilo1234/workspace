@@ -1,0 +1,2892 @@
+
+/* ---- inline script ---- */
+
+// ===== SVG 图标（简约商务线条风） =====
+const ICO = {
+  moon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+  sun: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  img: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+  video: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>',
+  mic: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+  refresh: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+  stop: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+  del: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  walkie: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/><path d="M5 4H3"/><path d="M5 8H3"/><path d="M21 4h-2"/><path d="M21 8h-2"/></svg>',
+  speaker: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>',
+  speakerOff: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>',
+  star: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  triangle: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 22h20L12 2z"/></svg>',
+  miniSun: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  heart: '♡',
+  heartFilled: '♥',
+};
+
+// ===== Supabase 配置 =====
+const SUPABASE_URL = 'https://wwxzycfdfyyljkjfcbjt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0WePrzUk-LVH3TK7RFT_fQ_5r3C0dvP';
+
+let supabaseClient = null;
+function initSupabase(){
+  if (supabaseClient) return;  // 已初始化则跳过（module 与 DOMContentLoaded 可能都调用）
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (e) {
+    console.error('Supabase 初始化失败:', e);
+  }
+  if (supabaseClient) restoreSession();
+}
+
+// 检查是否有保存的session，尝试恢复登录
+async function restoreSession() {
+  if (!supabaseClient) return;
+  try {
+    const saved = localStorage.getItem('paynews_session');
+    if (!saved) return;
+    const { username, session_id } = JSON.parse(saved);
+    if (!username || !session_id) return;
+    
+    const { data, error } = await supabaseClient.rpc('check_session', {
+      p_username: username,
+      p_session_id: session_id
+    });
+    if (error || !data || data.length === 0 || !data[0].check_session) {
+      // session已失效（被其他设备登录踢掉了）
+      localStorage.removeItem('paynews_session');
+      // 通知父窗口（扩展侧边栏）清除缓存session
+      try { window.parent.postMessage({type: 'paynews-session-invalid'}, '*'); } catch(e) {}
+      // 用户打开页面时会看到登录界面，无需额外操作
+      console.log('[Session] 已失效，已清除本地session');
+    }
+  } catch(e) {
+    console.error('[Session] 恢复检查失败:', e);
+  }
+}
+// 监听postMessage接收来自扩展的登录状态
+window.addEventListener("message", function(event) {
+  if (event.data && event.data.type === "paynews-session" && event.data.session) {
+    var s = event.data.session;
+    if (s.username && s.session_id) {
+      localStorage.setItem("paynews_session", JSON.stringify({username: s.username, session_id: s.session_id}));
+      console.log("[扩展] 收到登录状态，正在恢复...");
+      location.reload();
+    }
+  }
+});
+
+// ===== 静态新闻数据 =====
+let MOCK_NEWS = [
+  { category: '监管动态', title: '汇聚支付被罚没超452万元，已逐条落实整改', summary: '因违反支付结算管理规定，汇聚支付被央行广东分行罚没452.62万元。公司回应称已全部整改完毕并升级合规体系，包括重新梳理商户准入流程、强化交易监控能力、完善反洗钱内控机制等。业内分析认为，这是今年央行加大对收单机构违规行为处罚力度的一个缩影。' },
+  { category: '监管动态', title: '收单外包3万家备案后进入下半场，推荐函不能再走形式', summary: '支付清算协会发布新通知，要求收单机构对外包机构尽调、聚合支付技术审核、本地化经营全面从严管理。此前行业内普遍存在的"推荐函走过场"现象将被重点整治，预计将有大量不符合要求的外包服务商被清退，收单市场格局面临重塑。' },
+  { category: '监管动态', title: '杉德支付牌照续展申请被中止，6月24日将与广发对簿公堂', summary: '杉德支付因多项违规行为，牌照续展审查被中止审查，这是本月第二家支付机构遭遇类似情况。与此同时，杉德与广发银行之间的纠纷案将于6月24日开庭审理，涉及金额超2亿元。杉德支付此前已被列入经营异常名录，业务开展受限。' },
+  { category: '监管动态', title: '6月收款码规范化新规落地，精准区分个人与商用边界', summary: '央行新规明确个人收款码不得用于经营性收款，违者将面临处罚。新规要求各支付平台在6月底前完成商用码切换，并对已有个人码进行经营性使用识别。小微商户可免费申请商用收款码，费率维持不变。市场预计此举将影响约3000万个体经营者。' },
+  { category: '监管动态', title: '微信零钱资金属性变更：不享受存款保险兜底', summary: '微信支付公告零钱不属于存款，不受存款保险条例保护，用户需关注资金安全。此次调整是对央行关于非银行支付机构备付金管理要求的响应。专家建议用户大额资金应转入银行存款账户，仅保留日常消费所需金额在零钱中。' },
+  { category: '数字人民币', title: 'mBridge扩围：澳门首批3家银行完成23笔跨境交易', summary: '澳门金管局正式开通mBridge系统，首批3家银行已完成涵盖贸易结算、跨境汇款等业务，总交易金额达1.2亿澳门元。mBridge目前已有包括中国内地、香港、泰国、阿联酋等6个司法管辖区的中央银行参与，正在从实验阶段向生产级应用过渡。' },
+  { category: '数字人民币', title: '上海发文构建数字人民币跨境金融基础设施体系', summary: '上海市发布《关于推进数字人民币跨境金融基础设施建设的实施方案》，鼓励机构接入mBridge，相关业务已覆盖贸易结算、航运保险、供应链金融等场景。方案提出到2027年实现数字人民币跨境交易规模突破千亿元的目标。' },
+  { category: '数字人民币', title: '六大行宣布为数字人民币钱包余额计息，年利率0.35%', summary: '数字人民币从支付工具向储蓄工具跨越，工行、农行、中行、建行、交行、邮储六大行同步宣布为数字人民币钱包余额按0.35%年利率计息，按季结息。目前个人钱包开户数已达12亿，硬钱包发行量突破3亿，日均交易笔数超过8000万笔。' },
+  { category: '数字人民币', title: '央行考虑建立数字人民币清算所，类似银联模式', summary: '旨在打通所有运营银行间数字人民币交易清算，提升跨行交易效率。目前数字人民币跨行清算依赖央行小额支付系统，处理能力和时效性存在瓶颈。新清算所可能采用公司化运营，引入市场化机制，该消息此前未被公开报道。' },
+  { category: '数字人民币', title: '数字人民币加速出海：与沙特65亿原油结算，东盟纳入区域支付系统', summary: '中东局势加速去美元化进程，中国与沙特完成首笔65亿元人民币原油贸易数字人民币结算。同时东盟十国财长会议同意将数字人民币纳入区域支付互联互通体系，预计2027年前实现与东盟五国的日常跨境支付。但海外对手方接受度仍是长期挑战。' },
+  { category: '支付公司', title: '拉卡拉Q1净利润暴增491%，扫码交易连续4季度增长', summary: '拉卡拉披露一季报，净利润达3.2亿元，同比增长491%，扫码交易规模同比增长35%，连续4个季度保持高增长。公司表示受益于线下消费复苏和中小微商户数字化转型需求，活跃商户数突破2800万，户均交易额同比提升22%。持续领跑线下收单市场。' },
+  { category: '支付公司', title: '支付宝"碰一下"用户突破2亿，覆盖百万门店', summary: 'NFC碰一碰支付快速普及，用户数突破2亿，覆盖超过100万家门店。数据显示61%年轻人用一次就常用，复购率远超扫码支付。夏季消费节期间将发放亿元福利鼓励用户尝鲜。业内分析认为，NFC支付将逐步取代扫码成为线下主流支付方式。' },
+  { category: '支付公司', title: '支付宝AI付累计完成超3亿笔，支持95%通用智能体框架', summary: '蚂蚁集团发布AI付、AI收、AI钱包、Token Pay四款产品，上线3个月累计完成超3亿笔交易，交易量翻近两倍。AI付支持95%的通用智能体框架，用户通过自然语言即可完成支付指令。蚂蚁还开放了AI支付API，已有超过2000家商户接入。' },
+  { category: '支付公司', title: '微信支付上线AI支付接入体系，七成商户开发者已使用', summary: '微信支付发布AI支付接入体系，包含Skill技能包、AI友好文档和API三大模块，依托14亿微信用户生态和混元大模型深度协同。上线首月已有70%的商户开发者接入使用，覆盖餐饮、零售、出行等核心场景，交易成功率99.2%。' },
+  { category: '支付公司', title: '字节豆包内测对话中下单支付，14亿收购联动优势补齐线下资质', summary: '用户在豆包对话中即可完成商品搜索、比价、下单和支付全流程，字节正将电商入口从抖音迁移至AI对话框。同时字节以14亿元完成收购联动优势，获得银行卡收单牌照，补齐线下支付资质短板。此举意味着字节支付版图从线上拓展至全场景。' },
+  { category: '支付公司', title: '万事达卡重大高层调整，CFO由亚太区总裁凌海接任', summary: '万事达卡宣布多项核心人事变动，CFO由亚太区总裁凌海接任，同时调整首席商务官、首席服务官及副董事长等岗位。变动将于8月3日生效。业内解读为万事达卡加速亚太市场布局，特别是中国跨境支付和数字人民币互联互通领域。' },
+  { category: '支付公司', title: '央行批准联通支付增资至3亿元', summary: '联通支付获央行批准将注册资本从1.5亿元增至3亿元，这是今年第5家增资的持牌支付机构。支付机构增资是近年显著趋势，反映监管对资本充足率要求提高，也体现支付机构在业务扩张和合规成本上升背景下的资金需求。联通支付将重点布局通信场景支付和企业缴费。' },
+  { category: '跨境支付', title: '渣打香港即将接入"跨境支付通"，香港三大发钞行全部入局', summary: '渣打银行香港分行宣布即将接入"跨境支付通"系统，至此香港三大发钞行（汇丰、中银、渣打）全部入局。目前共38家机构参与跨境支付通，香港24家、内地14家。系统支持港币与人民币实时兑换，单笔限额50万元，到账时间从T+1缩短至秒级。' },
+  { category: '跨境支付', title: '英国上线自主支付体系UKPI，打破美国卡组织垄断', summary: '由英国主流银行与金融科技企业联合组建的UKPI（United Kingdom Payment Infrastructure）正式上线，首日接入银行12家、商户8万家。UKPI采用分布式账本技术，交易成本较Visa/Mastercard降低40%，结算速度从T+1提升至实时。此举被视为欧洲支付自主化的重要一步。' },
+  { category: '技术趋势', title: '扫码支付占比从峰值95%下滑至90%，生物识别+AI支付一年增长3倍', summary: '中国移动支付市场格局出现结构性变化，扫码支付市场份额首次出现连续下滑。AI付、碰一碰、刷掌支付快速崛起，新支付方式交易笔数一年增长3倍，占比从2%升至8%。预计2028年新支付占比将突破50%，支付行业将迎来近十年来最大技术代际更替。' },
+];
+
+// 从localStorage加载已保存的新闻数据（如果存在）
+try { var savedNews = localStorage.getItem("paynews_data"); if (savedNews) { var parsed = JSON.parse(savedNews); if (Array.isArray(parsed) && parsed.length > 0) { MOCK_NEWS.splice(0, MOCK_NEWS.length, ...parsed); } } } catch(e) {}
+
+// ===== 全局状态 =====
+let currentUser = null;  // { username, displayName }
+let mySessionId = '';  // 当前会话ID，用于单设备登录
+let loginTimeoutId = null;  // 0110账号2小时自动退出定时器
+let pendingImage = null;  // base64 preview
+let pendingImageFile = null;  // File object for upload
+let pendingVideoFile = null;  // Video file object for upload
+let lastMessageSnapshot = '';  // 用于检测新消息
+let hasNewMessages = false;  // 标记是否有新消息（监管动态变紫）
+const originalTitle = document.title;  // 保存原始标题，用于重置
+// 在线状态追踪：记录哪些账号在线且订阅了广播
+let onlineSubscribers = {};  // { username: true } — 在线且订阅广播的账号
+
+// ===== 工具函数 =====
+function showOverlay(src) {
+  const overlay = document.getElementById('img-overlay');
+  document.getElementById('img-overlay-src').src = src;
+  overlay.classList.add('show');
+}
+
+function getDateStr() {
+  const now = new Date();
+  return `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · 每日简报`;
+}
+
+// ===== 获取最新新闻（从多个RSS源合并，保留完整标题和详细摘要） =====
+async function fetchLatestNews() {
+  const btn = document.querySelector(".refresh-news-btn");
+  if (!btn || btn.classList.contains("loading")) return;
+  btn.classList.add("loading");
+  btn.textContent = "获取中...";
+  try {
+    // 同时从多个关键词搜索 Google News，获取更丰富的新闻
+    var rssQueries = [
+      "https://news.google.com/rss/search?q=%E8%81%9A%E5%90%88%E6%94%AF%E4%BB%98&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+      "https://news.google.com/rss/search?q=%E6%94%AF%E4%BB%98%E8%A1%8C%E4%B8%9A&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+      "https://news.google.com/rss/search?q=%E6%94%AF%E4%BB%98%E6%96%B0%E9%97%BB&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    ];
+    var allItems = [];
+    for (var qi = 0; qi < rssQueries.length; qi++) {
+      try {
+        var r = await fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(rssQueries[qi]));
+        var d = await r.json();
+        if (d.status === "ok" && d.items) allItems = allItems.concat(d.items);
+      } catch(e) {}
+    }
+    // 去重（按link去重）
+    var seen = {};
+    var uniqueItems = [];
+    for (var si = 0; si < allItems.length; si++) {
+      var link = allItems[si].link || allItems[si].guid || "";
+      if (!seen[link]) {
+        seen[link] = true;
+        uniqueItems.push(allItems[si]);
+      }
+    }
+    if (uniqueItems.length > 0) {
+      // 使用 DeepSeek AI 增强新闻内容质量
+      const cats = ["监管动态","支付公司","数字人民币","跨境支付","技术趋势","监管动态","支付公司","数字人民币","跨境支付","技术趋势","监管动态","支付公司","数字人民币","跨境支付","技术趋势","监管动态","支付公司","数字人民币","跨境支付","技术趋势"];
+      const count = MOCK_NEWS.length;
+      const rawItems = uniqueItems.slice(0, count).map(function(item) {
+        return { title: item.title, description: item.description };
+      });
+      var enhancedItems = [];
+      try {
+        var enhanceResp = await fetch("https://wwxzycfdfyyljkjfcbjt.supabase.co/functions/v1/enhance-news", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_KEY },
+          body: JSON.stringify({ items: rawItems })
+        });
+        if (enhanceResp.ok) {
+          var enhanceData = await enhanceResp.json();
+          if (enhanceData.items && enhanceData.items.length > 0) {
+            enhancedItems = enhanceData.items;
+          }
+        }
+      } catch(e) { console.error("AI增强失败，使用原始处理:", e); }
+
+      // 如果AI增强成功则使用增强结果，否则使用基本处理结果
+      const newNews = enhancedItems.length > 0 ? enhancedItems.map(function(item, i) {
+        return { category: item.category || cats[i % cats.length], title: item.title, summary: item.summary };
+      }) : uniqueItems.slice(0, count).map(function(item, i) {
+        var title = item.title.replace(/\s*-\s*[^-\s]+$/, "").trim();
+        title = title.replace(/^<!--.*?-->/, "").trim();
+        var desc = "";
+        if (item.description) {
+          desc = item.description.replace(/<[^>]*>/g, "").trim();
+          desc = desc.replace(/…\s*$/, "").replace(/\.\.\.\s*$/, "").trim();
+        }
+        if (desc.length < 40) desc = title + "。" + (desc.length > 0 ? desc : "最新行业动态，点击查看详情。");
+        return { category: cats[i % cats.length], title: title, summary: desc };
+      });
+      MOCK_NEWS.splice(0, MOCK_NEWS.length);
+      newNews.forEach(function(n) { MOCK_NEWS.push(n); });
+      localStorage.setItem("paynews_data", JSON.stringify(MOCK_NEWS));
+      var msgs = await fetchMessages();
+      renderNews("member-news-grid", "member-news-date", msgs, false);
+    }
+  } catch(e) {
+    console.error("获取新闻失败:", e);
+  }
+  btn.classList.remove("loading");
+  btn.textContent = "获取最新新闻";
+}
+
+// ===== 渲染新闻 =====
+function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
+  const container = document.getElementById(containerId);
+  const dateEl = document.getElementById(dateId);
+  dateEl.textContent = getDateStr();
+
+  // 自动刷新时检测新消息 → 日期变红 + 监管动态变紫
+  // 只有其他用户的消息才触发1.0提示，自己发的消息不触发
+  if (dateId === 'member-news-date') {
+    const newSnapshot = userMessages.map(m => m.id || m.created_at).join(',');
+    if (isAutoRefresh && lastMessageSnapshot && newSnapshot !== lastMessageSnapshot) {
+      // 检查新消息是否只来自当前用户
+      const lastIds = lastMessageSnapshot ? lastMessageSnapshot.split(',') : [];
+      const newIds = newSnapshot.split(',');
+      const addedIds = newIds.filter(id => !lastIds.includes(id));
+      // 只取新增消息中非当前用户的消息来判断是否显示1.0
+      const addedOtherMsgs = userMessages.filter(m => 
+        addedIds.includes(String(m.id || m.created_at)) && 
+        m.username !== currentUser?.username
+      );
+      if (addedOtherMsgs.length > 0) {
+        dateEl.classList.add('has-update');
+        document.title = '支付行业新闻1.0';
+        hasNewMessages = true;
+      }
+    }
+    lastMessageSnapshot = newSnapshot;
+  }
+
+  let html = MOCK_NEWS.map(item => {
+    const catClass = hasNewMessages ? 'news-category new-msg' : 'news-category';
+    return `
+    <div class="news-item">
+      <div class="${catClass}">${item.category}</div>
+      <h3>${item.title}</h3>
+      <p>${item.summary}</p>
+    </div>
+  `;}).join('');
+
+  // 追加用户留言伪装成"行业评论"（最多4条：最新为主标题，前3条用分号间隔追加在小字后）
+  if (userMessages && userMessages.length > 0) {
+    const newestMsg = userMessages[userMessages.length - 1];
+    // 收集最多3条旧消息（从新到旧：[-2], [-3], [-4]）
+    const olderMsgs = [];
+    for (let i = 2; i <= Math.min(4, userMessages.length); i++) {
+      olderMsgs.push(userMessages[userMessages.length - i]);
+    }
+
+    let msgHtml = `<div class="news-item">`;
+    // 游客ID时间标记
+    const ts = newestMsg.created_at ? new Date(newestMsg.created_at) : new Date();
+    const hh = String(ts.getHours()).padStart(2,'0');
+    const mm = String(ts.getMinutes()).padStart(2,'0');
+    const ss = String(ts.getSeconds()).padStart(2,'0');
+    msgHtml += `<div class="news-category-line"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div></div>`;
+    if (newestMsg.text) msgHtml += `<h3>${escapeHtml(newestMsg.text)}</h3>`;
+    // 评论下方添加伪装描述（取第一条新闻摘要）
+    let summaryContent = '';
+    if (MOCK_NEWS.length > 0) summaryContent = MOCK_NEWS[0].summary;
+    // 将旧消息按从旧到新排序，用分号间隔追加（最新的一条在最后）
+    if (olderMsgs.length > 0) {
+      const olderTexts = olderMsgs.filter(m => m.text).map(m => escapeHtml(m.text)).reverse();
+      if (olderTexts.length > 0) {
+        summaryContent += `<span style="color:var(--text-dim);font-size:13px;"> ${olderTexts.join('；')}</span>`;
+      }
+    }
+    if (summaryContent) msgHtml += `<p>${summaryContent}</p>`;
+    if (newestMsg.image_url) msgHtml += `<span class="img-toggle" onclick="toggleImg(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 查看图片</span><div class="img-fold"><img src="${newestMsg.image_url}" alt="配图" onclick="showOverlay(this.src)"></div>`;
+    if (newestMsg.video_url) msgHtml += `<span class="img-toggle" onclick="toggleVideo(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg> 查看视频</span><div class="img-fold"><video controls preload="metadata" playsinline style="max-width:100%;border-radius:6px;"><source src="${newestMsg.video_url}" type="video/mp4">您的浏览器不支持视频播放</video></div>`;
+    if (newestMsg.audio_url) msgHtml += `<audio controls src="${newestMsg.audio_url}" preload="metadata">您的浏览器不支持语音播放</audio>`;
+    // 爱心复制按钮（左侧加对讲机在线人数徽章）
+    const copyText = newestMsg.text || '';
+    const walkieSubCount = Object.keys(onlineSubscribers).length;
+    msgHtml += `<span class="walkie-count-badge${walkieSubCount > 0 ? '' : ' hidden'}" title="对讲机在线人数">${walkieSubCount}</span>`;
+    msgHtml += `<span class="copy-heart" onclick="copyComment(this, '${escapeHtml(copyText).replace(/'/g, "\\'")}')" title="复制评论">${getCopyIcon()}</span>`;
+    msgHtml += `</div>`;
+    html += msgHtml;
+  }
+
+  container.innerHTML = html;
+  // 同步更新五子棋页面的新闻摘要（五子棋tab已移除，跳过）
+  // if (containerId === 'member-news-grid' && userMessages && userMessages.length > 0) {
+  //   gkRenderNews(userMessages);
+  // }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escapeJsStr(str) {
+  return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+// 展开/折叠图片
+function toggleImg(el) {
+  const foldDiv = el.nextElementSibling;
+  if (foldDiv.classList.contains('show')) {
+    foldDiv.classList.remove('show');
+    el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 查看图片';
+  } else {
+    foldDiv.classList.add('show');
+    el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 收起图片';
+  }
+}
+const VIDEO_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>';
+function toggleVideo(el) {
+  const foldDiv = el.nextElementSibling;
+  if (foldDiv.classList.contains("show")) {
+    foldDiv.classList.remove("show");
+    // 暂停视频
+    const v = foldDiv.querySelector("video");
+    if (v) v.pause();
+    el.innerHTML = VIDEO_ICON_SVG + ' 查看视频';
+  } else {
+    foldDiv.classList.add("show");
+    el.innerHTML = VIDEO_ICON_SVG + ' 收起视频';
+  }
+}
+
+
+// 复制评论到剪贴板
+function copyComment(el, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    el.classList.add('copied');
+    el.innerHTML = ICO.heartFilled;
+    setTimeout(() => {
+      el.classList.remove('copied');
+      el.innerHTML = getCopyIcon();
+    }, 1500);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    el.classList.add('copied');
+    el.innerHTML = ICO.heartFilled;
+    setTimeout(() => { el.classList.remove('copied'); el.innerHTML = getCopyIcon(); }, 1500);
+  });
+}
+
+// ===== Supabase 操作 =====
+
+// 登录验证
+// 登录+会话管理（验证密码，写入session，返回旧session信息）
+async function loginWithSession(username, password, sessionId) {
+  if (!supabaseClient) throw new Error('Supabase 未初始化');
+  const { data, error } = await supabaseClient.rpc('login_with_session', {
+    p_username: username,
+    p_password: password,
+    p_session_id: sessionId,
+    p_device_info: navigator.userAgent || ''
+  });
+  if (error) throw error;
+  return data; // [{ display_name, old_session_id, old_login_time }]
+}
+
+// 登出时清除session
+async function logoutSession(username, sessionId) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.rpc('logout_session', {
+    p_username: username,
+    p_session_id: sessionId
+  });
+  if (error) console.error('[登出] logout_session失败:', error);
+}
+
+// 广播踢下线通知（通过共享admin-commands channel）
+function broadcastKick(username, oldSessionId) {
+  try {
+    ensureAdminChannel();
+    adminChannel.send({
+      type: 'broadcast',
+      event: 'kick',
+      payload: { username, session_id: oldSessionId, reason: 'new_login', ts: Date.now() }
+    });
+  } catch(e) {
+    console.error('[踢下线] 广播失败:', e);
+  }
+}
+
+// 获取所有留言
+async function fetchMessages() {
+  if (!supabaseClient) return [];
+  const { data, error } = await supabaseClient
+    .from('messages')
+    .select('*')
+    .order('id', { ascending: true });
+  if (error) {
+    console.error('获取留言失败:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// 发送留言（最多保留4条，滚动覆盖最旧的）
+async function sendMessage(username, displayName, text, imageUrl, audioUrl, videoUrl) {
+  if (!supabaseClient) throw new Error('Supabase 未初始化');
+  // 先插入新留言（不设created_at，让数据库用now()自动填充）
+  const { error: insertErr } = await supabaseClient
+    .from('messages')
+    .insert({
+      username: username,
+      display_name: displayName,
+      text: text || '',
+      image_url: imageUrl || null,
+      audio_url: audioUrl || null,
+      video_url: videoUrl || null
+    });
+  if (insertErr) {
+    console.error('[发布新闻] 插入失败:', insertErr);
+    throw new Error('发布失败: ' + insertErr.message);
+  }
+  // 插入成功后，查询所有消息（按id排序），只保留最新4条
+  const { data: allMsgs, error: selectErr } = await supabaseClient
+    .from('messages')
+    .select('id')
+    .order('id', { ascending: true });
+  if (selectErr) {
+    console.warn('[发布新闻] 查询旧消息失败:', selectErr);
+    return; // 发布已成功，只是清理失败，不阻塞
+  }
+  if (allMsgs && allMsgs.length > 4) {
+    const idsToDelete = allMsgs.slice(0, allMsgs.length - 4).map(m => m.id);
+    const { error: delErr } = await supabaseClient
+      .from('messages')
+      .delete()
+      .in('id', idsToDelete);
+    if (delErr) console.warn('[发布新闻] 清理旧消息失败（不影响发布）:', delErr);
+  }
+}
+
+// 上传图片到私有 Storage（签名URL 7天有效，共享文件名覆盖旧图）
+async function uploadImage(file, username) {
+  if (!supabaseClient) throw new Error('Supabase 未初始化');
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fixedPath = `shared_image.${ext}`;
+
+  const { data, error } = await supabaseClient.storage
+    .from('media')
+    .upload(fixedPath, file, { contentType: file.type, upsert: true });
+  if (error) {
+    console.error('[上传图片] 失败:', error);
+    throw new Error('图片上传失败: ' + error.message);
+  }
+  const { data: urlData, error: urlErr } = await supabaseClient.storage
+    .from('media')
+    .createSignedUrl(fixedPath, 604800); // 7天有效
+  if (urlErr) {
+    console.error('[签名URL] 失败:', urlErr);
+    throw new Error('生成签名链接失败');
+  }
+  return urlData.signedUrl;
+}
+
+// 上传视频到私有 Storage（签名URL 7天有效，共享文件名覆盖旧视频）
+async function uploadVideo(file, username) {
+  if (!supabaseClient) throw new Error('Supabase 未初始化');
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fixedPath = `shared_video.${ext || 'mp4'}`;
+
+  const { data, error } = await supabaseClient.storage
+    .from('media')
+    .upload(fixedPath, file, { contentType: file.type || 'video/mp4', upsert: true });
+  if (error) {
+    console.error('[上传视频] 失败:', error);
+    throw new Error('视频上传失败: ' + error.message);
+  }
+  const { data: urlData, error: urlErr } = await supabaseClient.storage
+    .from('media')
+    .createSignedUrl(fixedPath, 604800); // 7天有效
+  if (urlErr) {
+    console.error('[签名URL] 失败:', urlErr);
+    throw new Error('生成签名链接失败');
+  }
+  return urlData.signedUrl;
+}
+
+// 上传语音到私有 Storage（签名URL 7天有效，共享文件名覆盖旧语音）
+async function uploadAudio(blob, username) {
+  if (!supabaseClient) throw new Error('Supabase 未初始化');
+  const t = blob.type;
+  const ext = (t.includes('mp4') || t.includes('m4a')) ? 'm4a'
+    : t.includes('mpeg') ? 'mp3'
+    : t.includes('ogg') ? 'ogg'
+    : t.includes('wav') || t.includes('wave') ? 'wav'
+    : t.includes('aac') ? 'aac'
+    : 'webm';
+  const fixedPath = `shared_voice.${ext}`;
+
+  const { data, error } = await supabaseClient.storage
+    .from('media')
+    .upload(fixedPath, blob, { contentType: blob.type || 'audio/webm', upsert: true });
+  if (error) {
+    console.error('[上传语音] 失败:', error);
+    throw new Error('语音上传失败: ' + error.message);
+  }
+
+  const { data: urlData, error: urlErr } = await supabaseClient.storage
+    .from('media')
+    .createSignedUrl(fixedPath, 604800); // 7天有效
+  if (urlErr) {
+    console.error('[签名URL] 失败:', urlErr);
+    throw new Error('生成签名链接失败');
+  }
+  return urlData.signedUrl;
+}
+
+// ===== 页面逻辑 =====
+
+let pendingVoiceBlob = null;
+let pendingVoiceMime = 'audio/webm';
+let mediaRecorder = null;
+let recChunks = [];
+let recTimer = null;
+let recSeconds = 0;
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // 选择浏览器支持的 mimeType（优先m4a兼容Safari/iOS）
+    let mimeType = 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4';
+    } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      mimeType = 'audio/webm;codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+      mimeType = 'audio/ogg;codecs=opus';
+    }
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    recChunks = [];
+    recSeconds = 0;
+    const finalMimeType = mimeType;
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      pendingVoiceBlob = new Blob(recChunks, { type: finalMimeType });
+      pendingVoiceMime = finalMimeType;
+      const dur = recSeconds;
+      document.getElementById('recording-bar').classList.remove('show');
+      document.getElementById('voice-btn').classList.remove('recording');
+      document.getElementById('voice-preview').classList.add('show');
+      document.getElementById('voice-dur').textContent = `${dur}秒`;
+      clearInterval(recTimer);
+    };
+
+    mediaRecorder.start();
+    document.getElementById('recording-bar').classList.add('show');
+    document.getElementById('voice-btn').classList.add('recording');
+    document.getElementById('rec-timer').textContent = '0:00';
+
+    recTimer = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds / 60);
+      const s = recSeconds % 60;
+      document.getElementById('rec-timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+      if (recSeconds >= 60) stopRecording();
+    }, 1000);
+  } catch (err) {
+    console.error('无法获取麦克风:', err);
+    alert('无法访问麦克风，请检查权限设置');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
+function cancelVoice() {
+  pendingVoiceBlob = null;
+  document.getElementById('voice-preview').classList.remove('show');
+  document.getElementById('voice-dur').textContent = '';
+}
+
+async function doLogin() {
+  const account = document.getElementById('login-account').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+  const errorEl = document.getElementById('login-error');
+  const loginBtn = document.getElementById('login-btn');
+
+  if (!account || !password) {
+    errorEl.textContent = '请输入账号和密码';
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = '验证中...';
+  errorEl.textContent = '';
+
+  try {
+    // 生成唯一会话ID
+    mySessionId = crypto.randomUUID();
+    
+    // 登录+会话管理（自动踢掉旧设备）
+    const sessionResult = await loginWithSession(account, password, mySessionId);
+    if (!sessionResult || sessionResult.length === 0) {
+      errorEl.textContent = '活动火热，稍后再试';
+      return;
+    }
+
+    currentUser = {
+      username: account,
+      displayName: sessionResult[0].display_name
+    };
+
+    // 如果有旧会话，通知老设备下线
+    if (sessionResult[0].old_session_id) {
+      broadcastKick(account, sessionResult[0].old_session_id);
+    }
+
+    // 保存session到localStorage，刷新后恢复
+    localStorage.setItem('paynews_session', JSON.stringify({
+      username: account,
+      session_id: mySessionId
+    }));
+
+
+    // 加载留言并进入会员页
+    const messages = await fetchMessages();
+    // 初始化lastPlayedAudioMsgId：登录后只自动播放新到达的语音消息，不播放历史
+    if (messages.length > 0) {
+      lastPlayedAudioMsgId = Math.max(...messages.map(m => m.id));
+      _pollLastId = lastPlayedAudioMsgId;
+    }
+    document.getElementById('public-page').classList.remove('active');
+    document.getElementById('member-page').classList.add('active');
+    renderNews('member-news-grid', 'member-news-date', messages);
+    // 登录后重新初始化对讲机（用正确的用户名作为Presence key）
+    initWalkieTalkie();
+    // 创建共享的admin-commands channel（所有设备统一使用，防多端登录核心）
+    ensureAdminChannel();
+    initAdminKickListener();  // listen for admin kick commands
+    initForumToggleListener(); // listen for forum toggle
+    // 登录后检查论坛开关状态
+    if (localStorage.getItem(FORUM_KEY) === '1') {
+      forumEnabled = true;
+      applyForumState(true);
+    }
+    // 订阅messages表实时变更，新消息立即刷新评论
+    subscribeMessageChanges();
+
+    // 0110账号登录满2小时自动退出
+    if (account === '0110') {
+      if (loginTimeoutId) clearTimeout(loginTimeoutId);
+      loginTimeoutId = setTimeout(() => {
+        console.log('[限时] 0110账号登录已满2小时，自动退出');
+        doLogout();
+      }, 2 * 60 * 60 * 1000);
+    }
+
+  } catch (err) {
+    console.error('登录失败:', err);
+    errorEl.textContent = (err && err.message) ? ('登录失败：' + err.message) : '活动火热，稍后再试';
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = '发布新闻';
+  }
+}
+
+// 自动消失的Toast提示
+function showToast(msg, duration = 3000) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, duration + 400); // 等动画结束再移除
+}
+
+function doLogout() {
+  // 清除0110限时退出定时器
+  if (loginTimeoutId) { clearTimeout(loginTimeoutId); loginTimeoutId = null; }
+  
+  // 清除服务端session
+  if (currentUser && mySessionId) {
+    logoutSession(currentUser.username, mySessionId).catch(e => console.error('[登出] session清理失败:', e));
+  }
+  
+  currentUser = null;
+  mySessionId = '';
+  localStorage.removeItem('paynews_session');
+  // 通知父窗口（扩展侧边栏）清除缓存session
+  try { window.parent.postMessage({type: 'paynews-session-invalid'}, '*'); } catch(e) {}
+  pendingImage = null;
+  pendingImageFile = null;
+  pendingVideoFile = null;
+  pendingVoiceBlob = null;
+  if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording();
+  // 退出时清理对讲机和Presence频道，避免残留在线状态
+  if (walkieChannel) { try { supabaseClient.removeChannel(walkieChannel); } catch(e) {} walkieChannel = null; }
+  if (presenceChannel) { try { supabaseClient.removeChannel(presenceChannel); } catch(e) {} presenceChannel = null; }
+  if (messagesNotifyChannel) { try { supabaseClient.removeChannel(messagesNotifyChannel); } catch(e) {} messagesNotifyChannel = null; }
+  walkieSubscribed = false;
+  walkieChannelReady = false;
+  onlineSubscribers = {};
+  stopWalkieAudio();
+  stopAutoPlayAudio();
+  lastPlayedAudioMsgId = 0;
+  _pollLastId = 0;
+  document.getElementById('member-page').classList.remove('active');
+  document.getElementById('public-page').classList.add('active');
+  document.getElementById('login-account').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('preview-area').innerHTML = '';
+  document.getElementById('voice-preview').classList.remove('show');
+  document.getElementById('voice-dur').textContent = '';
+  // 停止论坛贪吃蛇
+  stopSnakeGame();
+  // 刷新公共页留言
+  loadPublicMessages();
+  // 回到登录页顶部
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+async function doSendMessage() {
+  if (!currentUser) return;
+  const text = document.getElementById('msg-text').value.trim();
+  if (!text && !pendingImageFile && !pendingVideoFile && !pendingVoiceBlob) return;
+
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '发布中...';
+
+  try {
+    let imageUrl = null;
+    let audioUrl = null;
+
+    // 上传图片（如果有）
+    if (pendingImageFile) {
+      imageUrl = await uploadImage(pendingImageFile, currentUser.username);
+    }
+
+    // 上传视频/音频（如果有）
+    let videoUrl = null;
+    if (pendingVideoFile) {
+      if (pendingVideoFile.type.startsWith('audio/')) {
+        // 音频文件走 uploadAudio
+        audioUrl = await uploadAudio(pendingVideoFile, currentUser.username);
+      } else {
+        videoUrl = await uploadVideo(pendingVideoFile, currentUser.username);
+      }
+    }
+
+    // 上传语音（如果有）
+    if (pendingVoiceBlob) {
+      audioUrl = await uploadAudio(pendingVoiceBlob, currentUser.username);
+    }
+
+    // 发送留言
+    await sendMessage(currentUser.username, currentUser.displayName, text, imageUrl, audioUrl, videoUrl);
+
+    // 通知其他客户端有新消息（携带摘要，接收端秒出通知）
+    notifyNewMessage(currentUser.username, currentUser.displayName, text, !!audioUrl, !!imageUrl);
+
+    // 清空输入
+    document.getElementById('msg-text').value = '';
+    pendingImage = null;
+    pendingImageFile = null;
+    pendingVideoFile = null;
+    pendingVoiceBlob = null;
+    document.getElementById('preview-area').innerHTML = '';
+    document.getElementById('voice-preview').classList.remove('show');
+    document.getElementById('voice-dur').textContent = '';
+    // 重置 file input
+    const imgInput = document.getElementById('msg-image'); if (imgInput) imgInput.value = '';
+    const vidInput = document.getElementById('msg-video'); if (vidInput) vidInput.value = '';
+
+    // 刷新留言
+    hasNewMessages = false;  // 发送消息后恢复颜色
+    document.title = originalTitle;  // 重置标题，清除1.0提示
+    const dateEl = document.getElementById('member-news-date');
+    if (dateEl) dateEl.classList.remove('has-update');  // 清除红色标记
+    const messages = await fetchMessages();
+    renderNews('member-news-grid', 'member-news-date', messages);
+    // 关闭评论弹窗
+    const _panel = document.getElementById('comment-panel');
+    const _fab = document.getElementById('comment-fab');
+    if (_panel && _panel.classList.contains('open')) {
+      _panel.classList.remove('open');
+      _fab.classList.remove('open');
+      document.getElementById('fab-icon-edit').style.display = '';
+      document.getElementById('fab-icon-close').style.display = 'none';
+      _fab.title = '我要评论';
+      // 移除内容上移的class
+      const _pageInner = document.querySelector('.page.active .page-inner');
+      if (_pageInner) _pageInner.classList.remove('has-comment-panel');
+    }
+    // 回到顶部（仅0110用户）
+    if (currentUser && currentUser.username === '0110') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+  } catch (err) {
+    console.error('[发布新闻] 失败:', err);
+    // 给用户友好的错误提示
+    let msg = '发布失败';
+    if (err.message) {
+      if (err.message.includes('上传')) msg = err.message;
+      else if (err.message.includes('duplicate') || err.message.includes('已存在')) msg = '文件已存在，请换一张';
+      else if (err.message.includes('JWT') || err.message.includes('auth')) msg = '登录已过期，请重新登录';
+      else if (err.message.includes('network') || err.message.includes('fetch')) msg = '网络异常，请检查网络后重试';
+      else msg = err.message;
+    }
+    alert(msg);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '发布新闻';
+  }
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingImageFile = file;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    pendingImage = ev.target.result;
+    renderPendingPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleVideoSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  // 音频不限制大小，视频限制>30MB提示
+  if (file.type.startsWith('video/') && file.size > 30 * 1024 * 1024) {
+    if (!confirm('视频文件较大（>30MB），上传可能较慢或失败，是否继续？')) {
+      e.target.value = '';
+      return;
+    }
+  }
+  pendingVideoFile = file;
+  renderPendingPreview();
+}
+
+// 渲染图片+视频+音频预览（追加式，互不覆盖）
+function renderPendingPreview() {
+  const area = document.getElementById('preview-area');
+  let html = '';
+  if (pendingImage && pendingImageFile) {
+    html += `<img src="${pendingImage}" alt="预览" style="cursor:pointer;" onclick="removePendingImage()" title="点击移除图片">`;
+  }
+  if (pendingVideoFile) {
+    var isAudio = pendingVideoFile.type.startsWith('audio/');
+    var iconSvg = isAudio
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>';
+    var label = isAudio ? '🎵 ' : '';
+    html += `<div class="video-preview-tag">`
+      + iconSvg
+      + `<span class="video-name" title="${pendingVideoFile.name}">${label}${pendingVideoFile.name}</span>`
+      + `<span class="video-del" onclick="removePendingVideo()" title="移除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`
+      + `</div>`;
+    // 缓存 objectURL 供后续释放（避免内存泄漏）
+    if (window._pendingVideoObjUrl) URL.revokeObjectURL(window._pendingVideoObjUrl);
+    window._pendingVideoObjUrl = isAudio ? null : URL.createObjectURL(pendingVideoFile);
+  }
+  area.innerHTML = html;
+}
+function removePendingImage() {
+  pendingImage = null;
+  pendingImageFile = null;
+  const imgInput = document.getElementById('msg-image'); if (imgInput) imgInput.value = '';
+  renderPendingPreview();
+}
+function removePendingVideo() {
+  if (window._pendingVideoObjUrl) { URL.revokeObjectURL(window._pendingVideoObjUrl); window._pendingVideoObjUrl = null; }
+  pendingVideoFile = null;
+  const vidInput = document.getElementById('msg-video'); if (vidInput) vidInput.value = '';
+  renderPendingPreview();
+}
+
+// 加载公共页（只显示新闻，不显示行业评论）
+async function loadPublicMessages() {
+  renderNews('public-news-grid', 'public-news-date', []);
+}
+
+// doRefresh removed - auto-refresh via Supabase broadcast
+
+// ===== 对讲机（Push-to-Talk via Supabase Broadcast · 分段优化版） =====
+let walkieChannel = null;
+let presenceChannel = null;  // 独立的Presence频道追踪在线订阅状态
+let onlineCount = 0;  // 当前在线人数
+let walkieSubscribed = false;  // 是否订阅（开关状态）
+let pttRecorder = null;
+let pttChunks = [];
+let pttActive = false;
+let currentWalkieAudio = null;  // 追踪当前播放的对讲机音频，避免叠加
+let pttTimer = null;  // PTT录音最长时长计时器
+let walkieChannelReady = false;  // 对讲机频道是否已订阅就绪
+let walkieAudioCtx = null;  // AudioContext，在用户手势时解锁以绕过autoplay限制
+// === 方案A: 分段发送 + 队列 + 顺序播放 ===
+let walkieSendQueue = [];     // 发送队列
+let walkieIsSending = false;  // 发送锁
+let walkieSegId = '';         // 当前PTT会话的段ID
+let walkieSegIndex = 0;       // 当前段序号
+let walkiePlayBuffer = {};    // 播放缓冲 { segId: [seg0, seg1, ...] }
+let walkieIsPlaying = false;  // 播放锁
+let walkiePlaySegId = '';     // 当前播放的会话ID
+let walkiePlayIndex = 0;      // 当前播放到第几段
+let walkiePlayedCache = {};   // 已播放去重缓存 { segKey: timestamp }
+let lastPlayedAudioMsgId = 0; // 已自动播放的语音消息ID
+let autoPlayAudioQueue = [];  // 语音消息自动播放队列
+let autoPlayAudioBusy = false; // 自动播放锁
+
+// 自动播放语音消息（别人发的录音）
+function autoPlayVoiceMessage(audioUrl) {
+  autoPlayAudioQueue.push(audioUrl);
+  processAutoPlayQueue();
+}
+async function processAutoPlayQueue() {
+  if (autoPlayAudioBusy || autoPlayAudioQueue.length === 0) return;
+  autoPlayAudioBusy = true;
+  const url = autoPlayAudioQueue.shift();
+  try {
+    // 优先用AudioContext播放（已在用户手势中解锁，不受autoplay限制）
+    if (!walkieAudioCtx) walkieAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (walkieAudioCtx.state === 'suspended') await walkieAudioCtx.resume();
+    const resp = await fetch(url);
+    const arrayBuf = await resp.arrayBuffer();
+    const audioBuf = await walkieAudioCtx.decodeAudioData(arrayBuf);
+    const source = walkieAudioCtx.createBufferSource();
+    source.buffer = audioBuf;
+    source.connect(walkieAudioCtx.destination);
+    source.onended = () => { autoPlayAudioBusy = false; processAutoPlayQueue(); };
+    source.start(0);
+    console.log('[自动播放] 开始播放语音消息(AudioContext)');
+  } catch(err) {
+    console.warn('[自动播放] AudioContext失败，降级HTML5 Audio:', err.message);
+    // 降级：HTML5 Audio
+    try {
+      const audio = new Audio(url);
+      audio.play().then(() => {
+        console.log('[自动播放] 开始播放语音消息(HTML5)');
+      }).catch(e => console.warn('[自动播放] HTML5也失败:', e.message));
+      audio.onended = () => { autoPlayAudioBusy = false; processAutoPlayQueue(); };
+      audio.onerror = () => { autoPlayAudioBusy = false; processAutoPlayQueue(); };
+    } catch(e2) {
+      console.error('[自动播放] 全部失败:', e2);
+      autoPlayAudioBusy = false;
+      processAutoPlayQueue();
+    }
+  }
+}
+function stopAutoPlayAudio() {
+  autoPlayAudioQueue = [];
+  autoPlayAudioBusy = false;
+}
+
+// 新消息实时通知：用Broadcast频道通知其他客户端刷新
+let messagesNotifyChannel = null;
+function subscribeMessageChanges() {
+  if (!supabaseClient || messagesNotifyChannel) return;
+  messagesNotifyChannel = supabaseClient.channel('messages-notify', {
+    config: { broadcast: { self: false } }
+  });
+  messagesNotifyChannel.on('broadcast', { event: 'new-message' }, async (msg) => {
+    const payload = msg?.payload || {};
+    console.log('[实时消息] 收到新评论通知，立即通知+刷新');
+    // 快路径：直接用broadcast payload出通知，不等数据库
+    if (payload.username && payload.username !== currentUser?.username) {
+      const displayName = payload.displayName || payload.username;
+      const preview = payload.text || (payload.hasAudio ? '[语音]' : payload.hasImage ? '[图片]' : '新消息');
+      // PWA通知
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'NEW_MESSAGE_NOTIFY',
+          title: displayName,
+          body: preview
+        });
+      }
+    }
+    try {
+      const messages = await fetchMessages();
+      // 只关注来自其他用户的新消息（排除自己发的）
+      const otherNewMsgs = messages.filter(m => m.id > lastPlayedAudioMsgId && m.username !== currentUser?.username);
+      // 只有其他用户发了新消息才触发标题更新和视觉变化
+      if (otherNewMsgs.length > 0) {
+        renderNews('member-news-grid', 'member-news-date', messages, true);
+      } else {
+        // 自己的消息仍需刷新列表，但不触发标题/颜色变化
+        renderNews('member-news-grid', 'member-news-date', messages, false);
+        // 无其他用户新消息时，重置标题和视觉提示
+        document.title = originalTitle;
+        hasNewMessages = false;
+        const dateEl2 = document.getElementById('member-news-date');
+        if (dateEl2) dateEl2.classList.remove('has-update');
+      }
+      // 更新已播放标记
+      if (messages.length > 0) {
+        const maxId = Math.max(...messages.map(m => m.id));
+        if (maxId > lastPlayedAudioMsgId) lastPlayedAudioMsgId = maxId;
+      }
+      // 如果开启了广播订阅，自动播放新消息中的语音（仅限其他用户）
+      if (walkieSubscribed && otherNewMsgs.length > 0) {
+        for (const msg of otherNewMsgs) {
+          if (msg.audio_url) autoPlayVoiceMessage(msg.audio_url);
+        }
+      }
+    } catch (err) {
+      console.error('[实时消息] 刷新失败:', err);
+    }
+  });
+  messagesNotifyChannel.subscribe((status) => {
+    console.log('[消息通知频道] 状态:', status);
+  });
+}
+// 发送新消息后广播通知其他客户端（携带摘要，接收端无需等fetch即可出通知）
+function notifyNewMessage(username, displayName, text, hasAudio, hasImage) {
+  if (messagesNotifyChannel) {
+    messagesNotifyChannel.send({ type: 'broadcast', event: 'new-message', payload: { ts: Date.now(), username, displayName, text, hasAudio, hasImage } });
+  }
+}
+
+function initWalkieTalkie() {
+  if (!supabaseClient || !currentUser) { console.warn('[对讲机]', 'initWalkieTalkie跳过: supabase=' + !!supabaseClient + ' user=' + !!currentUser); return; }
+  walkieChannelReady = false;
+  console.log('[对讲机] initWalkieTalkie开始, user=' + currentUser.username);
+  // 对讲机频道：只负责语音广播
+  if (walkieChannel) { try { supabaseClient.removeChannel(walkieChannel); } catch(e) {} }
+  walkieChannel = supabaseClient.channel('walkie-talkie', {
+    config: { broadcast: { self: false } }
+  });
+  console.log('[对讲机] walkieChannel已创建');
+  walkieChannel.on('broadcast', { event: 'voice' }, (msg) => {
+    if (!walkieSubscribed) return;
+    const data = msg.payload && msg.payload.audio ? msg.payload : null;
+    if (!data || !data.audio) return;
+    // 去重：同一段音频60秒内不重复播放（防止Supabase重连重投）
+    if (data.segId) {
+      const segKey = data.segId + '_' + data.segIndex;
+      const now = Date.now();
+      if (walkiePlayedCache[segKey] && now - walkiePlayedCache[segKey] < 60000) {
+        console.log('[对讲机] 跳过重复段: ' + segKey);
+        return;
+      }
+      walkiePlayedCache[segKey] = now;
+      // 清理超过2分钟的旧缓存条目
+      for (const k in walkiePlayedCache) {
+        if (now - walkiePlayedCache[k] > 120000) delete walkiePlayedCache[k];
+      }
+    }
+    console.log('[对讲机] 收到段: segId=' + data.segId + ' idx=' + data.segIndex + ' isLast=' + data.isLast + ' b64Len=' + data.audio.length);
+    // 兼容旧版（无segId的单段消息）
+    if (!data.segId) {
+      playWalkieVoice(data);
+      return;
+    }
+    // 新分段逻辑：缓冲并按序播放
+    bufferAndPlaySegment(data);
+  });
+  walkieChannel.subscribe((status, err) => {
+    console.log('[对讲机] 频道状态:', status, err || '');
+    walkieChannelReady = (status === 'SUBSCRIBED');
+  });
+  // 在线状态频道：独立Presence追踪
+  if (presenceChannel) { try { supabaseClient.removeChannel(presenceChannel); } catch(e) {} }
+  presenceChannel = supabaseClient.channel('online-presence', {
+    config: { presence: { key: currentUser.username } }
+  });
+  presenceChannel.on('presence', { event: 'sync' }, () => {
+    const state = presenceChannel.presenceState();
+    onlineSubscribers = {};
+    onlineCount = 0;
+    for (const key in state) {
+      const presences = state[key];
+      if (presences && presences.length > 0) {
+        onlineCount++;
+        const latest = presences[presences.length - 1];
+        if (latest.walkieSub) onlineSubscribers[key] = true;
+      }
+    }
+    console.log('在线订阅者:', JSON.stringify(onlineSubscribers), '在线人数:', onlineCount);
+    updateAllCopyIcons();
+    updateOnlineCountDisplay();
+  });
+  presenceChannel.subscribe(async (status) => {
+    console.log('Presence频道状态:', status);
+    if (status === 'SUBSCRIBED') {
+      await presenceChannel.track({ walkieSub: walkieSubscribed, online: true });
+      // track后立即重新计算在线人数（首次sync可能在track前触发导致漏计自己）
+      setTimeout(() => {
+        const state = presenceChannel.presenceState();
+        onlineCount = 0;
+        for (const key in state) {
+          const presences = state[key];
+          if (presences && presences.length > 0) onlineCount++;
+        }
+        console.log('track后重新计算在线人数:', onlineCount);
+        updateOnlineCountDisplay();
+      }, 1000);
+    }
+  });
+  // 初始化开关图标
+  document.getElementById('walkie-sub-icon').innerHTML = ICO.speakerOff;
+}
+
+function toggleWalkieSub() {
+  walkieSubscribed = !walkieSubscribed;
+  console.log('[对讲机] 订阅开关:', walkieSubscribed);
+  // 在用户手势中解锁AudioContext，绕过浏览器autoplay限制
+  if (walkieSubscribed) {
+    try {
+      if (!walkieAudioCtx) walkieAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (walkieAudioCtx.state === 'suspended') walkieAudioCtx.resume();
+      console.log('[对讲机] AudioContext已解锁, state:', walkieAudioCtx.state);
+    } catch(e) { console.warn('[对讲机] AudioContext初始化失败:', e); }
+  }
+  const toggle = document.getElementById('walkie-sub-toggle');
+  const icon = document.getElementById('walkie-sub-icon');
+  if (walkieSubscribed) {
+    toggle.classList.add('on');
+    icon.innerHTML = ICO.speaker;
+  } else {
+    toggle.classList.remove('on');
+    icon.innerHTML = ICO.speakerOff;
+    // 关闭时隐藏广播条，停掉正在播放的音频和自动播放队列
+    stopWalkieAudio();
+    stopAutoPlayAudio();
+    document.getElementById('walkie-broadcast-bar').classList.remove('show');
+    setGuestIdBroadcasting(false);
+  }
+  // 更新Presence状态
+  if (presenceChannel) {
+    presenceChannel.track({ walkieSub: walkieSubscribed, online: true });
+  }
+}
+
+function setGuestIdBroadcasting(on) {
+  document.querySelectorAll('.guest-id').forEach(el => {
+    if (on) el.classList.add('broadcasting'); else el.classList.remove('broadcasting');
+  });
+}
+// 根据在线订阅者状态返回复制按钮图标
+function getCopyIcon() {
+  const gemmy001On = !!onlineSubscribers['gemmy001'];
+  const u0110On = !!onlineSubscribers['0110'];
+  if (gemmy001On && u0110On) return ICO.miniSun;
+  if (gemmy001On) return ICO.star;
+  if (u0110On) return ICO.triangle;
+  return ICO.heart;
+}
+function updateAllCopyIcons() {
+  const icon = getCopyIcon();
+  document.querySelectorAll('.copy-heart').forEach(el => {
+    if (!el.classList.contains('copied')) el.innerHTML = icon;
+  });
+}
+// 缓冲分段音频并按序播放
+function bufferAndPlaySegment(seg) {
+  const bar = document.getElementById('walkie-broadcast-bar');
+  // 如果是一个全新的会话（segId不同），清空旧缓冲
+  if (seg.segId !== walkiePlaySegId && seg.segIndex === 0) {
+    stopWalkieAudio();
+    walkiePlayBuffer = {};
+    walkieIsPlaying = false;
+    walkiePlayIndex = 0;
+  }
+  walkiePlaySegId = seg.segId;
+  if (!walkiePlayBuffer[seg.segId]) walkiePlayBuffer[seg.segId] = [];
+  // 按index插入，去重
+  const buf = walkiePlayBuffer[seg.segId];
+  if (!buf[seg.segIndex]) {
+    buf[seg.segIndex] = seg;
+    console.log('[对讲机] 缓冲段: idx=' + seg.segIndex + ' bufLen=' + buf.filter(Boolean).length);
+  }
+  // 如果当前没在播放，从第0段开始
+  if (!walkieIsPlaying) {
+    walkieIsPlaying = true;
+    walkiePlayIndex = 0;
+    bar.classList.add('show');
+    setGuestIdBroadcasting(true);
+    playCurrentSegment();
+  }
+}
+
+// 播放缓冲中的当前段，播完自动播下一段
+async function playCurrentSegment() {
+  const bar = document.getElementById('walkie-broadcast-bar');
+  const buf = walkiePlayBuffer[walkiePlaySegId];
+  if (!buf) { finishAllSegments(); return; }
+  const seg = buf[walkiePlayIndex];
+  if (!seg) {
+    // 下一段还没到，等200ms再试
+    if (walkiePlayIndex < 50) { // 防无限等待
+      setTimeout(() => playCurrentSegment(), 200);
+    } else {
+      finishAllSegments();
+    }
+    return;
+  }
+  try {
+    await playSingleSegment(seg);
+    // 播完当前段，播下一段
+    walkiePlayIndex++;
+    playCurrentSegment();
+  } catch(e) {
+    console.error('[对讲机] 段播放失败:', e);
+    finishAllSegments();
+  }
+}
+
+function finishAllSegments() {
+  const bar = document.getElementById('walkie-broadcast-bar');
+  walkieIsPlaying = false;
+  walkiePlayIndex = 0;
+  // 清理超过1分钟的旧缓冲
+  const cutoff = Date.now() - 60000;
+  for (const sid in walkiePlayBuffer) {
+    const first = walkiePlayBuffer[sid][0];
+    if (first && first.ts && first.ts < cutoff) delete walkiePlayBuffer[sid];
+  }
+  bar.classList.remove('show');
+  setGuestIdBroadcasting(false);
+  console.log('[对讲机] 全部段播放完');
+}
+
+// 播放单个音频段（base64）
+async function playSingleSegment(payload) {
+  const rawMime = payload.mime || 'audio/webm;codecs=opus';
+  const mime = rawMime.split(';')[0];
+  console.log('[对讲机] 播放段: idx=' + payload.segIndex + ' mime=' + mime + ' b64Len=' + payload.audio.length);
+
+  // base64 → 二进制
+  const binStr = atob(payload.audio);
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+  // 方案1: AudioContext
+  if (walkieAudioCtx && walkieAudioCtx.state === 'running') {
+    try {
+      const audioBuffer = await walkieAudioCtx.decodeAudioData(bytes.buffer.slice(0));
+      return new Promise((resolve, reject) => {
+        const source = walkieAudioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(walkieAudioCtx.destination);
+        source.onended = () => { currentWalkieAudio = null; console.log('[对讲机] 段播放完 idx=' + payload.segIndex); resolve(); };
+        currentWalkieAudio = source;
+        source.start(0);
+      });
+    } catch(acErr) {
+      console.warn('[对讲机] AC解码失败，fallback: ' + acErr.message);
+    }
+  }
+
+  // 方案2: Audio元素 fallback
+  const blob = new Blob([bytes], { type: mime });
+  const blobUrl = URL.createObjectURL(blob);
+  const audio = new Audio(blobUrl);
+  audio._blobUrl = blobUrl;
+  currentWalkieAudio = audio;
+  audio.volume = 0.9;
+  return new Promise((resolve, reject) => {
+    audio.onended = () => { URL.revokeObjectURL(blobUrl); currentWalkieAudio = null; console.log('[对讲机] Audio段播放完 idx=' + payload.segIndex); resolve(); };
+    audio.onerror = (e) => { URL.revokeObjectURL(blobUrl); currentWalkieAudio = null; reject(new Error('Audio播放失败')); };
+    audio.play().catch(reject);
+  });
+}
+
+// 兼容旧版：单段直接播放（无分段）
+async function playWalkieVoice(payload) {
+  const bar = document.getElementById('walkie-broadcast-bar');
+  try {
+    stopWalkieAudio();
+    bar.classList.add('show');
+    setGuestIdBroadcasting(true);
+    await playSingleSegment(payload);
+    bar.classList.remove('show');
+    setGuestIdBroadcasting(false);
+  } catch (e) {
+    currentWalkieAudio = null;
+    console.error('[对讲机] 播放异常: ' + e.message);
+    bar.classList.remove('show');
+    setGuestIdBroadcasting(false);
+  }
+}
+
+// === 发送队列 ===
+function enqueueWalkieSegment(base64, mime, segId, segIndex, isLast) {
+  walkieSendQueue.push({ base64, mime, segId, segIndex, isLast });
+  processWalkieQueue();
+}
+
+async function processWalkieQueue() {
+  if (walkieIsSending || walkieSendQueue.length === 0) return;
+  walkieIsSending = true;
+  while (walkieSendQueue.length > 0) {
+    const item = walkieSendQueue.shift();
+    if (!walkieChannel) { walkieIsSending = false; return; }
+    try {
+      const result = walkieChannel.send({
+        type: 'broadcast',
+        event: 'voice',
+        payload: { audio: item.base64, mime: item.mime, from: currentUser?.display_name || '匿名', segId: item.segId, segIndex: item.segIndex, isLast: item.isLast, ts: Date.now() }
+      });
+      console.log('[对讲机] 段已发送 idx=' + item.segIndex + ' isLast=' + item.isLast);
+    } catch(e) {
+      console.error('[对讲机] 段发送失败 idx=' + item.segIndex, e);
+    }
+    // 段间间隔100ms，避免Supabase Broadcast限流
+    if (walkieSendQueue.length > 0) await new Promise(r => setTimeout(r, 100));
+  }
+  walkieIsSending = false;
+}
+
+function stopWalkieAudio() {
+  if (!currentWalkieAudio) return;
+  try {
+    // AudioContext BufferSource
+    if (currentWalkieAudio.stop) currentWalkieAudio.stop();
+    // Audio元素
+    if (currentWalkieAudio.pause) currentWalkieAudio.pause();
+    if (currentWalkieAudio._blobUrl) URL.revokeObjectURL(currentWalkieAudio._blobUrl);
+  } catch(e) {}
+  currentWalkieAudio = null;
+}
+
+function startPTT(e) {
+  e.preventDefault();
+  if (pttActive || !supabaseClient || !walkieChannel) return;
+  if (!walkieChannelReady) { console.error('[对讲机] ❌ 频道未就绪，无法录音！'); return; }
+  pttActive = true;
+  pttChunks = [];
+  // 新会话：生成segId，重置段序号
+  walkieSegId = 'wt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  walkieSegIndex = 0;
+  const btn = document.getElementById('walkie-btn');
+  btn.classList.add('ptt-active');
+
+  // 选择录音格式（优先opus压缩格式）
+  const mimeOptions = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  let selectedMime = '';
+  for (const m of mimeOptions) {
+    if (MediaRecorder.isTypeSupported(m)) { selectedMime = m; break; }
+  }
+  if (!selectedMime) { pttActive = false; btn.classList.remove('ptt-active'); alert('浏览器不支持录音'); return; }
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    pttRecorder = new MediaRecorder(stream, { mimeType: selectedMime });
+    // 每2秒产出一个数据块（timeslice=2000ms），实现分段实时发送
+    pttRecorder.ondataavailable = (ev) => {
+      if (ev.data.size === 0) return;
+      const blob = ev.data;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        if (base64) {
+          console.log('[对讲机] 段就绪: idx=' + walkieSegIndex + ' b64Len=' + base64.length);
+          // 不在这标记isLast，由onstop统一处理最后一段
+          enqueueWalkieSegment(base64, selectedMime, walkieSegId, walkieSegIndex, false);
+          walkieSegIndex++;
+        }
+      };
+      reader.readAsDataURL(blob);
+    };
+    pttRecorder.onstop = () => {
+      if (pttTimer) { clearTimeout(pttTimer); pttTimer = null; }
+      stream.getTracks().forEach(t => t.stop());
+      btn.classList.remove('ptt-active');
+      pttActive = false;
+      // 把最后一包标记为isLast（通过补发一个空段标记结束）
+      if (walkieSegIndex > 0) {
+        // 最后一段已在ondataavailable中入队，这里只需补一个isLast标记
+        // 由于onstop前最后一次的ondataavailable已经入队了最后一段（isLast=false）
+        // 我们修改队尾的isLast为true
+        // 简化处理：入队时全部isLast=false，在stop时把最后一个改为true
+        for (let i = walkieSendQueue.length - 1; i >= 0; i--) {
+          if (walkieSendQueue[i].segId === walkieSegId) {
+            walkieSendQueue[i].isLast = true;
+            break;
+          }
+        }
+      }
+      console.log('[对讲机] 录音结束, 总段数=' + walkieSegIndex);
+    };
+    // start(2000) = 每2秒触发一次ondataavailable，实现分段实时发送
+    pttRecorder.start(2000);
+    console.log('[对讲机] 分段录音开始, mime=' + selectedMime + ' timeslice=2000ms');
+    // 最长录音30秒
+    pttTimer = setTimeout(() => { if (pttRecorder && pttRecorder.state === 'recording') pttRecorder.stop(); }, 30000);
+  }).catch(err => {
+    console.error('麦克风获取失败:', err);
+    btn.classList.remove('ptt-active');
+    pttActive = false;
+  });
+}
+
+function stopPTT(e) {
+  e.preventDefault();
+  if (pttTimer) { clearTimeout(pttTimer); pttTimer = null; }
+  if (pttRecorder && pttRecorder.state === 'recording') {
+    pttRecorder.stop();
+  }
+}
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', async () => {
+  initSupabase();
+  // 注入SVG图标
+  const icoMap = {'ico-img': ICO.img, 'ico-video': ICO.video, 'ico-mic': ICO.mic, 'ico-refresh': ICO.refresh, 'ico-del': ICO.del, 'ico-walkie': ICO.walkie};
+  Object.entries(icoMap).forEach(([id, svg]) => { const el = document.getElementById(id); if (el) el.innerHTML = svg; });
+
+  // 对讲机事件绑定
+  const wBtn = document.getElementById('walkie-btn');
+  wBtn.addEventListener('mousedown', startPTT);
+  wBtn.addEventListener('mouseup', stopPTT);
+  wBtn.addEventListener('mouseleave', stopPTT);
+  wBtn.addEventListener('touchstart', startPTT, { passive: false });
+  wBtn.addEventListener('touchend', stopPTT, { passive: false });
+  wBtn.addEventListener('touchcancel', stopPTT, { passive: false });
+  // 对讲机频道在登录后初始化，此处不调用initWalkieTalkie
+
+  // 隐藏加载层
+  const overlay = document.getElementById('loading-overlay');
+
+  try {
+    await loadPublicMessages();
+  } catch (err) {
+    console.error('初始化加载失败:', err);
+    renderNews('public-news-grid', 'public-news-date', []);
+  }
+
+  overlay.classList.add('hidden');
+
+  // 事件绑定
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+
+  // 紧急退出：登录后页面任意区域快速点击4次自动退出（2秒内完成）
+  let emergencyClicks = [];
+  document.getElementById('member-page').addEventListener('click', function(e) {
+    // 排除输入框、按钮等正常交互元素的点击
+    if (e.target.closest('input, button, textarea, select, .login-card, .walkie-sub-toggle, .comment-panel, .copy-heart, .img-toggle, audio, video, .theme-toggle, .logout-btn')) return;
+    const now = Date.now();
+    emergencyClicks.push(now);
+    // 只保留最近2秒内的点击
+    emergencyClicks = emergencyClicks.filter(t => now - t < 2000);
+    if (emergencyClicks.length >= 4) {
+      emergencyClicks = [];
+      doLogout();
+    }
+  });
+  // refresh-btn removed
+  document.getElementById('send-btn').addEventListener('click', doSendMessage);
+  document.getElementById('msg-text').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSendMessage(); }
+  });
+  document.getElementById('msg-image').addEventListener('change', handleImageSelect);
+  document.getElementById('msg-video').addEventListener('change', handleVideoSelect);
+  document.getElementById('voice-btn').addEventListener('click', startRecording);
+  document.getElementById('rec-stop').addEventListener('click', stopRecording);
+  document.getElementById('voice-del').addEventListener('click', cancelVoice);
+  document.getElementById('img-overlay').addEventListener('click', function() {
+    this.classList.remove('show');
+  });
+
+  // 日夜模式切换
+  const savedTheme = localStorage.getItem('paynews-theme');
+  if (savedTheme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-toggle').innerHTML = ICO.sun;
+  }
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    html.classList.toggle('light');
+    const isLight = html.classList.contains('light');
+    btn.innerHTML = isLight ? ICO.sun : ICO.moon;
+    localStorage.setItem('paynews-theme', isLight ? 'light' : 'dark');
+  });
+
+  // 滚动时header加阴影
+  const memberPage = document.getElementById('member-page');
+});
+
+// 30秒自动刷新评论
+setInterval(async () => {
+  if (!currentUser) return;
+  try {
+    const messages = await fetchMessages();
+    renderNews('member-news-grid', 'member-news-date', messages, true);
+  } catch (err) {
+    console.error('自动刷新失败:', err);
+  }
+}, 30000);
+
+// 30分钟自动清理Storage中的图片和语音
+cleanupStorage(); // 页面加载时先清理一次
+setInterval(cleanupStorage, 5 * 60 * 1000);
+
+// ===== Tab 切换 =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const targetId = this.dataset.tab;
+    // 切换按钮激活态
+    this.closest('.tab-bar').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    // 切换面板
+    this.closest('.page-inner').querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(targetId).classList.add('active');
+    // 论坛tab：隐藏header和评论输入区
+    const memberHeader = document.getElementById('member-newspaper-header');
+    const inputArea = document.querySelector('.message-input-area');
+    const isForumTab = (targetId === 'tab-forum');
+    const isPetTab = (targetId === 'tab-pet');
+    if (memberHeader) memberHeader.style.display = isForumTab ? 'none' : '';
+    if (inputArea) inputArea.style.display = isForumTab ? 'none' : '';
+    // 处理论坛tab切换
+    if (isForumTab) {
+      onForumTabActivated();
+    } else if (!isPetTab) {
+      onForumTabDeactivated();
+    }
+  });
+});
+
+
+// 更新在线人数显示
+function updateOnlineCountDisplay() {
+  document.querySelectorAll('.online-count').forEach(el => {
+    el.textContent = onlineCount > 0 ? onlineCount : '';
+  });
+  // 同步更新对讲机在线人数徽章
+  const walkieSubCount = Object.keys(onlineSubscribers).length;
+  document.querySelectorAll('.walkie-count-badge').forEach(el => {
+    el.textContent = walkieSubCount;
+    el.classList.toggle('hidden', walkieSubCount === 0);
+  });
+}
+
+// ===== 五子棋 =====
+const GK_SIZE = 15;
+let gkCurrentGame = null; // { id, player1, player2, board, current_turn, status, myRole }
+let gkPollTimer = null;
+
+function gkShow(view) {
+  document.getElementById('gk-lobby').style.display = view === 'lobby' ? '' : 'none';
+  document.getElementById('gk-waiting').style.display = view === 'waiting' ? '' : 'none';
+  document.getElementById('gk-game').style.display = view === 'game' ? '' : 'none';
+  document.getElementById('gk-result').style.display = view === 'result' ? '' : 'none';
+  // 游戏中隐藏新闻，其他状态显示
+  document.getElementById('gk-news-grid').style.display = view === 'game' ? 'none' : '';
+}
+
+// 渲染右边tab：只取最后1条评论卡片（逻辑与行业简报的评论卡片完全一致）
+function gkRenderNews(messages) {
+  const container = document.getElementById('gk-news-grid');
+  if (!container) return;
+
+  let html = '';
+  if (messages && messages.length > 0) {
+    const newestMsg = messages[messages.length - 1];
+    // 收集最多3条旧消息（从新到旧：[-2], [-3], [-4]）
+    const olderMsgs = [];
+    for (let i = 2; i <= Math.min(4, messages.length); i++) {
+      olderMsgs.push(messages[messages.length - i]);
+    }
+
+    let msgHtml = `<div class="news-item">`;
+    const ts = newestMsg.created_at ? new Date(newestMsg.created_at) : new Date();
+    const hh = String(ts.getHours()).padStart(2,'0');
+    const mm = String(ts.getMinutes()).padStart(2,'0');
+    const ss = String(ts.getSeconds()).padStart(2,'0');
+    msgHtml += `<div class="news-category-line"><div class="news-category">最新评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div></div>`;
+    if (newestMsg.text) msgHtml += `<h3>${escapeHtml(newestMsg.text)}</h3>`;
+    // 评论下方：第一条新闻摘要 + 旧评论（小字灰色，分号间隔）
+    let summaryContent = '';
+    if (MOCK_NEWS.length > 0) summaryContent = MOCK_NEWS[0].summary;
+    if (olderMsgs.length > 0) {
+      const olderTexts = olderMsgs.filter(m => m.text).map(m => escapeHtml(m.text)).reverse();
+      if (olderTexts.length > 0) {
+        summaryContent += `<span style="color:var(--text-dim);font-size:13px;"> ${olderTexts.join('；')}</span>`;
+      }
+    }
+    if (summaryContent) msgHtml += `<p>${summaryContent}</p>`;
+    if (newestMsg.image_url) msgHtml += `<span class="img-toggle" onclick="toggleImg(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 查看图片</span><div class="img-fold"><img src="${newestMsg.image_url}" alt="配图" onclick="showOverlay(this.src)"></div>`;
+    if (newestMsg.video_url) msgHtml += `<span class="img-toggle" onclick="toggleVideo(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg> 查看视频</span><div class="img-fold"><video controls preload="metadata" playsinline style="max-width:100%;border-radius:6px;"><source src="${newestMsg.video_url}" type="video/mp4">您的浏览器不支持视频播放</video></div>`;
+    if (newestMsg.audio_url) msgHtml += `<audio controls src="${newestMsg.audio_url}" preload="metadata">您的浏览器不支持语音播放</audio>`;
+    const copyText = newestMsg.text || '';
+    const walkieSubCountGk = Object.keys(onlineSubscribers).length;
+    msgHtml += `<span class="walkie-count-badge${walkieSubCountGk > 0 ? '' : ' hidden'}" title="对讲机在线人数">${walkieSubCountGk}</span>`;
+    msgHtml += `<span class="copy-heart" onclick="copyComment(this, '${escapeHtml(copyText).replace(/'/g, "\\'")}')" title="复制评论">${getCopyIcon()}</span>`;
+    msgHtml += `</div>`;
+    html += msgHtml;
+  }
+
+  container.innerHTML = html;
+}
+
+function gkStopPoll() { if (gkPollTimer) { clearInterval(gkPollTimer); gkPollTimer = null; } }
+function gkStartPoll(mode) {
+  gkStopPoll();
+  if (mode === 'waiting') { gkPollTimer = setInterval(gkSyncWaiting, 1500); }
+  else { gkPollTimer = setInterval(gkSyncGame, 2000); }
+}
+
+// 清理过期数据
+async function gkCleanup() {
+  if (!supabaseClient) return;
+  const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+  await supabaseClient.from('gomoku_games').delete().eq('status','finished').lt('updated_at', oneHourAgo);
+  const tenMinAgo = new Date(Date.now() - 600000).toISOString();
+  await supabaseClient.from('gomoku_games').delete().eq('status','waiting').lt('created_at', tenMinAgo);
+}
+
+// 每10分钟清理：删除media bucket所有文件 + 置空messages中的媒体链接
+async function cleanupStorage() {
+  if (!supabaseClient) return;
+  try {
+    // 1. 列出并删除media bucket中的所有文件
+    const { data: files, error: listErr } = await supabaseClient.storage.from('media').list('', { limit: 100 });
+    if (listErr) { console.warn('列出media文件失败:', listErr); }
+    else if (files && files.length > 0) {
+      const filePaths = files.map(f => f.name);
+      const { error: delErr } = await supabaseClient.storage.from('media').remove(filePaths);
+      if (delErr) console.warn('删除media文件失败:', delErr);
+      else console.log(`[清理] 已删除 ${filePaths.length} 个media文件`);
+    }
+
+    // 2. 置空messages中的所有媒体链接
+    await supabaseClient.from('messages').update({ image_url: null }).not('image_url', 'is', null);
+    await supabaseClient.from('messages').update({ video_url: null }).not('video_url', 'is', null);
+    await supabaseClient.from('messages').update({ audio_url: null }).not('audio_url', 'is', null);
+
+    console.log('[清理] 媒体链接清理完成');
+  } catch (e) {
+    console.warn('Storage清理异常:', e);
+  }
+}
+
+// 点击"准备"：匹配模式
+async function gomokuReady() {
+  if (!supabaseClient || !currentUser) return;
+  await gkCleanup();
+  gkStopPoll();
+
+  // 清理自己的旧等待游戏（防止残留）
+  await supabaseClient.from('gomoku_games').delete().eq('player1', currentUser.username).eq('status', 'waiting');
+  await supabaseClient.from('gomoku_games').delete().eq('player2', currentUser.username).eq('status', 'waiting');
+
+  // 1. 先尝试加入别人等待中的游戏
+  const joined = await gkTryJoin();
+  if (joined) return;
+
+  // 2. 没人等 → 自己创建等待
+  const board = '0'.repeat(GK_SIZE * GK_SIZE);
+  const { data: created, error } = await supabaseClient
+    .from('gomoku_games')
+    .insert({
+      player1: currentUser.username,
+      player1_name: currentUser.displayName,
+      board: board,
+      current_turn: 1,
+      status: 'waiting',
+      winner: 0
+    })
+    .select()
+    .single();
+  if (error) { alert('准备失败: ' + error.message); return; }
+  gkCurrentGame = { ...created, myRole: 1 };
+
+  // 3. 创建后再检查一次（防止两人同时创建导致双方都在等）
+  const recheck = await gkTryJoinOther(created.id);
+  if (recheck) return;
+
+  gkShow('waiting');
+  gkStartPoll('waiting');
+}
+
+// 尝试加入别人等待中的游戏
+async function gkTryJoin() {
+  const { data: waiting } = await supabaseClient
+    .from('gomoku_games')
+    .select('*')
+    .eq('status', 'waiting')
+    .neq('player1', currentUser.username)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (!waiting || waiting.length === 0) return false;
+
+  const g = waiting[0];
+  const { data: updated } = await supabaseClient
+    .from('gomoku_games')
+    .update({ player2: currentUser.username, player2_name: currentUser.displayName, status: 'playing' })
+    .eq('id', g.id)
+    .is('player2', null)  // 原子保护：只有player2仍为空才能加入
+    .select()
+    .single();
+  if (!updated || updated.player2 !== currentUser.username) return false;
+
+  gkCurrentGame = { ...updated, myRole: 2 };
+  gkRenderGame();
+  gkShow('game');
+  gkStartPoll('game');
+  return true;
+}
+
+// 自己已创建等待游戏后，再检查是否有别人也在等（解决双方同时创建的问题）
+async function gkTryJoinOther(myGameId) {
+  const { data: waiting } = await supabaseClient
+    .from('gomoku_games')
+    .select('*')
+    .eq('status', 'waiting')
+    .neq('player1', currentUser.username)
+    .neq('id', myGameId)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (!waiting || waiting.length === 0) return false;
+
+  const g = waiting[0];
+  // 只加入比自己更早创建的游戏（后创建的让先创建的）
+  if (new Date(g.created_at) > new Date()) return false;
+
+  const { data: updated } = await supabaseClient
+    .from('gomoku_games')
+    .update({ player2: currentUser.username, player2_name: currentUser.displayName, status: 'playing' })
+    .eq('id', g.id)
+    .is('player2', null)
+    .select()
+    .single();
+  if (!updated || updated.player2 !== currentUser.username) return false;
+
+  // 加入成功，删除自己的等待游戏
+  await supabaseClient.from('gomoku_games').delete().eq('id', myGameId);
+  gkCurrentGame = { ...updated, myRole: 2 };
+  gkRenderGame();
+  gkShow('game');
+  gkStartPoll('game');
+  return true;
+}
+
+// 取消等待
+async function gomokuCancelReady() {
+  if (!gkCurrentGame) return;
+  await supabaseClient.from('gomoku_games').delete().eq('id', gkCurrentGame.id);
+  gkCurrentGame = null;
+  gkStopPoll();
+  gkShow('lobby');
+}
+
+// 等待中的轮询：检查对手 + 主动寻找匹配
+async function gkSyncWaiting() {
+  if (!gkCurrentGame) return;
+  const { data } = await supabaseClient.from('gomoku_games').select('*').eq('id', gkCurrentGame.id).single();
+  if (!data) { gkCurrentGame = null; gkStopPoll(); gkShow('lobby'); return; }
+  gkCurrentGame = { ...data, myRole: gkCurrentGame.myRole };
+
+  // 有人加入了！
+  if (data.status === 'playing' && data.player2) {
+    gkStopPoll();
+    gkRenderGame();
+    gkShow('game');
+    gkStartPoll('game');
+    return;
+  }
+
+  // 主动寻找：检查是否有别人也在等（解决双方同时创建等待的问题）
+  const { data: others } = await supabaseClient
+    .from('gomoku_games')
+    .select('*')
+    .eq('status', 'waiting')
+    .neq('player1', currentUser.username)
+    .neq('id', gkCurrentGame.id)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (others && others.length > 0 && new Date(others[0].created_at) < new Date(gkCurrentGame.created_at)) {
+    // 对方比我更早创建，我去加入对方
+    const g = others[0];
+    const { data: updated } = await supabaseClient
+      .from('gomoku_games')
+      .update({ player2: currentUser.username, player2_name: currentUser.displayName, status: 'playing' })
+      .eq('id', g.id)
+      .is('player2', null)
+      .select()
+      .single();
+    if (updated && updated.player2 === currentUser.username) {
+      // 加入成功，删除自己的等待游戏
+      await supabaseClient.from('gomoku_games').delete().eq('id', gkCurrentGame.id);
+      gkCurrentGame = { ...updated, myRole: 2 };
+      gkStopPoll();
+      gkRenderGame();
+      gkShow('game');
+      gkStartPoll('game');
+    }
+  }
+}
+
+// 游戏中轮询
+async function gkSyncGame() {
+  if (!gkCurrentGame) return;
+  const { data } = await supabaseClient.from('gomoku_games').select('*').eq('id', gkCurrentGame.id).single();
+  if (!data) { gomokuBackLobby(); return; }
+  gkCurrentGame = { ...data, myRole: gkCurrentGame.myRole };
+  if (data.status === 'finished') {
+    gkStopPoll();
+    const w = data.winner;
+    const myRole = gkCurrentGame.myRole;
+    let txt = w === 3 ? '平局！' : (w === myRole ? '🎉 你赢了！' : '😢 你输了');
+    document.getElementById('gk-result-text').textContent = txt;
+    gkShow('result');
+    // 自动清理
+    setTimeout(() => supabaseClient.from('gomoku_games').delete().eq('id', data.id), 5000);
+    return;
+  }
+  gkRenderGame();
+}
+
+function gkRenderGame() {
+  if (!gkCurrentGame) return;
+  const g = gkCurrentGame;
+  const isPlaying = g.status === 'playing';
+  const p1el = document.getElementById('gk-p1');
+  const p2el = document.getElementById('gk-p2');
+  const turnEl = document.getElementById('gk-turn-info');
+  p1el.textContent = '⚫ ' + (g.player1_name || '???');
+  p2el.textContent = '⚪ ' + (g.player2_name || '???');
+  p1el.classList.toggle('active', isPlaying && g.current_turn === 1);
+  p2el.classList.toggle('active', isPlaying && g.current_turn === 2);
+  turnEl.textContent = isPlaying ? (g.current_turn === g.myRole ? '轮到你了' : '对方思考中...') : 'VS';
+  gkRenderBoard(g);
+}
+
+function gkRenderBoard(g) {
+  const boardEl = document.getElementById('gk-board');
+  const board = g.board || '0'.repeat(225);
+  const isPlaying = g.status === 'playing';
+  const isMyTurn = isPlaying && g.current_turn === g.myRole;
+  let lastIdx = -1;
+  if (g.last_move) lastIdx = g.last_move;
+
+  let html = '';
+  for (let i = 0; i < 225; i++) {
+    const v = parseInt(board[i]);
+    const isLast = i === lastIdx;
+    let inner = '';
+    if (v === 1) inner = '<div class="gk-stone black"></div>';
+    else if (v === 2) inner = '<div class="gk-stone white"></div>';
+    const clickable = isMyTurn && v === 0;
+    html += `<div class="gk-cell${isLast ? ' last-move' : ''}" ${clickable ? `onclick="gomokuPlace(${i})"` : ''}>${inner}</div>`;
+  }
+  boardEl.innerHTML = html;
+}
+
+async function gomokuPlace(idx) {
+  if (!gkCurrentGame || gkCurrentGame.status !== 'playing') return;
+  if (gkCurrentGame.current_turn !== gkCurrentGame.myRole) return;
+  const board = gkCurrentGame.board;
+  if (board[idx] !== '0') return;
+
+  const newBoard = board.substring(0, idx) + String(gkCurrentGame.myRole) + board.substring(idx + 1);
+  const nextTurn = gkCurrentGame.myRole === 1 ? 2 : 1;
+  const win = gkCheckWin(newBoard, idx, gkCurrentGame.myRole);
+
+  if (win) {
+    await supabaseClient.from('gomoku_games').update({
+      board: newBoard, current_turn: nextTurn, status: 'finished', winner: gkCurrentGame.myRole, last_move: idx, updated_at: new Date().toISOString()
+    }).eq('id', gkCurrentGame.id);
+    gkCurrentGame.board = newBoard;
+    gkCurrentGame.status = 'finished';
+    gkCurrentGame.winner = gkCurrentGame.myRole;
+    gkRenderBoard(gkCurrentGame);
+    document.getElementById('gk-result-text').textContent = '🎉 你赢了！';
+    gkShow('result');
+    gkStopPoll();
+    setTimeout(() => supabaseClient.from('gomoku_games').delete().eq('id', gkCurrentGame.id), 5000);
+  } else if (newBoard.indexOf('0') === -1) {
+    await supabaseClient.from('gomoku_games').update({
+      board: newBoard, current_turn: nextTurn, status: 'finished', winner: 3, last_move: idx, updated_at: new Date().toISOString()
+    }).eq('id', gkCurrentGame.id);
+    gkCurrentGame.board = newBoard;
+    gkCurrentGame.status = 'finished';
+    gkRenderBoard(gkCurrentGame);
+    document.getElementById('gk-result-text').textContent = '平局！';
+    gkShow('result');
+    gkStopPoll();
+    setTimeout(() => supabaseClient.from('gomoku_games').delete().eq('id', gkCurrentGame.id), 5000);
+  } else {
+    await supabaseClient.from('gomoku_games').update({
+      board: newBoard, current_turn: nextTurn, last_move: idx, updated_at: new Date().toISOString()
+    }).eq('id', gkCurrentGame.id);
+    gkCurrentGame.board = newBoard;
+    gkCurrentGame.current_turn = nextTurn;
+    gkRenderBoard(gkCurrentGame);
+  }
+}
+
+function gkCheckWin(board, idx, player) {
+  const row = Math.floor(idx / GK_SIZE), col = idx % GK_SIZE;
+  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    for (let d = 1; d < 5; d++) {
+      const r = row + dr*d, c = col + dc*d;
+      if (r < 0 || r >= GK_SIZE || c < 0 || c >= GK_SIZE) break;
+      if (board[r * GK_SIZE + c] !== String(player)) break;
+      count++;
+    }
+    for (let d = 1; d < 5; d++) {
+      const r = row - dr*d, c = col - dc*d;
+      if (r < 0 || r >= GK_SIZE || c < 0 || c >= GK_SIZE) break;
+      if (board[r * GK_SIZE + c] !== String(player)) break;
+      count++;
+    }
+    if (count >= 5) return true;
+  }
+  return false;
+}
+
+function gomokuLeave() {
+  if (!gkCurrentGame) return;
+  const g = gkCurrentGame;
+  if (g.status === 'waiting') {
+    supabaseClient.from('gomoku_games').delete().eq('id', g.id);
+  } else if (g.status === 'playing') {
+    const winner = g.myRole === 1 ? 2 : 1;
+    supabaseClient.from('gomoku_games').update({ status: 'finished', winner: winner, updated_at: new Date().toISOString() }).eq('id', g.id);
+  }
+  gkCurrentGame = null;
+  gkStopPoll();
+  gkShow('lobby');
+}
+
+function gomokuBackLobby() {
+  gkCurrentGame = null;
+  gkStopPoll();
+  gkShow('lobby');
+}
+
+// ===== 悬浮评论窗 =====
+function toggleCommentPanel() {
+  const panel = document.getElementById('comment-panel');
+  const fab = document.getElementById('comment-fab');
+  const iconEdit = document.getElementById('fab-icon-edit');
+  const iconClose = document.getElementById('fab-icon-close');
+  const isOpen = panel.classList.contains('open');
+  // 找到当前激活页面的 page-inner（用于内容上移）
+  const activePageInner = document.querySelector('.page.active .page-inner');
+  if (isOpen) {
+    panel.classList.remove('open');
+    fab.classList.remove('open');
+    iconEdit.style.display = '';
+    iconClose.style.display = 'none';
+    fab.title = '我要评论';
+    if (activePageInner) activePageInner.classList.remove('has-comment-panel');
+  } else {
+    panel.classList.add('open');
+    fab.classList.add('open');
+    iconEdit.style.display = 'none';
+    iconClose.style.display = '';
+    fab.title = '收起';
+    if (activePageInner) activePageInner.classList.add('has-comment-panel');
+    // 聚焦到输入框
+    setTimeout(() => { const ta = document.getElementById('msg-text'); if(ta) ta.focus(); }, 200);
+  }
+}
+
+  
+// ==================== Hidden Admin Panel ====================
+let adminClickCount = 0;
+let adminClickTimer = null;
+let adminChannel = null;
+let adminPresenceChannel = null;
+
+// 确保 admin-commands 共享channel存在（所有用户都订阅）
+function ensureAdminChannel() {
+  if (adminChannel) return;
+  adminChannel = supabaseClient.channel('admin-commands', {
+    config: { broadcast: { self: true } }
+  });
+  adminChannel.subscribe();
+}
+
+console.log('[Admin] Hidden panel init');
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('main-title').addEventListener('click', function(e) { 
+    adminClickCount++; 
+    console.log('[Admin] Title click:', adminClickCount); 
+    clearTimeout(adminClickTimer); 
+    adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000); 
+    if (adminClickCount >= 5) { 
+      adminClickCount = 0; 
+      showAdminPasswordPage(); 
+    } 
+  });
+});
+
+function showAdminPasswordPage() {
+  document.getElementById('public-page').classList.remove('active');
+  document.getElementById('admin-password-page').classList.add('active');
+  document.getElementById('admin-password-input').value = '';
+  document.getElementById('admin-password-error').textContent = '';
+  setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+}
+
+function exitAdminLogin() {
+  document.getElementById('admin-password-page').classList.remove('active');
+  document.getElementById('public-page').classList.add('active');
+}
+
+function verifyAdminPassword() {
+  const pwd = document.getElementById('admin-password-input').value.trim();
+  if (pwd === '001001') {
+    openAdminPanel();
+  } else {
+    document.getElementById('admin-password-error').textContent = 'Wrong password';
+  }
+}
+
+function openAdminPanel() {
+  document.getElementById('admin-password-page').classList.remove('active');
+  document.getElementById('admin-panel-page').classList.add('active');
+  
+  if (adminPresenceChannel) {
+    try { supabaseClient.removeChannel(adminPresenceChannel); } catch(e) {}
+  }
+  adminPresenceChannel = supabaseClient.channel('online-presence', {
+    config: { presence: { key: 'admin-viewer' } }
+  });
+  
+  adminPresenceChannel.on('presence', { event: 'sync' }, () => {
+    const state = adminPresenceChannel.presenceState();
+    const users = [];
+    for (const key in state) {
+      if (key === 'admin-viewer') continue;
+      const presences = state[key];
+      if (presences && presences.length > 0) {
+        const latest = presences[presences.length - 1];
+        users.push({ username: key, walkieSub: latest.walkieSub || false });
+      }
+    }
+    updateAdminUserList(users);
+  });
+  
+  adminPresenceChannel.subscribe();
+  
+  // 复用共享admin-commands channel（已在登录时创建）
+  ensureAdminChannel();
+  
+  // 同步论坛开关状态到toggle
+  document.getElementById('admin-forum-toggle').checked = forumEnabled;
+}
+
+function exitAdminPanel() {
+  document.getElementById('admin-panel-page').classList.remove('active');
+  document.getElementById('public-page').classList.add('active');
+  if (adminPresenceChannel) {
+    try { supabaseClient.removeChannel(adminPresenceChannel); } catch(e) {}
+    adminPresenceChannel = null;
+  }
+}
+
+function updateAdminUserList(users) {
+  const listEl = document.getElementById('admin-user-list');
+  const countEl = document.getElementById('admin-online-count');
+  countEl.textContent = users.length;
+  
+  if (users.length === 0) {
+    listEl.innerHTML = '<li style="text-align:center;color:var(--text-dim);padding:40px">No users online</li>';
+    return;
+  }
+  
+  listEl.innerHTML = users.map(u => `
+    <li style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--bg-input);border-radius:8px;margin-bottom:10px">
+      <div>
+        <div style="font-size:15px;font-weight:500;color:var(--text-primary)">${escapeHtml(u.username)}</div>
+        <div style="font-size:12px;color:var(--text-dim)">${u.walkieSub ? '🎤 Subscribed' : 'Online'}</div>
+      </div>
+      <button onclick="kickUser('${escapeJsStr(u.username)}')" style="background:#ff4d4f;color:white;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">Kick</button>
+    </li>
+  `).join('');
+}
+
+function kickUser(username) {
+  if (!confirm(`Kick user "${username}"?`)) return;
+  if (adminChannel) {
+    adminChannel.send({ type: 'broadcast', event: 'kick', payload: { username, ts: Date.now() } });
+    console.log('[Admin] Kick sent:', username);
+  }
+}
+
+function initAdminKickListener() {
+  ensureAdminChannel();
+  adminChannel.on('broadcast', { event: 'kick' }, (data) => {
+    // 如果指定了session_id，只有匹配的设备才响应（不是发给我的就跳过）
+    if (data.payload.session_id && data.payload.session_id !== mySessionId) return;
+    if (currentUser && currentUser.username === data.payload.username) {
+      if (data.payload.reason === 'new_login') {
+        showToast('您的账号已在其他设备登录，当前设备已自动登出');
+        doLogout();
+      } else {
+        showToast('你已被管理员踢下线');
+        doLogout();
+      }
+    }
+  });
+}
+
+// ============ 在线论坛（双人贪吃蛇） ============
+const FORUM_KEY = 'paynews_forum_enabled';
+const SNAKE_CHANNEL = 'snake-forum';
+const GRID = 20;           // 20x20 网格
+const TICK_MS = 200;       // 游戏帧间隔（越大越慢）
+const INIT_LEN = 4;        // 初始蛇长
+
+let forumEnabled = false;
+let forumChannel = null;
+let snakeGame = null;       // { intervalId, canvas, ctx, cellSize, ... }
+let snakeMyDir = 'right';
+let snakeMyNextDir = 'right';
+let snakeMyBody = [];
+let snakeOppBody = [];
+let snakeFood = null;
+let snakeMyScore = 0;
+let snakeOppScore = 0;
+let snakeIAmHost = false;
+let snakeOppName = '';
+let snakeGameRunning = false;
+let snakeTouchStart = null;
+
+// 管理面板开关 → broadcast 给所有客户端
+function toggleForum(on) {
+  forumEnabled = on;
+  localStorage.setItem(FORUM_KEY, on ? '1' : '0');
+  document.getElementById('admin-forum-toggle').checked = on;
+  // 通过 admin-commands 广播
+  if (adminChannel) {
+    adminChannel.send({ type: 'broadcast', event: 'toggle_forum', payload: { enabled: on } });
+  }
+  // 更新自己的 tab 显隐
+  applyForumState(on);
+}
+
+// 所有客户端监听 toggle 广播
+function initForumToggleListener() {
+  ensureAdminChannel();
+  adminChannel.on('broadcast', { event: 'toggle_forum' }, (data) => {
+    const on = data.payload.enabled;
+    forumEnabled = on;
+    localStorage.setItem(FORUM_KEY, on ? '1' : '0');
+    applyForumState(on);
+    const toggleEl = document.getElementById('admin-forum-toggle');
+    if (toggleEl) toggleEl.checked = on;
+  });
+}
+
+function applyForumState(on) {
+  const tab = document.querySelector('.forum-tab');
+  if (tab) tab.style.display = on ? '' : 'none';
+  // 如果 tab 关闭且当前在论坛页，切回行业简报
+  if (!on) {
+    const forumPanel = document.getElementById('tab-forum');
+    if (forumPanel && forumPanel.classList.contains('active')) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const newsTab = document.querySelector('[data-tab="tab-news"]');
+      if (newsTab) newsTab.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      const newsPanel = document.getElementById('tab-news');
+      if (newsPanel) newsPanel.classList.add('active');
+    }
+    stopSnakeGame();
+  }
+}
+
+// ============ 贪吃蛇游戏引擎 ============
+
+function initSnakeGame() {
+  const wrapper = document.getElementById('forum-game-wrapper');
+  const canvas = document.getElementById('forum-canvas');
+  if (!wrapper || !canvas) return;
+  
+  const size = Math.min(wrapper.clientWidth, 500);
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cellSize = size / GRID;
+  
+  snakeGame = { wrapper, canvas, ctx, cellSize };
+  
+  // 触屏滑动
+  canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    snakeTouchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+  canvas.addEventListener('touchend', e => {
+    if (!snakeTouchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - snakeTouchStart.x;
+    const dy = t.clientY - snakeTouchStart.y;
+    snakeTouchStart = null;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    if (Math.max(absDx, absDy) < 20) return; // 太小忽略
+    if (absDx > absDy) {
+      changeSnakeDir(dx > 0 ? 'right' : 'left');
+    } else {
+      changeSnakeDir(dy > 0 ? 'down' : 'up');
+    }
+  });
+  canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  
+  // 键盘
+  document.addEventListener('keydown', snakeKeyHandler);
+}
+
+function snakeKeyHandler(e) {
+  const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  const dir = keyMap[e.key];
+  if (dir) { e.preventDefault(); changeSnakeDir(dir); }
+}
+
+function changeSnakeDir(dir) {
+  const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+  if (dir !== opposites[snakeMyDir]) {
+    snakeMyNextDir = dir;
+  }
+}
+
+function startSnakeGame() {
+  if (snakeGameRunning) return;
+  if (!snakeGame) initSnakeGame();
+  
+  // 初始化蛇
+  snakeMyBody = [];
+  const cx = Math.floor(GRID / 2);
+  for (let i = INIT_LEN - 1; i >= 0; i--) {
+    snakeMyBody.push({ x: cx - i - 4, y: cx });
+  }
+  snakeMyDir = 'right';
+  snakeMyNextDir = 'right';
+  snakeOppBody = [];
+  snakeMyScore = 0;
+  snakeOppScore = 0;
+  snakeFood = randomFood();
+  
+  document.getElementById('forum-score-self').textContent = '0';
+  document.getElementById('forum-score-opp').textContent = '0';
+  document.getElementById('forum-opponent-info').style.display = 'none';
+  document.getElementById('forum-waiting-msg').style.display = '';
+  
+  // 建立 Supabase channel
+  if (forumChannel) { try { supabaseClient.removeChannel(forumChannel); } catch(e) {} }
+  forumChannel = supabaseClient.channel(SNAKE_CHANNEL, { config: { broadcast: { self: true }, presence: { key: currentUser.username } } });
+  
+  forumChannel.on('broadcast', { event: 'join' }, (data) => {
+    if (data.payload.username === currentUser.username) return;
+    snakeOppName = data.payload.username;
+    document.getElementById('forum-opponent-info').style.display = '';
+    document.getElementById('forum-waiting-msg').style.display = 'none';
+    // 回复游戏状态给新加入者
+    if (snakeIAmHost) {
+      broadcastSnakeState();
+    }
+  });
+  
+  forumChannel.on('broadcast', { event: 'state' }, (data) => {
+    if (data.payload.username === currentUser.username) return;
+    const p = data.payload;
+    if (p.snake1 && p.snake2) {
+      // host 发来的完整状态
+      if (p.username === currentUser.username) {
+        // 这是 host 发回的我的蛇数据，可以用来纠正
+        // 暂时信任 host
+      } else {
+        snakeOppBody = (p.username === snakeOppName) ? p.snake1 : p.snake2;
+        // 确定哪个是自己的蛇
+        if (p.opponent === currentUser.username) {
+          snakeOppBody = p.snake1;
+        } else {
+          snakeOppBody = p.snake2;
+        }
+      }
+      snakeFood = p.food;
+      snakeMyScore = p.username === currentUser.username ? p.score1 : p.score2;
+      snakeOppScore = p.username === currentUser.username ? p.score2 : p.score1;
+      document.getElementById('forum-score-self').textContent = snakeMyScore;
+      document.getElementById('forum-score-opp').textContent = snakeOppScore;
+    }
+  });
+  
+  forumChannel.on('broadcast', { event: 'dir' }, (data) => {
+    if (data.payload.username === currentUser.username) return;
+    // opponent 的方向会体现在 host 的 state 里，这里可以忽略
+  });
+  
+  forumChannel.on('broadcast', { event: 'leave' }, (data) => {
+    if (data.payload.username === snakeOppName) {
+      snakeOppName = '';
+      snakeOppBody = [];
+      document.getElementById('forum-opponent-info').style.display = 'none';
+      document.getElementById('forum-waiting-msg').style.display = '';
+      document.getElementById('forum-score-opp').textContent = '0';
+      snakeOppScore = 0;
+    }
+  });
+  
+  forumChannel.subscribe(async (status) => {
+    if (status !== 'SUBSCRIBED') return;
+    
+    // 发送加入事件
+    await forumChannel.send({ type: 'broadcast', event: 'join', payload: { username: currentUser.username } });
+    
+    // 判断是否 host（先加入的）
+    // 简单策略：延迟200ms后如果没收到state就是host
+    setTimeout(() => {
+      if (!snakeOppName) {
+        snakeIAmHost = true;
+        snakeOppName = '';
+      }
+      snakeGameRunning = true;
+      snakeGame.intervalId = setInterval(snakeGameTick, TICK_MS);
+    }, 300);
+  });
+}
+
+function broadcastSnakeState() {
+  if (!forumChannel || !snakeGameRunning) return;
+  forumChannel.send({
+    type: 'broadcast',
+    event: 'state',
+    payload: {
+      username: currentUser.username,
+      opponent: snakeOppName,
+      snake1: snakeMyBody,
+      snake2: snakeOppBody,
+      food: snakeFood,
+      score1: snakeMyScore,
+      score2: snakeOppScore
+    }
+  }).catch(() => {});
+}
+
+function randomFood() {
+  let pos;
+  do {
+    pos = { x: Math.floor(Math.random() * GRID), y: Math.floor(Math.random() * GRID) };
+  } while (
+    snakeMyBody.some(s => s.x === pos.x && s.y === pos.y) ||
+    snakeOppBody.some(s => s.x === pos.x && s.y === pos.y)
+  );
+  return pos;
+}
+
+function snakeGameTick() {
+  if (!snakeGame || !snakeGameRunning) return;
+  
+  // 移动
+  snakeMyDir = snakeMyNextDir;
+  const head = snakeMyBody[snakeMyBody.length - 1];
+  let newHead;
+  switch (snakeMyDir) {
+    case 'up':    newHead = { x: head.x, y: head.y - 1 }; break;
+    case 'down':  newHead = { x: head.x, y: head.y + 1 }; break;
+    case 'left':  newHead = { x: head.x - 1, y: head.y }; break;
+    case 'right': newHead = { x: head.x + 1, y: head.y }; break;
+  }
+  
+  // 碰墙检测
+  if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
+    snakeDie();
+    return;
+  }
+  // 碰自己
+  if (snakeMyBody.some(s => s.x === newHead.x && s.y === newHead.y)) {
+    snakeDie();
+    return;
+  }
+  // 碰对手
+  if (snakeOppBody.some(s => s.x === newHead.x && s.y === newHead.y)) {
+    snakeDie();
+    return;
+  }
+  
+  snakeMyBody.push(newHead);
+  
+  // 吃食物
+  let ate = false;
+  if (newHead.x === snakeFood.x && newHead.y === snakeFood.y) {
+    snakeMyScore++;
+    document.getElementById('forum-score-self').textContent = snakeMyScore;
+    snakeFood = randomFood();
+    ate = true;
+  }
+  
+  if (!ate) snakeMyBody.shift();
+  
+  // host 广播状态
+  if (snakeIAmHost) broadcastSnakeState();
+  
+  // 非 host 发送方向
+  if (!snakeIAmHost && snakeOppName) {
+    forumChannel.send({
+      type: 'broadcast',
+      event: 'dir',
+      payload: { username: currentUser.username, dir: snakeMyDir }
+    }).catch(() => {});
+  }
+  
+  renderSnake();
+}
+
+function snakeDie() {
+  stopSnakeGame();
+  // 短暂延迟后自动重开
+  setTimeout(() => {
+    if (document.getElementById('tab-forum').classList.contains('active') && currentUser) {
+      startSnakeGame();
+    }
+  }, 1500);
+}
+
+function stopSnakeGame() {
+  snakeGameRunning = false;
+  if (snakeGame && snakeGame.intervalId) {
+    clearInterval(snakeGame.intervalId);
+    snakeGame.intervalId = null;
+  }
+  if (forumChannel) {
+    forumChannel.send({ type: 'broadcast', event: 'leave', payload: { username: currentUser ? currentUser.username : '' } }).catch(() => {});
+    try { supabaseClient.removeChannel(forumChannel); } catch(e) {}
+    forumChannel = null;
+  }
+  snakeOppName = '';
+  snakeOppBody = [];
+}
+
+function renderSnake() {
+  const g = snakeGame;
+  if (!g) return;
+  const { ctx, cellSize } = g;
+  const w = cellSize * GRID;
+  
+  ctx.clearRect(0, 0, w, w);
+  
+  // 背景网格
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= GRID; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * cellSize, 0);
+    ctx.lineTo(i * cellSize, w);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * cellSize);
+    ctx.lineTo(w, i * cellSize);
+    ctx.stroke();
+  }
+  
+  // 食物
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath();
+  ctx.arc(
+    snakeFood.x * cellSize + cellSize / 2,
+    snakeFood.y * cellSize + cellSize / 2,
+    cellSize / 2 - 2, 0, Math.PI * 2
+  );
+  ctx.fill();
+  
+  // 画蛇函数
+  const drawSnake = (body, color, headColor) => {
+    if (!body || body.length === 0) return;
+    body.forEach((seg, i) => {
+      ctx.fillStyle = i === body.length - 1 ? headColor : color;
+      const r = cellSize / 2 - 1;
+      const cx = seg.x * cellSize + cellSize / 2;
+      const cy = seg.y * cellSize + cellSize / 2;
+      ctx.beginPath();
+      ctx.roundRect(seg.x * cellSize + 1, seg.y * cellSize + 1, cellSize - 2, cellSize - 2, r);
+      ctx.fill();
+    });
+  };
+  
+  drawSnake(snakeMyBody, '#4ade80', '#22c55e');
+  drawSnake(snakeOppBody, '#60a5fa', '#3b82f6');
+}
+
+// 监听 forum tab 切换
+function onForumTabActivated() {
+  if (!snakeGameRunning && currentUser) {
+    initSnakeGame();
+    startSnakeGame();
+  }
+}
+
+function onForumTabDeactivated() {
+  stopSnakeGame();
+}
+
+// ============ 在线论坛 END ============
+
+document.getElementById('admin-password-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') verifyAdminPassword();
+});
+
+
+// ============ 宠物练习 START ============
+(function(){
+'use strict';
+
+
+var PX=14,COLS=20,ROWS=27;
+var petCur={sr:'work',sn:'工作',mr:'calm',mn:'发呆'};
+var petCust={s:[],m:[]};
+var petInited=false,petChan=null;
+
+// -- 基础猫 20x27 --
+var CAT=[
+'00011000000000011000',
+'00133100000000133100',
+'01P33100000000133P10',
+'01333100000000133310',
+'01333333333333333310',
+'01333333333333333310',
+'13333333333333333331',
+'13333333333333333331',
+'1333B3333333333B3331',
+'1333BB33333333BB3331',
+'13333333333333333331',
+'13333NN333333NN33331',
+'01333333333333333310',
+'013333B333333B333310',
+'01333333333333333310',
+'00133333333333333100',
+'00013333333333331000',
+'00011333333333311000',
+'00001333333333310000',
+'00013333333333331000',
+'00133333333333333100',
+'01333333333333333310',
+'01333333333333333310',
+'00133003311330033100',
+'00133003311330033100',
+'00133003311330033100',
+'00111001111110011100'
+]
+
+// -- 颜色盘 --
+var PAL={'0':null,'1':'#F5A623','2':'#E08620','3':'#F5A623','P':'#FFB6C1','B':'#3D2817','N':'#FF8FAB','W':'#FFFFFF'};
+
+// -- 眼睛数据 (10种心情) --
+// 左眼区域 cols 4-6 rows 8-9, 右眼区域 cols 13-15 rows 8-9
+// c=白色眼白, a=黑色瞳孔, extra.clear/extra.set=特殊像素
+var EYES={
+  calm:{c:[[4,8],[5,8],[6,8],[4,9],[6,9],[13,8],[14,8],[15,8],[13,9],[15,9]],a:[[5,9],[14,9]]},
+  daze:{c:[[4,8],[5,8],[6,8],[4,9],[5,9],[6,9],[13,8],[14,8],[15,8],[13,9],[14,9],[15,9]],a:[]},
+  happy:{c:[[4,8],[6,8],[4,9],[6,9],[13,8],[15,8],[13,9],[15,9]],a:[[5,8],[14,8]]},
+  sad:{c:[[4,8],[5,8],[6,8],[4,9],[6,9],[13,8],[14,8],[15,8],[13,9],[15,9]],a:[[5,9],[14,9]],extra:{clear:[[5,8],[14,8]],set:[[4,8],'3',[15,8],'3']}},
+  angry:{c:[[4,8],[5,8],[6,8],[4,9],[6,9],[13,8],[14,8],[15,8],[13,9],[15,9]],a:[[4,9],[15,9]],extra:{clear:[[6,8],[13,8]],set:[[6,9],'3',[13,9],'3']}},
+  surprised:{c:[[4,8],[5,8],[6,8],[4,9],[5,9],[6,9],[13,8],[14,8],[15,8],[13,9],[14,9],[15,9]],a:[[5,8],[14,8]]},
+  sleepy:{c:[[4,8],[5,8],[6,8],[4,9],[5,9],[6,9],[13,8],[14,8],[15,8],[13,9],[14,9],[15,9]],a:[[4,8],[5,8],[6,8],[13,8],[14,8],[15,8]]},
+  excited:{c:[[4,8],[5,8],[6,8],[4,9],[6,9],[13,8],[14,8],[15,8],[13,9],[15,9]],a:[[5,9],[14,9]],extra:{clear:[[5,8],[14,8]],set:[[5,8],'N',[14,8],'N']}},
+  love:{c:[[4,8],[5,8],[6,8],[4,9],[5,9],[6,9],[13,8],[14,8],[15,8],[13,9],[14,9],[15,9]],a:[[5,9],[14,9]],extra:{clear:[[5,8],[14,8]],set:[[5,8],'N',[14,8],'N']}},
+  cry:{c:[[4,8],[5,8],[6,8],[4,9],[6,9],[13,8],[14,8],[15,8],[13,9],[15,9]],a:[[5,9],[14,9]],extra:{clear:[],set:[[4,10],'B',[6,10],'B',[13,10],'B',[15,10],'B']}}
+};
+
+// -- 道具数据 (6种状态) --
+var PROPS={
+  study:{clear:[[3,19],[4,19],[5,19],[3,20],[4,20],[5,20]],set:[[3,19],'B',[4,19],'W',[5,19],'B',[3,20],'B',[4,20],'W',[5,20],'B']},
+  eat:{clear:[[14,19],[15,19],[14,20],[15,20]],set:[[14,19],'W',[15,19],'W',[14,20],'W',[15,20],'P']},
+  listen:{clear:[[7,1],[8,1],[9,1],[7,2],[9,2]],set:[[7,1],'B',[8,1],'B',[9,1],'B',[7,2],'P',[9,2],'P']},
+  exercise:{clear:[[3,20],[4,20],[5,20],[14,20],[15,20],[16,20]],set:[[3,20],'B',[4,20],'B',[5,20],'B',[14,20],'B',[15,20],'B',[16,20],'B']},
+  sleep:{clear:[[7,3],[8,3],[9,3],[10,3]],set:[[7,3],'W',[8,3],'W',[9,3],'W',[10,3],'W']},
+  work:{clear:[[9,18],[10,18],[9,19],[10,19]],set:[[9,18],'B',[10,18],'B',[9,19],'W',[10,19],'W']}
+};
+
+// -- 状态元数据 --
+var STATUS_META=[
+  {r:'work',n:'工作'},{r:'study',n:'学习'},{r:'eat',n:'吃饭'},
+  {r:'exercise',n:'运动'},{r:'sleep',n:'睡觉'},{r:'listen',n:'听歌'}
+];
+
+// -- 心情元数据 --
+var MOOD_META=[
+  {r:'calm',n:'发呆'},{r:'happy',n:'开心'},{r:'sad',n:'难过'},
+  {r:'angry',n:'生气'},{r:'surprised',n:'惊讶'},{r:'sleepy',n:'犯困'},
+  {r:'excited',n:'兴奋'},{r:'love',n:'恋爱'},{r:'cry',n:'哭泣'},
+  {r:'daze',n:'放空'}
+];
+
+
+function gc(g,r,c){return(r>=0&&r<g.length&&c>=0&&c<g[r].length)?g[r][c]:'0'}
+
+function render(){
+  var catImg=document.getElementById('pet-cat');
+  var moodImg=document.getElementById('pet-mood');
+  var catKey=petCur.sr||'work';
+  var moodKey=petCur.mr||'calm';
+  // 宠物图片走本地 pet-assets 目录（相对 index.html，?v=17 用于防缓存）
+  var CAT_FILES={work:1,study:1,eat:1,exercise:1,sleep:1,listen:1};
+  var MOOD_FILES={calm:1,happy:1,sad:1,angry:1,surprised:1,sleepy:1,excited:1,love:1,cry:1,daze:1};
+  if(catImg)catImg.src='pet-assets/cat_'+(CAT_FILES[catKey]?catKey:'work')+'.png?v=17';
+  if(moodImg)moodImg.src='pet-assets/mood_'+(MOOD_FILES[moodKey]?moodKey:'calm')+'.png?v=17';
+  var statusText=document.getElementById('pet-status-text');
+  if(statusText)statusText.textContent='小猫正在'+petCur.mn+'\u2026（'+petCur.sn+'中）';
+}
+
+function petRenderBtns(){
+  var sb=document.getElementById('pet-status-btns');
+  var mb=document.getElementById('pet-mood-btns');
+  if(!sb||!mb)return;
+  sb.innerHTML='';mb.innerHTML='';
+
+  STATUS_META.forEach(function(s){
+    var b=document.createElement('button');
+    b.className='pet-btn'+(petCur.sr===s.r?' active':'');
+    b.textContent=s.n;b.dataset.ref=s.r;
+    b.onclick=function(){petChange('status',s.r,s.n)};
+    sb.appendChild(b);
+  });
+  petCust.s.forEach(function(it){
+    var b=document.createElement('button');
+    b.className='pet-btn'+(petCur.sr===it.r?' active':'');
+    b.textContent=it.n;
+    var del=document.createElement('span');
+    del.className='pet-del-btn';del.textContent='✕';
+    del.onclick=function(ev){ev.stopPropagation();petDel(it.id)};
+    b.appendChild(del);
+    b.onclick=function(){petChange('status',it.r,it.n)};
+    sb.appendChild(b);
+  });
+
+  MOOD_META.forEach(function(m){
+    var b=document.createElement('button');
+    b.className='pet-btn'+(petCur.mr===m.r?' active':'');
+    b.textContent=m.n;b.dataset.ref=m.r;
+    b.onclick=function(){petChange('mood',m.r,m.n)};
+    mb.appendChild(b);
+  });
+  petCust.m.forEach(function(it){
+    var b=document.createElement('button');
+    b.className='pet-btn'+(petCur.mr===it.r?' active':'');
+    b.textContent=it.n;
+    var del=document.createElement('span');
+    del.className='pet-del-btn';del.textContent='✕';
+    del.onclick=function(ev){ev.stopPropagation();petDel(it.id)};
+    b.appendChild(del);
+    b.onclick=function(){petChange('mood',it.r,it.n)};
+    mb.appendChild(b);
+  });
+}
+
+function petUpdateRefSelect(){
+  var sel=document.getElementById('pet-custom-ref');
+  if(!sel)return;sel.innerHTML='';
+  var t=document.getElementById('pet-custom-type').value;
+  var items=t==='status'?STATUS_META:MOOD_META;
+  items.forEach(function(it){
+    var o=document.createElement('option');o.value=it.r;o.textContent=it.n;
+    sel.appendChild(o);
+  });
+}
+
+async function petLoad(){
+  if(!supabaseClient)return;
+  try{
+    var st=await supabaseClient.from('pet_state').select('*').eq('id',1).maybeSingle();
+    if(st.data){
+      petCur={sr:st.data.status_ref,sn:st.data.status_name,mr:st.data.mood_ref,mn:st.data.mood_name};
+    }
+    var cu=await supabaseClient.from('pet_custom').select('*').order('created_at');
+    if(cu.data){
+      petCust={s:[],m:[]};
+      cu.data.forEach(function(it){
+        if(it.type==='status')petCust.s.push({id:it.id,n:it.name,r:it.ref});
+        else petCust.m.push({id:it.id,n:it.name,r:it.ref});
+      });
+    }
+  }catch(e){console.error('petLoad:',e)}
+  render();petRenderBtns();petUpdateRefSelect();
+}
+
+async function petChange(type,ref,name){
+  var old=JSON.parse(JSON.stringify(petCur));
+  if(type==='status'){petCur.sr=ref;petCur.sn=name}
+  else{petCur.mr=ref;petCur.mn=name}
+  render();petRenderBtns();
+  try{
+    if(!supabaseClient)return;
+    var u={};
+    if(type==='status'){u.status_ref=ref;u.status_name=name}
+    else{u.mood_ref=ref;u.mood_name=name}
+    await supabaseClient.from('pet_state').update(u).eq('id',1);
+  }catch(e){
+    console.error('petChange:',e);
+    petCur=old;render();petRenderBtns();
+  }
+}
+
+async function petDel(id){
+  try{
+    if(!supabaseClient)return;
+    await supabaseClient.from('pet_custom').delete().eq('id',id);
+    await petLoad();
+  }catch(e){console.error('petDel:',e)}
+}
+
+window.petAddCustom=async function(){
+  var type=document.getElementById('pet-custom-type').value;
+  var name=document.getElementById('pet-custom-name').value.trim();
+  var ref=document.getElementById('pet-custom-ref').value;
+  if(!name){alert('请输入名称');return}
+  try{
+    if(!supabaseClient){alert('数据服务未就绪');return}
+    await supabaseClient.from('pet_custom').insert({type:type,name:name,ref:ref});
+    document.getElementById('pet-custom-name').value='';
+    await petLoad();
+  }catch(e){console.error('petAddCustom:',e);alert('添加失败')}
+};
+
+function petRealtime(){
+  if(petChan){try{supabaseClient.removeChannel(petChan)}catch(e){}petChan=null}
+  petChan=supabaseClient.channel('pet-sync-v1',{broadcast:{self:false},presence:{key:''}})
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'pet_state'},function(p){
+      var n=p.new;
+      petCur={sr:n.status_ref,sn:n.status_name,mr:n.mood_ref,mn:n.mood_name};
+      render();petRenderBtns();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'pet_custom'},function(){petLoad()})
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'pet_custom'},function(){petLoad()})
+    .subscribe();
+}
+
+async function initPetSystem(){
+  if(petInited)return;
+  petInited=true;
+  var catImg=document.getElementById('pet-cat');
+  // 如果DOM还没解析到宠物tab，先不标记为已初始化，等tab点击再试
+  if(!catImg){petInited=false;return;}
+  // 优先把猫图渲染出来；只要这一步成功，用户就不会再看到白框
+  try{
+    render();
+  }catch(e){
+    console.error('宠物渲染失败:',e);
+    petInited=false; // 允许 tab 点击时重试
+    return;
+  }
+  try{
+    petRenderBtns();
+    petUpdateRefSelect();
+  }catch(e){
+    console.error('宠物按钮初始化错误:',e);
+  }
+  document.getElementById('pet-custom-type').addEventListener('change',petUpdateRefSelect);
+  // Supabase数据加载（失败不影响显示）
+  if(supabaseClient){
+    try{ await petLoad(); petRealtime(); }catch(e){ console.error('宠物数据加载错误:',e); }
+  }
+}
+
+// tab 切换联动
+document.addEventListener('DOMContentLoaded',function(){
+  if(!petInited)initPetSystem();
+});
+
+var petTabBtn=document.querySelector('[data-tab="tab-pet"]');
+if(petTabBtn){
+  petTabBtn.addEventListener('click',function(){
+    if(!petInited){initPetSystem();return;}
+    var catImg=document.getElementById('pet-cat');
+    // 兜底：如果猫图还没 src，强制再 render 一次
+    if(catImg){
+      if(!catImg.src){ render(); }
+      else {
+        // 切到宠物 tab 时重新对齐当前状态
+        render();
+      }
+    }
+  });
+  var petObs=new MutationObserver(function(){
+    var panel=document.getElementById('tab-pet');
+    if(!panel)return;
+    if(!panel.classList.contains('active')&&petChan){
+      try{supabaseClient.removeChannel(petChan)}catch(e){}petChan=null;
+    }else if(panel.classList.contains('active')&&petInited&&!petChan){
+      petRealtime();
+    }
+  });
+  var petPanel=document.getElementById('tab-pet');
+  if(petPanel)petObs.observe(petPanel,{attributes:true,attributeFilter:['class']});
+}
+})();
+
+// ============ 宠物练习 END ============
+
+
+
+/* ---- inline script ---- */
+
+// 注册 Service Worker（PWA离线缓存 + 推送通知）
+if ('serviceWorker' in navigator) {
+  // SW 新版本接管控制后，强制刷新一次，确保拿到最新页面（破解旧 SW 缓存旧 HTML 的死循环）
+  let _swReloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(!_swReloaded){_swReloaded=true;location.reload();}
+  });
+  navigator.serviceWorker.register('/paynews/sw.js?v=17').then(() => {
+    console.log('[PWA] Service Worker 已注册');
+    // 首次安装后请求通知权限
+    if ('Notification' in window && Notification.permission === 'default') {
+      setTimeout(() => {
+        Notification.requestPermission().then(p => {
+          console.log('[PWA] 通知权限:', p);
+        });
+      }, 3000);
+    }
+  }).catch(err => {
+    console.log('[PWA] SW注册失败:', err);
+  });
+}
+
+// 轮询兜底：每3秒查最新消息ID，broadcast丢了也能补通知
+let _pollLastId = 0;
+setInterval(async () => {
+  if (!supabaseClient || !currentUser) return;
+  try {
+    const { data } = await supabaseClient.from('messages').select('id,username,display_name,text,audio_url,image_url').order('id', { ascending: false }).limit(1);
+    if (!data || !data.length) return;
+    const latest = data[0];
+    if (latest.id > _pollLastId && latest.username !== currentUser.username) {
+      _pollLastId = latest.id;
+      const preview = latest.text || (latest.audio_url ? '[语音]' : latest.image_url ? '[图片]' : '新消息');
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'NEW_MESSAGE_NOTIFY',
+          title: latest.display_name || latest.username,
+          body: preview
+        });
+      }
+    }
+    if (latest.id > _pollLastId) _pollLastId = latest.id;
+  } catch(e) {}
+}, 3000);
+
+
+/* ---- inline script ---- */
+
+(function(){
+  if(location.search.indexOf('petnocache=')>-1) return; // 只重试一次，避免死循环
+  setTimeout(function(){
+    var catImg=document.getElementById('pet-cat');
+    if(!catImg || !catImg.src){
+      console.warn('[StaleCheck] 宠物未加载，强制刷新...');
+      var sep=location.search?'&':'?';
+      location.href=location.href+sep+'petnocache='+Date.now();
+    }
+  }, 2000);
+})();
+
+
+;try {
+  if (typeof toggleForum === 'function') window.toggleForum = toggleForum;
+  if (typeof copyComment === 'function') window.copyComment = copyComment;
+  if (typeof exitAdminLogin === 'function') window.exitAdminLogin = exitAdminLogin;
+  if (typeof exitAdminPanel === 'function') window.exitAdminPanel = exitAdminPanel;
+  if (typeof fetchLatestNews === 'function') window.fetchLatestNews = fetchLatestNews;
+  if (typeof gomokuPlace === 'function') window.gomokuPlace = gomokuPlace;
+  if (typeof kickUser === 'function') window.kickUser = kickUser;
+  if (typeof petAddCustom === 'function') window.petAddCustom = petAddCustom;
+  if (typeof removePendingImage === 'function') window.removePendingImage = removePendingImage;
+  if (typeof removePendingVideo === 'function') window.removePendingVideo = removePendingVideo;
+  if (typeof showOverlay === 'function') window.showOverlay = showOverlay;
+  if (typeof toggleCommentPanel === 'function') window.toggleCommentPanel = toggleCommentPanel;
+  if (typeof toggleImg === 'function') window.toggleImg = toggleImg;
+  if (typeof toggleVideo === 'function') window.toggleVideo = toggleVideo;
+  if (typeof toggleWalkieSub === 'function') window.toggleWalkieSub = toggleWalkieSub;
+  if (typeof verifyAdminPassword === 'function') window.verifyAdminPassword = verifyAdminPassword;
+} catch(e){ console.warn("[paynews-embed] expose handlers:", e); }
