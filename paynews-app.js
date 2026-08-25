@@ -2190,7 +2190,7 @@ function applyForumState(on) {
 
 // ============ 贪吃蛇游戏引擎 ============
 
-function initSnakeGame() {
+function initSnakeGame() { return; // [workbench] 已禁用贪吃蛇
   const wrapper = document.getElementById('forum-game-wrapper');
   const canvas = document.getElementById('forum-canvas');
   if (!wrapper || !canvas) return;
@@ -2745,7 +2745,7 @@ function petRealtime(){
     .subscribe();
 }
 
-async function initPetSystem(){
+async function initPetSystem(){ return; // [workbench] 已禁用宠物
   if(petInited)return;
   petInited=true;
   var catImg=document.getElementById('pet-cat');
