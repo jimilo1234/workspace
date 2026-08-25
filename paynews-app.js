@@ -742,6 +742,12 @@ async function doSendMessage() {
   const sendBtn = document.getElementById('send-btn');
   sendBtn.disabled = true;
   sendBtn.textContent = '发布中...';
+  // 超时兜底：任一步 await 挂起（网络/后端慢）时自动恢复按钮
+  var _sendTimeout = setTimeout(function () {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '发布新闻';
+    alert('发布超时，请检查网络后重试');
+  }, 30000);
 
   try {
     let imageUrl = null;
@@ -825,6 +831,7 @@ async function doSendMessage() {
     }
     alert(msg);
   } finally {
+    clearTimeout(_sendTimeout);
     sendBtn.disabled = false;
     sendBtn.textContent = '发布新闻';
   }
