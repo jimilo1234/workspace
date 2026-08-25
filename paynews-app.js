@@ -629,7 +629,9 @@ async function doLogin() {
 
 
     // 加载留言并进入会员页
+    console.log('[发布] 刷新列表 开始');
     const messages = await fetchMessages();
+    console.log('[发布] 刷新列表 完成');
     // 初始化lastPlayedAudioMsgId：登录后只自动播放新到达的语音消息，不播放历史
     if (messages.length > 0) {
       lastPlayedAudioMsgId = Math.max(...messages.map(m => m.id));
@@ -755,7 +757,9 @@ async function doSendMessage() {
 
     // 上传图片（如果有）
     if (pendingImageFile) {
+      console.log('[发布] 上传图片 开始');
       imageUrl = await uploadImage(pendingImageFile, currentUser.username);
+      console.log('[发布] 上传图片 完成');
     }
 
     // 上传视频/音频（如果有）
@@ -763,19 +767,27 @@ async function doSendMessage() {
     if (pendingVideoFile) {
       if (pendingVideoFile.type.startsWith('audio/')) {
         // 音频文件走 uploadAudio
+        console.log('[发布] 上传音频(视频) 开始');
         audioUrl = await uploadAudio(pendingVideoFile, currentUser.username);
+        console.log('[发布] 上传音频(视频) 完成');
       } else {
+        console.log('[发布] 上传视频 开始');
         videoUrl = await uploadVideo(pendingVideoFile, currentUser.username);
+        console.log('[发布] 上传视频 完成');
       }
     }
 
     // 上传语音（如果有）
     if (pendingVoiceBlob) {
+      console.log('[发布] 上传语音 开始');
       audioUrl = await uploadAudio(pendingVoiceBlob, currentUser.username);
+      console.log('[发布] 上传语音 完成');
     }
 
     // 发送留言
+    console.log('[发布] 写库 开始');
     await sendMessage(currentUser.username, currentUser.displayName, text, imageUrl, audioUrl, videoUrl);
+    console.log('[发布] 写库 完成');
 
     // 通知其他客户端有新消息（携带摘要，接收端秒出通知）
     notifyNewMessage(currentUser.username, currentUser.displayName, text, !!audioUrl, !!imageUrl);
@@ -798,7 +810,9 @@ async function doSendMessage() {
     document.title = originalTitle;  // 重置标题，清除1.0提示
     const dateEl = document.getElementById('member-news-date');
     if (dateEl) dateEl.classList.remove('has-update');  // 清除红色标记
+    console.log('[发布] 刷新列表 开始');
     const messages = await fetchMessages();
+    console.log('[发布] 刷新列表 完成');
     renderNews('member-news-grid', 'member-news-date', messages);
     // 关闭评论弹窗
     const _panel = document.getElementById('comment-panel');
@@ -1001,7 +1015,9 @@ function subscribeMessageChanges() {
       }
     }
     try {
-      const messages = await fetchMessages();
+      console.log('[发布] 刷新列表 开始');
+    const messages = await fetchMessages();
+    console.log('[发布] 刷新列表 完成');
       // 只关注来自其他用户的新消息（排除自己发的）
       const otherNewMsgs = messages.filter(m => m.id > lastPlayedAudioMsgId && m.username !== currentUser?.username);
       // 只有其他用户发了新消息才触发标题更新和视觉变化
@@ -1510,7 +1526,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 setInterval(async () => {
   if (!currentUser) return;
   try {
+    console.log('[发布] 刷新列表 开始');
     const messages = await fetchMessages();
+    console.log('[发布] 刷新列表 完成');
     renderNews('member-news-grid', 'member-news-date', messages, true);
   } catch (err) {
     console.error('自动刷新失败:', err);
