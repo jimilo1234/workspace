@@ -1242,18 +1242,24 @@ html.light .guest-id.broadcasting { color: #222; }
    【评论浮窗限制在模块内】comment-fab / comment-panel
    改为 absolute 并钉在新闻卡片内部右下角，不再超出模块。
    ===================================================== */
-:host .comment-fab,
-:host .comment-panel {
+:host .comment-fab {
   position: absolute !important;
   right: 14px !important;
   bottom: 14px !important;
   left: auto !important;
-  width: auto !important;
-  max-width: calc(100% - 28px) !important;
+  width: 48px !important;    /* 保持正圆，不再被 width:auto 拉变形 */
+  height: 48px !important;
+  border-radius: 50% !important;
   z-index: 50 !important;
 }
 :host .comment-panel {
+  position: absolute !important;
+  right: 14px !important;
   bottom: 66px !important;
+  left: auto !important;
+  width: min(460px, calc(100% - 28px)) !important;  /* 弹窗加大到 460px，不超卡片 */
+  max-width: calc(100% - 28px) !important;
   max-height: calc(100% - 84px);
   overflow-y: auto;
+  z-index: 50 !important;
 }
