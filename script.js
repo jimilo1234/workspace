@@ -1355,7 +1355,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260825e";
+const PAYNEWS_VER = "20260825f";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
