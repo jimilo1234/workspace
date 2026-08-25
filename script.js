@@ -148,8 +148,14 @@ const DEFAULT_LINKS = [
   { emoji: "🔍", name: "百度", url: "https://www.baidu.com" },
 ];
 
+// 账号表：账号名 -> SHA-256 密码哈希（数据按 user_id 自然隔离）
+const ACCOUNTS = {
+  "jimilo": "c91bbcd983458914acd70d06b43a9ec5bb5152e419b416ceee17e84178be66d4",
+  "gemmy110": "ac4c8e9867776e5909e2ed257a850642230962adba12e34121f05ce03642ae8f"
+};
 function defaultState() {
-  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules()
+  const defName = userId && ACCOUNTS[userId] ? (userId === "jimilo" ? "吉米" : userId) : "吉米";
+  return { name: defName, todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules()
   };
 }
 
@@ -273,8 +279,6 @@ async function loadData() {
 }
 
 /* ---------- 登录（固定授权账号） ---------- */
-const VALID_ACCOUNT = "jimilo";
-const VALID_PASS_HASH = "c91bbcd983458914acd70d06b43a9ec5bb5152e419b416ceee17e84178be66d4";
 const SESSION_KEY = "wb_logged_in";
 // SHA-256 十六进制（Web Crypto，HTTPS 下可用）
 async function sha256Hex(str) {
@@ -291,9 +295,9 @@ function startHomePolling() {
 function stopHomePolling() {
   if (_homePollId) { clearInterval(_homePollId); _homePollId = null; }
 }
-async function enterWorkbench() {
-  userId = "jimilo";
-  localStorage.setItem(SESSION_KEY, "1");
+function enterWorkbench(acc) {
+  userId = acc;
+  localStorage.setItem(SESSION_KEY, acc);
   $("#setupModal").classList.add("hidden");
   loadData();
   startHomePolling();
@@ -306,8 +310,8 @@ async function handleLogin() {
   let passHash;
   try { passHash = await sha256Hex(pass); }
   catch (e) { setMsg("校验失败，请重试"); return; }
-  if (acc !== VALID_ACCOUNT || passHash !== VALID_PASS_HASH) { setMsg("账号或密码错误"); return; }
-  enterWorkbench();
+  if (!ACCOUNTS[acc] || ACCOUNTS[acc] !== passHash) { setMsg("账号或密码错误"); return; }
+  enterWorkbench(acc);
 }
 
 function exitSpace() {
@@ -894,8 +898,11 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
 /* ---------- 启动：恢复登录态 ---------- */
 (async function boot() {
   initWater();
-  if (localStorage.getItem(SESSION_KEY)) {
-    enterWorkbench();
+  const saved = localStorage.getItem(SESSION_KEY);
+  if (saved) {
+    const u = saved === "1" ? "jimilo" : saved; // 兼容旧登录格式
+    if (ACCOUNTS[u]) enterWorkbench(u);
+    else { localStorage.removeItem(SESSION_KEY); setStatus("未登录", ""); }
   } else {
     setStatus("未登录", "");
   }
