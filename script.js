@@ -51,7 +51,6 @@ async function fetchState() {
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
 let notesHistoryColReady = true; // notes_history 列就绪标志；列未建好时降级跳过，防整行 400
-let newsForumColsReady = true;    // news / forum 列就绪标志；加列 SQL 未跑时降级跳过，防整行 400
 
 async function saveState() {
   if (!dataConfirmed) {
@@ -104,7 +103,6 @@ async function saveState() {
     sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
     gh_arrival: state.ghArrival, updated_at: state.updated_at,
     homeModules: state.homeModules,
-    ...(newsForumColsReady ? { news: state.news, forum: state.forum } : {}),
     ...(withHist ? { notes_history: state.notesHistory } : {}),
   });
   let res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
@@ -114,10 +112,9 @@ async function saveState() {
   }), 20000, "写入后端");
   /* notes_history 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 notes_history，
      保证待办/笔记/便利贴等核心数据可正常保存，历史暂只存本机 localStorage，加列后自动恢复。 */
-  if (!res.ok && (notesHistoryColReady || newsForumColsReady)) {
+  if (!res.ok && notesHistoryColReady) {
     notesHistoryColReady = false;
-    newsForumColsReady = false;
-    console.warn("[workbench] notes_history / news / forum 列尚不存在，本次及之后保存暂不含这些扩展列；加列后将自动恢复");
+    console.warn("[workbench] notes_history 列尚不存在，本次及之后保存暂不含历史；加列后将自动恢复");
     res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
       method: "POST",
       headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
@@ -152,9 +149,7 @@ const DEFAULT_LINKS = [
 ];
 
 function defaultState() {
-  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules(),
-    news: { items: [], updatedAt: null, read: [] },   // PayNews 原生新闻：RSS 聚合结果 + 已读标记
-    forum: { posts: [] }                               // PayNews 论坛：发帖板
+  return { name: "吉米", todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules()
   };
 }
 
@@ -332,7 +327,7 @@ function applyState() {
   // 首页模块显隐 + 顺序（可配置）
   state.homeModules = normalizeHomeModules(state.homeModules);
   applyHomeLayout();
-  ensureNewsLoaded(); // 新闻已合并到首页模块：状态就绪即拉取/渲染（原独立「新闻」页已移除）
+  ensurePaynewsMounted(); // 新闻模块：原生嵌入 paynews 应用（非 iframe）
   renderHomeManage();
 }
 function updateGreeting() {
@@ -1357,178 +1352,96 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    - 论坛：发帖板（文字/图片，存后端）
    ===================================================================== */
 
-/* ---------- 新闻 ---------- */
-function escapeHtml(str) {
-  return String(str == null ? "" : str)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-const NEWS_QUERIES = [
-  "https://news.google.com/rss/search?q=%E8%81%9A%E5%90%88%E6%94%AF%E4%BB%98&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
-  "https://news.google.com/rss/search?q=%E6%94%AF%E4%BB%98%E8%A1%8C%E4%B8%9A&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
-  "https://news.google.com/rss/search?q=%E6%94%AF%E4%BB%98%E6%96%B0%E9%97%BB&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
-];
-const NEWS_CATS = ["监管动态", "支付公司", "数字人民币", "跨境支付", "技术趋势"];
-let _newsLoaded = false;
-let _newsFilter = "全部";
+/* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
+const PAYNEWS_VER = "20260825c";
+let _paynewsMounted = false;
 
-function newsDateStr(d) {
-  d = d ? new Date(d) : new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-async function fetchNews() {
-  const btn = $("#newsRefresh");
-  const st = $("#newsStatus");
-  if (btn) { btn.disabled = true; btn.textContent = "获取中…"; }
-  if (st) st.textContent = "正在拉取 RSS…";
-  try {
-    const all = [];
-    for (const q of NEWS_QUERIES) {
-      try {
-        const r = await fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(q));
-        const d = await r.json();
-        if (d && d.status === "ok" && Array.isArray(d.items)) all.push(...d.items);
-      } catch (e) { /* 单个源失败忽略 */ }
-    }
-    const seen = {}; const uniq = [];
-    for (const it of all) {
-      const link = it.link || it.guid || "";
-      if (!seen[link]) { seen[link] = true; uniq.push(it); }
-    }
-    const items = uniq.slice(0, 60).map((it, i) => {
-      let title = (it.title || "").replace(/\s*-\s*[^-\s]+$/, "").replace(/^<!--.*?-->/, "").trim();
-      let desc = "";
-      if (it.description) desc = it.description.replace(/<[^>]*>/g, "").replace(/[…\.]{2,}\s*$/, "").trim();
-      if (desc.length < 40) desc = (desc.length ? desc + "。" : "") + "最新行业动态，点击查看详情。";
-      return {
-        category: NEWS_CATS[i % NEWS_CATS.length],
-        title, summary: desc,
-        link: it.link || "", pubDate: it.pubDate || ""
-      };
-    });
-    state.news.items = items;
-    state.news.updatedAt = new Date().toISOString();
-    scheduleSave(true);
-    renderNews();
-    if (st) st.textContent = `已更新 ${items.length} 条 · ${newsDateStr(state.news.updatedAt)}`;
-  } catch (e) {
-    if (st) st.textContent = "获取失败，请稍后重试";
-    console.warn("[news] fetch 失败", e);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "🔄 刷新"; }
-  }
-}
-function renderNews() {
-  const grid = $("#newsGrid"); if (!grid) return;
-  const items = state.news.items || [];
-  const dEl = $("#newsDate");
-  if (dEl) dEl.textContent = state.news.updatedAt ? "更新于 " + newsDateStr(state.news.updatedAt) : "尚未拉取";
-  // 分类筛选条
-  const cats = Array.from(new Set(items.map((x) => x.category)));
-  const catBox = $("#newsCats");
-  if (catBox) {
-    const list = ["全部", ...cats];
-    catBox.innerHTML = list.map((c) =>
-      `<span class="news-cat${c === _newsFilter ? " active" : ""}" data-cat="${c}">${c}</span>`).join("");
-    catBox.querySelectorAll(".news-cat").forEach((el) => {
-      el.addEventListener("click", () => { _newsFilter = el.dataset.cat; renderNews(); });
-    });
-  }
-  const read = state.news.read || [];
-  const view = _newsFilter === "全部" ? items : items.filter((x) => x.category === _newsFilter);
-  if (!view.length) {
-    grid.innerHTML = `<div class="forum-empty">暂无新闻，点右上角「刷新」拉取最新聚合内容</div>`;
-    return;
-  }
-  grid.innerHTML = view.map((n) => {
-    const isRead = n.link && read.includes(n.link);
-    return `<div class="news-item${isRead ? " read" : ""}" data-link="${encodeURIComponent(n.link || "")}" data-title="${encodeURIComponent(n.title || "")}">
-      <div class="news-category">${n.category}</div>
-      <h3>${(n.title || "").replace(/[<>&]/g, "")}</h3>
-      <p>${(n.summary || "").replace(/[<>&]/g, "")}</p>
-    </div>`;
-  }).join("");
-  grid.querySelectorAll(".news-item").forEach((el) => {
-    el.addEventListener("click", () => {
-      const link = decodeURIComponent(el.dataset.link || "");
-      if (link) {
-        if (!state.news.read.includes(link)) { state.news.read.push(link); scheduleSave(true); }
-        el.classList.add("read");
-        window.open(link, "_blank", "noopener");
-      }
-    });
+function _pnLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src; s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("load fail: " + src));
+    document.head.appendChild(s);
   });
 }
 
-/* ---------- 论坛：发帖板 ---------- */
-function forumTimeStr(iso) {
-  const d = new Date(iso); const now = Date.now();
-  const diff = Math.floor((now - d.getTime()) / 1000);
-  if (diff < 60) return "刚刚";
-  if (diff < 3600) return Math.floor(diff / 60) + " 分钟前";
-  if (diff < 86400) return Math.floor(diff / 3600) + " 小时前";
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getMonth() + 1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-function renderForumBoard() {
-  const board = $("#forumBoard"); if (!board) return;
-  const posts = (state.forum.posts || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  if (!posts.length) { board.innerHTML = `<div class="forum-empty">还没有帖子，来发第一条吧～</div>`; return; }
-  board.innerHTML = posts.map((p) => `
-    <div class="forum-post">
-      <div class="forum-post-head">
-        <span class="forum-post-author">${escapeHtml(p.author || "吉米")}</span>
-        <span style="display:flex;gap:10px;align-items:center;">
-          <span class="forum-post-time">${forumTimeStr(p.created_at)}</span>
-          <button class="forum-post-del" data-id="${p.id}">删除</button>
-        </span>
-      </div>
-      <div class="forum-post-text">${escapeHtml(p.text || "")}</div>
-      ${p.image_url ? `<img class="forum-post-img" src="${escapeHtml(p.image_url)}" alt="配图" />` : ""}
-    </div>`).join("");
-  board.querySelectorAll(".forum-post-del").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.dataset.id;
-      state.forum.posts = (state.forum.posts || []).filter((x) => x.id !== id);
-      scheduleSave(); renderForumBoard();
-    });
+// 把 shadowRoot 包装成 paynews 脚本可用的受限 document（屏蔽 location 跳转 / service worker）
+function _pnShadowDoc(sr) {
+  const real = document;
+  const fwd = ["getElementById","querySelector","querySelectorAll","getElementsByClassName","getElementsByTagName","getElementsByTagNameNS","addEventListener","removeEventListener","dispatchEvent"];
+  const crt = ["createElement","createElementNS","createTextNode","importNode","createComment"];
+  return new Proxy(sr, {
+    get(t, p) {
+      if (fwd.includes(p)) return t[p] ? t[p].bind(t) : undefined;
+      if (crt.includes(p)) return real[p].bind(real);
+      if (p === "body") return t;
+      if (p === "head") return real.head;
+      if (p === "documentElement") return real.documentElement;
+      if (p === "title") return real.title;
+      if (p in t) return t[p];
+      if (p in real) return real[p];
+      return undefined;
+    },
+    set(t, p, v) {
+      if (p === "title" || p === "cookie") return true; // 忽略，避免改 tab 标题 / 写 cookie
+      t[p] = v; return true;
+    }
   });
 }
-function addForumPost() {
-  const input = $("#forumInput"); const img = $("#forumImg");
-  const text = (input.value || "").trim();
-  if (!text) { input.focus(); return; }
-  const post = {
-    id: "p" + Date.now() + Math.random().toString(36).slice(2, 6),
-    author: "吉米", text, image_url: (img.value || "").trim(),
-    created_at: new Date().toISOString()
+
+// 安全 location 桩：屏蔽 reload / 跳转（否则会冲走整个工作台）
+function _pnLocShim() {
+  const real = window.location;
+  const base = {
+    reload(){}, assign(){}, replace(){},
+    href: real.href, search: "", hash: "", origin: real.origin,
+    pathname: real.pathname, host: real.host, hostname: real.hostname,
+    protocol: real.protocol, port: real.port
   };
-  state.forum.posts = state.forum.posts || [];
-  state.forum.posts.push(post);
-  input.value = ""; img.value = "";
-  scheduleSave(); renderForumBoard();
+  return new Proxy(base, { get(t, p){ return (p in t) ? t[p] : (() => {}); }, set(){ return true; } });
 }
 
-/* ---------- 接线 ---------- */
-function ensureNewsLoaded() {
-  if (!_newsLoaded && (!state.news.items || !state.news.items.length)) {
-    _newsLoaded = true; fetchNews();
-  } else {
-    renderNews();
+// 安全 navigator 桩：屏蔽 service worker 注册（否则会劫持工作台作用域）
+function _pnNavShim() {
+  const real = navigator;
+  const sw = {
+    register(){ return Promise.resolve({ unregister(){}, update(){}, installing:null, waiting:null, active:null, addEventListener(){}, removeEventListener(){}, getRegistration(){ return Promise.resolve(undefined); }, ready: Promise.resolve({}) }); },
+    addEventListener(){}, removeEventListener(){}, controller: null,
+    getRegistrations(){ return Promise.resolve([]); }
+  };
+  return new Proxy(real, { get(t, p){ if (p === "serviceWorker") return sw; if (p in t) return t[p]; return undefined; } });
+}
+
+async function mountPaynews(host) {
+  try {
+    const sr = host.attachShadow({ mode: "open" });
+    const [css, html, js] = await Promise.all([
+      fetch("paynews-app.css?v=" + PAYNEWS_VER).then((r) => r.text()),
+      fetch("paynews-app.html?v=" + PAYNEWS_VER).then((r) => r.text()),
+      fetch("paynews-app.js?v=" + PAYNEWS_VER).then((r) => r.text()),
+    ]);
+    sr.innerHTML = "<style>" + css + "</style>" + html;
+    if (!window.supabase) {
+      await _pnLoadScript("supabase-umd.js?v=" + PAYNEWS_VER);
+    }
+    const runner = new Function("document", "navigator", "location", js);
+    runner(_pnShadowDoc(sr), _pnNavShim(), _pnLocShim());
+    try { sr.dispatchEvent(new Event("DOMContentLoaded")); } catch (e) { console.warn("[paynews-embed] DCL:", e); }
+  } catch (e) {
+    console.error("[paynews-embed] 挂载失败:", e);
+    host.innerHTML = '<div style="padding:16px;color:#f87171">PayNews 模块加载失败，请刷新重试。</div>';
   }
 }
-function ensureForumLoaded() {
-  renderForumBoard();
+
+function ensurePaynewsMounted() {
+  const host = document.getElementById("paynewsHost");
+  if (!host || _paynewsMounted) return;
+  if (host.shadowRoot) { _paynewsMounted = true; return; }
+  _paynewsMounted = true;
+  mountPaynews(host);
 }
-// 导航点击：进入论坛页才渲染（新闻已合并到首页模块，随首页加载）
-document.querySelectorAll('.nav-item[data-page="forum"]').forEach((btn) => {
-  btn.addEventListener("click", () => { ensureForumLoaded(); });
-});
-const pnRefreshBtn = $("#newsRefresh");
-if (pnRefreshBtn) pnRefreshBtn.addEventListener("click", fetchNews);
-const pnSend = $("#forumSend"); if (pnSend) pnSend.addEventListener("click", addForumPost);
-const pnInput = $("#forumInput");
-if (pnInput) pnInput.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") addForumPost(); });
+
+
 
 
