@@ -1481,21 +1481,22 @@ function _pnNavShim() {
 async function mountPaynews(host) {
   try {
     const sr = host.attachShadow({ mode: "open" });
+    // 先放加载占位，避免空白等待
+    sr.innerHTML = '<div style="padding:22px;text-align:center;color:#8b8b9e;font-size:14px">📰 新闻加载中…</div>';
+    // 4 个资源并行下载：css/html/js（优先走缓存）+ supabase 脚本，避免串行拖慢首屏
     const [css, html, js] = await Promise.all([
-      fetch("paynews-app.css?v=" + PAYNEWS_VER).then((r) => r.text()),
-      fetch("paynews-app.html?v=" + PAYNEWS_VER).then((r) => r.text()),
-      fetch("paynews-app.js?v=" + PAYNEWS_VER).then((r) => r.text()),
+      fetch("paynews-app.css?v=" + PAYNEWS_VER, { cache: "force-cache" }).then((r) => r.text()),
+      fetch("paynews-app.html?v=" + PAYNEWS_VER, { cache: "force-cache" }).then((r) => r.text()),
+      fetch("paynews-app.js?v=" + PAYNEWS_VER, { cache: "force-cache" }).then((r) => r.text()),
+      window.supabase ? Promise.resolve() : _pnLoadScript("supabase-umd.js?v=" + PAYNEWS_VER),
     ]);
     sr.innerHTML = "<style>" + css + "</style>" + html;
-    if (!window.supabase) {
-      await _pnLoadScript("supabase-umd.js?v=" + PAYNEWS_VER);
-    }
     const runner = new Function("document", "navigator", "location", js);
     runner(_pnShadowDoc(sr), _pnNavShim(), _pnLocShim());
     try { sr.dispatchEvent(new Event("DOMContentLoaded")); } catch (e) { console.warn("[paynews-embed] DCL:", e); }
   } catch (e) {
     console.error("[paynews-embed] 挂载失败:", e);
-    host.innerHTML = '<div style="padding:16px;color:#f87171">PayNews 模块加载失败，请刷新重试。</div>';
+    try { host.innerHTML = '<div style="padding:16px;color:#f87171">PayNews 模块加载失败，请刷新重试。</div>'; } catch (e2) {}
   }
 }
 
