@@ -1,0 +1,202 @@
+<div class="loading-overlay" id="loading-overlay">加载中...</div>
+
+  
+  <div id="public-page" class="page active">
+    <div class="page-inner">
+      <div class="newspaper-header">
+        <h1 id="main-title" style="cursor:pointer">支付行业新闻</h1>
+        <p class="date" id="public-news-date"></p>
+        <div class="header-line"></div>
+      </div>
+      <div class="news-grid" id="public-news-grid"></div>
+      <div class="login-section">
+        <div class="login-divider"><span>发布留言</span></div>
+        <div class="login-card">
+          <div class="input-group">
+            <label>用户名称</label>
+            <input type="text" id="login-account" autocomplete="off">
+          </div>
+          <div class="input-group">
+            <label>留言</label>
+            <input type="text" id="login-password" autocomplete="off">
+          </div>
+          <button class="login-btn" id="login-btn">发布新闻</button>
+          <p class="login-error" id="login-error"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div id="member-page" class="page">
+    <span class="walkie-sub-toggle" id="walkie-sub-toggle" onclick="toggleWalkieSub()" style="position:fixed;top:18px;left:12px;z-index:200;">
+      <span id="walkie-sub-icon"></span>
+      <span>订阅广播</span>
+      <span class="toggle-track"><span class="toggle-knob"></span></span>
+    </span>
+    <button class="logout-btn" id="logout-btn">刷新新闻</button>
+    <button class="theme-toggle" id="theme-toggle" title="切换日/夜模式"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
+    <div class="page-inner" style="padding-bottom:80px;">
+
+  
+  <div class="walkie-broadcast-bar" id="walkie-broadcast-bar">
+    <div class="pulse-dot"></div>
+    <span>广播订阅中...</span>
+  </div>
+
+  <div class="newspaper-header" id="member-newspaper-header">
+        <h1>支付行业新闻</h1>
+        <p class="date" id="member-news-date"></p>
+        <div class="header-line"></div>
+      </div>
+      
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="tab-news">行业简报</button>
+        <button class="tab-btn forum-tab" data-tab="tab-forum" style="display:none;">在线论坛</button>
+        <button class="tab-btn pet-tab" data-tab="tab-pet">宠物练习</button>
+      </div>
+      
+      <div class="tab-panel active" id="tab-news">
+        <div class="refresh-news-bar"><span class="refresh-news-btn" onclick="fetchLatestNews()">获取最新新闻</span></div>
+        <div class="news-grid" id="member-news-grid"></div>
+      </div>
+
+      
+      <div class="tab-panel" id="tab-forum">
+        <div class="forum-game-wrapper" id="forum-game-wrapper">
+          <canvas id="forum-canvas"></canvas>
+        </div>
+        <div class="forum-status" id="forum-status">
+          <span class="p1">🟢 你：<span class="score" id="forum-score-self">0</span></span>
+          <span class="p2" id="forum-opponent-info" style="display:none;">🔵 对手：<span class="score" id="forum-score-opp">0</span></span>
+          <span id="forum-waiting-msg" class="forum-waiting">等待对手加入...</span>
+        </div>
+        <div class="forum-tip">📱 滑动屏幕操控方向 ｜ 💻 键盘方向键操控</div>
+      </div>
+
+      
+      <div class="tab-panel" id="tab-pet">
+        <div class="pet-container">
+                <div class="pet-cat-wrap">
+        <img id="pet-cat" class="pet-cat" alt="像素猫" />
+        <img id="pet-mood" class="pet-mood" alt="心情" />
+      </div>
+          <div class="pet-status-text" id="pet-status-text">小猫正在发呆...</div>
+          <div class="pet-section">
+            <div class="pet-section-title">🐾 状态</div>
+            <div class="pet-btn-row" id="pet-status-btns"></div>
+          </div>
+          <div class="pet-section">
+            <div class="pet-section-title">💖 心情</div>
+            <div class="pet-btn-row" id="pet-mood-btns"></div>
+          </div>
+          <div class="pet-section">
+            <div class="pet-section-title">✨ 自定义</div>
+            <div class="pet-custom-add">
+              <select id="pet-custom-type">
+                <option value="status">状态</option>
+                <option value="mood">心情</option>
+              </select>
+              <input id="pet-custom-name" placeholder="名称" maxlength="8" />
+              <select id="pet-custom-ref"></select>
+              <button class="pet-btn" onclick="petAddCustom()">添加</button>
+            </div>
+          </div>
+          <div class="pet-hint">🐱 全站共养一只猫，实时同步</div>
+        </div>
+      </div>
+
+    
+    <button class="comment-fab" id="comment-fab" onclick="toggleCommentPanel()" title="我要评论">
+      <svg id="fab-icon-edit" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <svg id="fab-icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    
+    <div class="comment-panel" id="comment-panel">
+      <div class="message-input-area">
+        <div class="input-row">
+          <div class="input-col">
+            <textarea id="msg-text" placeholder="写点什么..." maxlength="200" rows="2"></textarea>
+            <button class="send-btn" id="send-btn">发布新闻</button>
+          </div>
+          <div class="input-side-btns">
+            <label class="img-upload-btn" title="上传图片">
+              <span id="ico-img"></span>
+              <input type="file" id="msg-image" accept="image/*" hidden>
+            </label>
+            <label class="img-upload-btn" title="上传视频/音频">
+              <span id="ico-video"></span>
+              <input type="file" id="msg-video" accept="video/*,audio/*,.m4a,.mp3,.wav,.aac,.ogg" hidden>
+            </label>
+            <span class="voice-btn" id="voice-btn" title="录制语音"><span id="ico-mic"></span></span>
+            <span class="walkie-btn" id="walkie-btn" title="对讲机（按住说话）"><span id="ico-walkie"></span></span>
+          </div>
+        </div>
+
+      <div class="recording-bar" id="recording-bar">
+        <span class="rec-dot"></span>
+        <span id="rec-timer">0:00</span>
+        <span class="rec-stop" id="rec-stop"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px"><rect x="4" y="4" width="16" height="16" rx="2"/></svg> 停止</span>
+      </div>
+      <div class="voice-preview" id="voice-preview">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> 语音已录制 <span id="voice-dur"></span>
+        <span class="voice-del" id="voice-del"><span id="ico-del"></span></span>
+      </div>
+      <div class="preview-area" id="preview-area"></div>
+    </div>
+  </div>
+
+  
+  <div class="img-overlay" id="img-overlay">
+    <img id="img-overlay-src" src="" alt="放大查看">
+  </div>
+
+  
+  
+
+  
+
+  
+  
+  </div>
+
+  
+  
+  </div>
+
+  
+  <div id="admin-password-page" class="page">
+    <div class="page-inner">
+      <div style="max-width:400px;margin:60px auto;text-align:center">
+        <h2 style="color:var(--text-primary);margin-bottom:30px">🔒 管理员验证</h2>
+        <div class="input-group" style="margin-bottom:20px;text-align:left">
+          <label>请输入管理员密码</label>
+          <input type="password" id="admin-password-input" autocomplete="off" style="width:100%;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:14px">
+        </div>
+        <p id="admin-password-error" style="color:#ff6b6b;font-size:13px;min-height:20px;margin:0 0 20px"></p>
+        <button class="login-btn" onclick="verifyAdminPassword()" style="width:100%;margin-bottom:12px">确认</button>
+        <button class="close-btn" onclick="exitAdminLogin()" style="width:100%;padding:12px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">返回</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <div id="admin-panel-page" class="page">
+    <div class="page-inner">
+      <div style="max-width:600px;margin:40px auto">
+        <h2 style="color:var(--text-primary);margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:12px">🔧 管理面板</h2>
+        <div style="font-size:15px;color:var(--text-dim);margin-bottom:20px">当前在线：<span id="admin-online-count" style="color:var(--text-primary);font-weight:600">0</span> 人</div>
+        <div class="admin-toggle-row">
+          <span class="toggle-label">🧩 在线论坛（双人贪吃蛇）</span>
+          <label class="admin-toggle">
+            <input type="checkbox" id="admin-forum-toggle" onchange="toggleForum(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <ul id="admin-user-list" style="list-style:none;padding:0;margin:0">
+          <li style="text-align:center;color:var(--text-dim);padding:40px 20px;font-size:14px">暂无在线用户</li>
+        </ul>
+        <button onclick="exitAdminPanel()" style="width:100%;margin-top:24px;padding:12px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">退出管理</button>
+      </div>
+    </div>
+  </div>
