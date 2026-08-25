@@ -332,6 +332,7 @@ function applyState() {
   // 首页模块显隐 + 顺序（可配置）
   state.homeModules = normalizeHomeModules(state.homeModules);
   applyHomeLayout();
+  ensureNewsLoaded(); // 新闻已合并到首页模块：状态就绪即拉取/渲染（原独立「新闻」页已移除）
   renderHomeManage();
 }
 function updateGreeting() {
@@ -1520,12 +1521,9 @@ function ensureNewsLoaded() {
 function ensureForumLoaded() {
   renderForumBoard();
 }
-// 导航点击：进入页面才加载/渲染
-document.querySelectorAll('.nav-item[data-page="news"], .nav-item[data-page="forum"]').forEach((btn) => {
-  btn.addEventListener("click", () => {
-    if (btn.dataset.page === "news") ensureNewsLoaded();
-    else ensureForumLoaded();
-  });
+// 导航点击：进入论坛页才渲染（新闻已合并到首页模块，随首页加载）
+document.querySelectorAll('.nav-item[data-page="forum"]').forEach((btn) => {
+  btn.addEventListener("click", () => { ensureForumLoaded(); });
 });
 const pnRefreshBtn = $("#newsRefresh");
 if (pnRefreshBtn) pnRefreshBtn.addEventListener("click", fetchNews);
