@@ -274,8 +274,13 @@ async function loadData() {
 
 /* ---------- 登录（固定授权账号） ---------- */
 const VALID_ACCOUNT = "jimilo";
-const VALID_PASS = "11223345";
+const VALID_PASS_HASH = "c91bbcd983458914acd70d06b43a9ec5bb5152e419b416ceee17e84178be66d4";
 const SESSION_KEY = "wb_logged_in";
+// SHA-256 十六进制（Web Crypto，HTTPS 下可用）
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 function setMsg(t) { $("#setupMsg").textContent = t; }
 
 let _homePollId = null;
@@ -294,11 +299,14 @@ async function enterWorkbench() {
   startHomePolling();
 }
 
-function handleLogin() {
+async function handleLogin() {
   const acc = $("#setupAccount").value.trim();
   const pass = $("#setupPass").value;
   if (!acc || !pass) { setMsg("请输入账号和密码"); return; }
-  if (acc !== VALID_ACCOUNT || pass !== VALID_PASS) { setMsg("账号或密码错误"); return; }
+  let passHash;
+  try { passHash = await sha256Hex(pass); }
+  catch (e) { setMsg("校验失败，请重试"); return; }
+  if (acc !== VALID_ACCOUNT || passHash !== VALID_PASS_HASH) { setMsg("账号或密码错误"); return; }
   enterWorkbench();
 }
 
