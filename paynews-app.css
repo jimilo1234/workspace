@@ -1237,3 +1237,23 @@ html.light .guest-id.broadcasting { color: #222; }
 :host #tab-pet {
   display: none !important;
 }
+
+/* =====================================================
+   【评论浮窗限制在模块内】comment-fab / comment-panel
+   改为 absolute 并钉在新闻卡片内部右下角，不再超出模块。
+   ===================================================== */
+:host .comment-fab,
+:host .comment-panel {
+  position: absolute !important;
+  right: 14px !important;
+  bottom: 14px !important;
+  left: auto !important;
+  width: auto !important;
+  max-width: calc(100% - 28px) !important;
+  z-index: 50 !important;
+}
+:host .comment-panel {
+  bottom: 66px !important;
+  max-height: calc(100% - 84px);
+  overflow-y: auto;
+}
