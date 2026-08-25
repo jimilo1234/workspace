@@ -314,6 +314,7 @@ function exitSpace() {
 /* ---------- 应用状态到界面 ---------- */
 function applyState() {
   document.documentElement.setAttribute("data-theme", state.theme || "dark");
+  _pnSyncTheme();
   $("#notes").value = state.notes || "";
   lastArchivedNotes = (state.notes || "").toString();
   renderNotesHistory();
@@ -861,6 +862,7 @@ if (notesHistoryClear) notesHistoryClear.addEventListener("click", () => {
 $("#themeToggle").addEventListener("click", () => {
   state.theme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", state.theme);
+  _pnSyncTheme();
   scheduleSave();
 });
 
@@ -1353,7 +1355,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260825d";
+const PAYNEWS_VER = "20260825e";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -1432,6 +1434,13 @@ async function mountPaynews(host) {
     console.error("[paynews-embed] 挂载失败:", e);
     host.innerHTML = '<div style="padding:16px;color:#f87171">PayNews 模块加载失败，请刷新重试。</div>';
   }
+}
+
+// 同步嵌入的 paynews 主题到工作台当前主题
+function _pnSyncTheme() {
+  const host = document.getElementById("paynewsHost");
+  if (!host) return;
+  host.setAttribute("data-paynews-theme", state.theme === "light" ? "light" : "dark");
 }
 
 function ensurePaynewsMounted() {
