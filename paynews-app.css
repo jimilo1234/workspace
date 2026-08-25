@@ -1197,3 +1197,32 @@ html.light .guest-id.broadcasting { color: #222; }
 }
 :host pre { white-space: pre-wrap; word-break: break-word; }
 :host img, :host video, :host canvas { max-width: 100% !important; height: auto; }
+
+/* =====================================================
+   【跟随工作台主题】host 属性 data-paynews-theme 由工作台
+   script.js 同步（state.theme），隐藏 paynews 自带主题按钮。
+   ===================================================== */
+:host([data-paynews-theme="light"]) {
+  background: #f5f5f7;
+  color: #2c2c2e;
+  --bg-dark: #f5f5f7;
+  --bg-card: rgba(0,0,0,0.03);
+  --bg-card-hover: rgba(0,0,0,0.06);
+  --border-card: rgba(0,0,0,0.08);
+  --border-input: rgba(0,0,0,0.15);
+  --bg-input: rgba(0,0,0,0.04);
+  --bg-input-focus: rgba(0,0,0,0.07);
+  --bg-bar: rgba(245,245,247,0.95);
+  --bg-overlay: rgba(0,0,0,0.5);
+  --accent: #5a4bd1;
+  --accent-light: #6C5CE7;
+  --teal: #00b4b0;
+  --text: #2c2c2e;
+  --text-bright: #1c1c1e;
+  --text-dim: #6e6e73;
+  --text-muted: #999;
+  --board-bg: #d4b877;
+  --cell-border: rgba(0,0,0,0.12);
+  --cell-hover: rgba(0,0,0,0.06);
+}
+:host .theme-toggle { display: none !important; }
