@@ -208,8 +208,8 @@ function mapRow(row) {
   return r;
 }
 
-let state = defaultState();
 let userId = null;
+let state = defaultState();
 let saveTimer = null;
 let editingLinks = false;
 let dataConfirmed = false; // loadData 成功从后端确认过数据后才允许保存，防误清空
