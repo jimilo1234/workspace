@@ -1134,3 +1134,66 @@ html.light .guest-id.broadcasting { color: #222; }
 .pet-custom-add input{flex:1;min-width:80px}
 .pet-hint{font-size:11px;color:#ccc;text-align:center;margin-top:14px}
   
+/* =====================================================
+   【工作台嵌入适配】Shadow DOM 覆盖层
+   说明：嵌入前 :root/:root 变量与 html/body 规则在 Shadow 内
+   不生效，本层在 :host 上补齐并做卡片化适配。
+   ===================================================== */
+:host {
+  display: block;
+  font-family: 'Noto Sans SC', system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", sans-serif;
+  color: #e0e0e0;
+  background: #0d0d0d;
+  --bg-dark: #0d0d0d;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.07);
+  --border-card: rgba(255,255,255,0.06);
+  --border-input: rgba(255,255,255,0.1);
+  --bg-input: rgba(255,255,255,0.05);
+  --bg-input-focus: rgba(255,255,255,0.08);
+  --bg-bar: rgba(13,13,13,0.95);
+  --bg-overlay: rgba(0,0,0,0.85);
+  --accent: #6C5CE7;
+  --accent-light: #a29bfe;
+  --teal: #00CEC9;
+  --text: #e0e0e0;
+  --text-bright: #f0f0f0;
+  --text-dim: #888;
+  --text-muted: #6e6e6e;
+  --board-bg: #c8a86e;
+  --cell-border: rgba(0,0,0,0.15);
+  --cell-hover: rgba(0,0,0,0.08);
+}
+:host * { box-sizing: border-box; }
+
+/* 去掉页面级的 100vh 撑高，避免卡片被顶得超高 */
+:host .page { min-height: 0; }
+:host .page-inner { max-width: 100% !important; padding-left: 14px; padding-right: 14px; }
+:host .news-grid { padding-top: 10px; }
+
+/* 卡片内新闻强制单列，避免两列挤压导致不换行/溢出 */
+:host .news-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  max-width: 100% !important;
+}
+
+/* 所有 fixed 元素改为 absolute，定位回卡片内（否则会跑到工作台视口角落） */
+:host .loading-overlay,
+:host .theme-toggle,
+:host .logout-btn,
+:host .walkie-broadcast-bar,
+:host [style*="position:fixed"],
+:host [style*="position: fixed"] {
+  position: absolute !important;
+}
+
+/* 长文本强制换行、防横向溢出 */
+:host p, :host h1, :host h2, :host h3, :host h4, :host li,
+:host span, :host a, :host div, :host td, :host th, :host blockquote {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+:host pre { white-space: pre-wrap; word-break: break-word; }
+:host img, :host video, :host canvas { max-width: 100% !important; height: auto; }
