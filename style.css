@@ -807,6 +807,41 @@ body {
 }
 html.pn-fs, html.pn-fs body { overflow: hidden; }
 
+/* 全屏时操作栏：固定悬浮右上角、带背景边框、始终在最上层，避免被新闻内容盖住 */
+.news-card.pn-fullscreen .card-head {
+  position: relative;
+  z-index: 10001;
+}
+.news-card.pn-fullscreen .news-actions {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: rgba(20, 21, 25, 0.82);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.news-card.pn-fullscreen .news-actions .text-btn {
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+}
+.news-card.pn-fullscreen .news-actions .text-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* 新闻卡片折叠态 */
 .news-card.collapsed #paynewsHost { display: none; }
 .news-card.collapsed { gap: 0; }
