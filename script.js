@@ -1518,3 +1518,20 @@ function ensurePaynewsMounted() {
 
 
 
+
+/* ---------- 新闻模块全屏切换 ---------- */
+(function initPnFullscreen() {
+  const card = document.querySelector('.news-card[data-module="news"]');
+  const enterBtn = document.getElementById("pnFsEnter");
+  const exitBtn = document.getElementById("pnFsExit");
+  if (!card || !enterBtn) return;
+  function pnSetFs(on) {
+    card.classList.toggle("pn-fullscreen", on);
+    document.documentElement.classList.toggle("pn-fs", on);
+    enterBtn.style.display = on ? "none" : "";
+    if (exitBtn) exitBtn.style.display = on ? "" : "none";
+  }
+  enterBtn.addEventListener("click", () => pnSetFs(true));
+  if (exitBtn) exitBtn.addEventListener("click", () => pnSetFs(false));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") pnSetFs(false); });
+})();
