@@ -1418,7 +1418,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260825l";
+const PAYNEWS_VER = "20260826a";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -1519,19 +1519,30 @@ function ensurePaynewsMounted() {
 
 
 
-/* ---------- 新闻模块全屏切换 ---------- */
-(function initPnFullscreen() {
+/* ---------- 新闻模块：折叠 + 全屏切换 ---------- */
+(function initPnHeaderActions() {
   const card = document.querySelector('.news-card[data-module="news"]');
   const enterBtn = document.getElementById("pnFsEnter");
   const exitBtn = document.getElementById("pnFsExit");
+  const collapseBtn = document.getElementById("pnCollapse");
   if (!card || !enterBtn) return;
+
   function pnSetFs(on) {
     card.classList.toggle("pn-fullscreen", on);
     document.documentElement.classList.toggle("pn-fs", on);
     enterBtn.style.display = on ? "none" : "";
     if (exitBtn) exitBtn.style.display = on ? "" : "none";
+    if (collapseBtn) collapseBtn.style.display = on ? "none" : "";
   }
   enterBtn.addEventListener("click", () => pnSetFs(true));
   if (exitBtn) exitBtn.addEventListener("click", () => pnSetFs(false));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") pnSetFs(false); });
+
+  if (collapseBtn) {
+    collapseBtn.addEventListener("click", () => {
+      const collapsed = card.classList.toggle("collapsed");
+      collapseBtn.textContent = collapsed ? "＋ 展开" : "− 收起";
+      collapseBtn.title = collapsed ? "展开新闻模块" : "收起新闻模块";
+    });
+  }
 })();
