@@ -814,7 +814,7 @@ html.pn-fs, html.pn-fs body { overflow: hidden; }
 }
 .news-card.pn-fullscreen .news-actions {
   position: fixed;
-  top: 16px;
+  top: 72px;
   right: 16px;
   z-index: 10001;
   display: flex;
