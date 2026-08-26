@@ -817,7 +817,7 @@ html.pn-fs .topbar { display: none; }
 }
 .news-card.pn-fullscreen .news-actions {
   position: fixed;
-  top: 16px;
+  top: 66px;       /* 在原 16px 基础上向下移动 50px，避开顶栏区域 */
   right: 16px;
   z-index: 10001;
   display: flex;
