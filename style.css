@@ -807,6 +807,9 @@ body {
 }
 html.pn-fs, html.pn-fs body { overflow: hidden; }
 
+/* 全屏新闻模块时隐藏顶部工具栏，避免遮挡退出全屏浮窗 */
+html.pn-fs .topbar { display: none; }
+
 /* 全屏时操作栏：固定悬浮右上角、带背景边框、始终在最上层，避免被新闻内容盖住 */
 .news-card.pn-fullscreen .card-head {
   position: relative;
@@ -814,7 +817,7 @@ html.pn-fs, html.pn-fs body { overflow: hidden; }
 }
 .news-card.pn-fullscreen .news-actions {
   position: fixed;
-  top: 72px;
+  top: 16px;
   right: 16px;
   z-index: 10001;
   display: flex;
