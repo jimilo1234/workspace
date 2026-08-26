@@ -806,3 +806,8 @@ body {
   overflow-y: auto;
 }
 html.pn-fs, html.pn-fs body { overflow: hidden; }
+
+/* 新闻卡片折叠态 */
+.news-card.collapsed #paynewsHost { display: none; }
+.news-card.collapsed { gap: 0; }
+.news-actions { display: flex; align-items: center; gap: 10px; }
