@@ -785,3 +785,24 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ===== 新闻模块全屏 ===== */
+.news-card.pn-fullscreen {
+  position: fixed; inset: 0; z-index: 9999;
+  width: 100vw; height: 100vh; max-width: none; max-height: none;
+  margin: 0; border-radius: 0; border: none;
+  background: var(--bg);
+  overflow: hidden;
+  animation: none;
+  transform: none !important;
+}
+.news-card.pn-fullscreen:hover { transform: none; }
+.news-card.pn-fullscreen #paynewsHost {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  overflow-y: auto;
+}
+html.pn-fs, html.pn-fs body { overflow: hidden; }
