@@ -1813,10 +1813,15 @@ async function uploadPetImages(type, files) {
   const list = Array.from(files || []);
   if (!list.length) return;
   setStatus("上传中…", "syncing");
-  let okCount = 0, failCount = 0, last = null;
+  let okCount = 0, failCount = 0, lastErrCode = null, last = null;
   for (const f of list) {
     try { last = await petStorageUpload(type, f); okCount++; }
-    catch (e) { failCount++; console.error("[pet] 上传失败", f.name, e); }
+    catch (e) {
+      failCount++;
+      const m = (e.message || "").match(/^上传失败\s+(\d+)/);
+      if (m) lastErrCode = m[1];
+      console.error("[pet] 上传失败", f.name, e);
+    }
   }
   try {
     if (type === "status") petStatusImgs = await petStorageList("status");
@@ -1833,7 +1838,8 @@ async function uploadPetImages(type, files) {
   }
   renderPet();
   if (failCount > 0) {
-    setStatus("有 " + failCount + " 张上传失败 · 常见原因：后端 pet bucket/表未初始化（需先执行 supabase_pet_setup.sql）", "err");
+    const code = lastErrCode ? "（HTTP " + lastErrCode + "）" : "";
+    setStatus("有 " + failCount + " 张上传失败" + code + " · 按 F12 看 Console 取完整报错", "err");
   } else {
     setStatus("宠物图已上传 ✓", "ok");
   }
