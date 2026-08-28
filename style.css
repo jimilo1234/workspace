@@ -849,3 +849,61 @@ html.pn-fs .topbar { display: none; }
 .news-card.collapsed #paynewsHost { display: none; }
 .news-card.collapsed { gap: 0; }
 .news-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ===== 操作员管理（仅超管） ===== */
+.op-wrap { padding: 8px 24px 40px; max-width: 980px; margin: 0 auto; width: 100%; }
+.op-table {
+  width: 100%; border-collapse: collapse; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+}
+.op-table th, .op-table td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
+.op-table thead th {
+  color: var(--text-faint); font-weight: 600; font-size: 12px;
+  font-family: var(--mono); letter-spacing: 0.4px; background: var(--bg-soft);
+}
+.op-table tbody tr:last-child td { border-bottom: none; }
+.op-table tbody tr:hover { background: var(--card-hover); }
+.op-table td strong { color: var(--text); font-weight: 600; }
+.op-mono { font-family: var(--mono); font-size: 12px; color: var(--text-soft); }
+.op-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+.op-status.online { background: #36c08a; box-shadow: 0 0 6px rgba(54, 192, 138, 0.7); }
+.op-status.offline { background: var(--text-faint); }
+.op-empty { text-align: center; color: var(--text-faint); padding: 30px 0 !important; }
+.op-tip { margin-top: 14px; font-size: 12px; color: var(--text-soft); line-height: 1.6; }
+.op-refresh { background: transparent; color: var(--text-soft); border: 1px solid var(--border-strong); box-shadow: none; }
+.op-refresh:hover { color: var(--text); filter: none; }
+.op-edit-btn { font-size: 12px; }
+
+/* 树形勾选弹层 */
+.op-modal {
+  width: min(92vw, 440px); max-height: 82vh; display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--border-strong);
+  border-radius: 14px; padding: 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  animation: markPop 0.16s ease;
+}
+.op-tree {
+  flex: 1; min-height: 0; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; background: var(--bg-soft);
+}
+.tree-group { margin: 4px 0 10px; }
+.tree-parent {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 14px; color: var(--text);
+  padding: 5px 4px; cursor: pointer; user-select: none;
+}
+.tree-parent input, .tree-leaf input { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+.tree-children {
+  display: flex; flex-direction: column; gap: 3px;
+  margin: 2px 0 4px 24px; padding-left: 12px;
+  border-left: 1px dashed var(--border-strong);
+}
+.tree-leaf {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-soft);
+  padding: 4px 6px; border-radius: 7px; cursor: pointer; user-select: none;
+  transition: background 0.15s;
+}
+.tree-leaf:hover { background: var(--accent-soft); }
+.tree-root { margin: 4px 0; }
+.op-tree-tip { margin: 10px 2px 0; font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
