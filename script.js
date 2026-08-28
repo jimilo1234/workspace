@@ -1813,14 +1813,16 @@ async function uploadPetImages(type, files) {
   const list = Array.from(files || []);
   if (!list.length) return;
   setStatus("上传中…", "syncing");
-  let last = null;
+  let okCount = 0, failCount = 0, last = null;
   for (const f of list) {
-    try { last = await petStorageUpload(type, f); }
-    catch (e) { console.warn("[pet] 上传失败", f.name, e); setStatus("部分图片上传失败", "err"); }
+    try { last = await petStorageUpload(type, f); okCount++; }
+    catch (e) { failCount++; console.error("[pet] 上传失败", f.name, e); }
   }
-  if (type === "status") petStatusImgs = await petStorageList("status");
-  else petMoodImgs = await petStorageList("mood");
-  // 当前未选时，自动选中最后上传的一张（并记录切换时间）
+  try {
+    if (type === "status") petStatusImgs = await petStorageList("status");
+    else petMoodImgs = await petStorageList("mood");
+  } catch (e) { console.error("[pet] 刷新列表失败", e); }
+  // 当前未选时，自动选中最后上传成功的一张（并记录切换时间）
   if (last) {
     if (type === "status" && !petState.current_status) {
       petState.current_status = last; petState.current_status_time = new Date().toISOString(); await savePetState();
@@ -1830,7 +1832,11 @@ async function uploadPetImages(type, files) {
     }
   }
   renderPet();
-  setStatus("宠物图已上传 ✓", "ok");
+  if (failCount > 0) {
+    setStatus("有 " + failCount + " 张上传失败 · 常见原因：后端 pet bucket/表未初始化（需先执行 supabase_pet_setup.sql）", "err");
+  } else {
+    setStatus("宠物图已上传 ✓", "ok");
+  }
 }
 
 async function switchPetStatus(filename) {
