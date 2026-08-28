@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260826d" />
+  <link rel="stylesheet" href="style.css?v=20260828a" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -40,62 +40,65 @@
         <button id="sidebarToggle" class="sidebar-toggle" title="收起 / 展开菜单" aria-label="收起或展开菜单">«</button>
       </div>
       <nav class="nav">
-        <button class="nav-item active" data-page="home">
+        <button class="nav-item active" data-page="home" data-menu-id="home">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.8V19a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V9.8"/></svg></span><span class="nav-label">首页</span>
         </button>
-        <button class="nav-item nav-parent open" data-toggle="study">
+        <button class="nav-item nav-parent open" data-toggle="study" data-menu-id="study">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v15H6a2 2 0 0 0-2 2z"/><path d="M18 3v15"/></svg></span><span class="nav-label">学习</span>
           <span class="nav-caret">▾</span>
         </button>
         <div class="nav-sub open" id="subStudy">
-          <button class="nav-item nav-child" data-page="english">
+          <button class="nav-item nav-child" data-page="english" data-menu-id="study-english">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2 2 0 0 1 5 3.5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M21 5.5A2 2 0 0 0 19 3.5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2z"/></svg></span><span class="nav-label">英语</span>
           </button>
-          <button class="nav-item nav-child" data-page="crossborder">
+          <button class="nav-item nav-child" data-page="crossborder" data-menu-id="study-crossborder">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg></span><span class="nav-label">跨境</span>
           </button>
-          <button class="nav-item nav-child" data-page="vcc">
+          <button class="nav-item nav-child" data-page="vcc" data-menu-id="study-vcc">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span><span class="nav-label">VCC账户</span>
           </button>
-          <button class="nav-item nav-child" data-page="acquiring">
+          <button class="nav-item nav-child" data-page="acquiring" data-menu-id="study-acquiring">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M2 10h20"/><circle cx="16" cy="14" r="2.2"/></svg></span><span class="nav-label">外卡收单</span>
           </button>
         </div>
-        <button class="nav-item nav-parent open" data-toggle="ai">
+        <button class="nav-item nav-parent open" data-toggle="ai" data-menu-id="ai">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.4c.8 3.6 2 4.8 5.6 5.6-3.6.8-4.8 2-5.6 5.6-.8-3.6-2-4.8-5.6-5.6 3.6-.8 4.8-2 5.6-5.6z"/><path d="M18.5 14.2c.3 1.5.9 2.1 2.4 2.4-1.5.3-2.1.9-2.4 2.4-.3-1.5-.9-2.1-2.4-2.4 1.5-.3 2.1-.9 2.4-2.4z"/></svg></span><span class="nav-label">AI</span>
           <span class="nav-caret">▾</span>
         </button>
         <div class="nav-sub open" id="subAi">
-          <button class="nav-item nav-child" data-page="doujie">
+          <button class="nav-item nav-child" data-page="doujie" data-menu-id="ai-doujie">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></svg></span><span class="nav-label">豆姐</span>
           </button>
         </div>
-        <button class="nav-item nav-parent open" data-toggle="work">
+        <button class="nav-item nav-parent open" data-toggle="work" data-menu-id="work">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg></span><span class="nav-label">工作</span>
           <span class="nav-caret">▾</span>
         </button>
         <div class="nav-sub open" id="subWork">
-          <button class="nav-item nav-child" data-page="mobile">
+          <button class="nav-item nav-child" data-page="mobile" data-menu-id="work-mobile">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手机端</span>
           </button>
-          <button class="nav-item nav-child" data-page="coffee">
+          <button class="nav-item nav-child" data-page="coffee" data-menu-id="work-coffee">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 3c0 1-1 1.4-1 2.4M12 3c0 1-1 1.4-1 2.4"/></svg></span><span class="nav-label">咖啡机</span>
           </button>
-          <button class="nav-item nav-child" data-page="miaoda">
+          <button class="nav-item nav-child" data-page="miaoda" data-menu-id="work-miaoda">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18.5" cy="17" r="2.2"/></svg></span><span class="nav-label">妙搭</span>
           </button>
-          <button class="nav-item nav-child" data-page="sticky">
+          <button class="nav-item nav-child" data-page="sticky" data-menu-id="work-sticky">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg></span><span class="nav-label">便利贴</span>
           </button>
         </div>
 
-        <button class="nav-item nav-parent open" data-toggle="system">
+        <button class="nav-item nav-parent open" data-toggle="system" data-menu-id="system">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">系统管理</span>
           <span class="nav-caret">▾</span>
         </button>
         <div class="nav-sub open" id="subSystem">
-          <button class="nav-item nav-child" data-page="homeManage">
+          <button class="nav-item nav-child" data-page="homeManage" data-menu-id="system-homemanage">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">首页管理</span>
+          </button>
+          <button class="nav-item nav-child" data-page="operators" data-menu-id="system-operators" style="display:none">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-label">操作员管理</span>
           </button>
         </div>
       </nav>
@@ -409,6 +412,30 @@
         </div>
       </div>
 
+      <!-- 操作员管理（仅超管可见） -->
+      <div id="pageOperators" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">👥 操作员管理</span>
+            <span class="page-bar-hint">查看操作员登录状态 · 配置可见菜单 · 超过 5 分钟无活跃上报判离线</span>
+          </div>
+          <div class="page-bar-right">
+            <button id="opRefresh" class="open-new op-refresh" type="button">刷新列表</button>
+          </div>
+        </div>
+        <div class="op-wrap">
+          <table class="op-table">
+            <thead>
+              <tr>
+                <th>用户名</th><th>姓名</th><th>登录状态</th><th>最后登录时间</th><th>最后登录IP</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="opList"><tr><td colspan="6" class="op-empty">加载中…</td></tr></tbody>
+          </table>
+          <p class="op-tip">提示：编辑菜单并保存后，该操作员下次请求菜单即生效（无需重新登录）。从未配置过的操作员默认全量可见。</p>
+        </div>
+      </div>
+
     </div>
     <!-- 移动端侧边栏抽屉遮罩：点击收起 -->
     <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
@@ -446,6 +473,22 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260826b"></script>
+  <!-- 操作员菜单权限配置弹层（树形勾选） -->
+  <div id="opMenuModal" class="modal-overlay" hidden>
+    <div class="modal-card op-modal">
+      <div class="mark-modal-head">
+        <span id="opModalTitle" class="mark-date">配置菜单权限</span>
+        <button id="opMenuClose" class="modal-x" aria-label="关闭">×</button>
+      </div>
+      <div id="opTree" class="op-tree"></div>
+      <p class="op-tree-tip">父节点支持全选 / 半选 · 保存后立即生效</p>
+      <div class="mark-modal-foot">
+        <button id="opMenuCancel" class="btn-ghost">取消</button>
+        <button id="opMenuSave" class="btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js?v=20260828a"></script>
 </body>
 </html>
