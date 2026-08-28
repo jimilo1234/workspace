@@ -907,3 +907,33 @@ html.pn-fs .topbar { display: none; }
 .tree-leaf:hover { background: var(--accent-soft); }
 .tree-root { margin: 4px 0; }
 .op-tree-tip { margin: 10px 2px 0; font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
+
+/* ===== 宠物模块（共享：所有用户可操作/可见） ===== */
+.pet-card .card-head { margin-bottom: 6px; }
+.pet-actions { display: flex; align-items: center; gap: 10px; }
+.pet-stage {
+  position: relative; width: 160px; height: 160px; margin: 4px auto 0;
+  border-radius: 14px; overflow: hidden;
+  background: var(--bg-soft); border: 1px solid var(--border);
+}
+.pet-status-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pet-mood-img {
+  position: absolute; top: 5px; right: 5px;
+  width: 10px; height: 10px; border-radius: 3px; object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.28);
+}
+.pet-meta { text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.pet-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+.pet-mood-time { font-size: 10px; }
+.pet-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.pet-row { display: flex; align-items: center; gap: 8px; }
+.pet-select { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px; color: var(--text-soft); }
+.pet-select select {
+  flex: 1; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--card-hover); color: var(--text);
+  font-size: 13px; font-family: var(--sans); outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.pet-select select:focus { border-color: var(--accent); background: var(--accent-soft); }
+.pet-row .text-btn { flex: none; font-size: 14px; }
+.pet-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.55; }

@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260828a" />
+  <link rel="stylesheet" href="style.css?v=20260828b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -250,6 +250,42 @@
             </div>
             <div id="paynewsHost"></div>
           </section>
+
+          <!-- 宠物（共享模块：所有登录用户可操作、可见，数据全局共享） -->
+          <section class="card pet-card" data-module="pet">
+            <div class="card-head">
+              <h2>🐾 宠物</h2>
+              <div class="link-actions pet-actions">
+                <button id="petUploadStatusBtn" class="text-btn" type="button">＋ 状态图</button>
+                <button id="petUploadMoodBtn" class="text-btn" type="button">＋ 心情图</button>
+              </div>
+            </div>
+            <div class="pet-stage">
+              <img id="petStatusImg" class="pet-status-img" alt="宠物状态" />
+              <img id="petMoodImg" class="pet-mood-img" alt="宠物心情" />
+            </div>
+            <div class="pet-meta">
+              <div id="petStatusMeta" class="pet-time">状态：—</div>
+              <div id="petMoodMeta" class="pet-time pet-mood-time">心情：—</div>
+            </div>
+            <div class="pet-controls">
+              <div class="pet-row">
+                <label class="pet-select"><span>状态</span>
+                  <select id="petStatusSelect"><option value="">（未选择）</option></select>
+                </label>
+                <button id="petDelStatusBtn" class="text-btn" type="button" title="删除当前状态图">🗑</button>
+              </div>
+              <div class="pet-row">
+                <label class="pet-select"><span>心情</span>
+                  <select id="petMoodSelect"><option value="">（未选择）</option></select>
+                </label>
+                <button id="petDelMoodBtn" class="text-btn" type="button" title="删除当前心情图">🗑</button>
+              </div>
+            </div>
+            <p class="pet-tip">上传图片即新增状态/心情（文件名即名称），切换下拉即换图并记录时间。所有用户共享同一只宠物。</p>
+            <input id="petStatusFile" type="file" accept="image/*" multiple hidden />
+            <input id="petMoodFile" type="file" accept="image/*" multiple hidden />
+          </section>
         </main>
         <footer class="footer">WorkBuddy 个人工作台 · 数据直读直写后端 · 🔒 仅授权账号可登录</footer>
       </div>
@@ -489,6 +525,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260828a"></script>
+  <script src="script.js?v=20260828b"></script>
 </body>
 </html>

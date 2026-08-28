@@ -191,6 +191,7 @@ const MODULE_REGISTRY = [
   { id: "gh",       label: "GH时间" },
   { id: "notes",    label: "随手笔记" },
   { id: "news",     label: "新闻" },
+  { id: "pet",      label: "宠物" },
 ];
 function defaultHomeModules() {
   return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true }));
@@ -469,6 +470,7 @@ async function enterWorkbench(user) {
   await refreshMenuPermission();   // 拉取菜单权限
   applyMenuPermission();
   loadData();
+  loadPet();
   startHomePolling();
   startHeartbeat();
 }
@@ -1213,7 +1215,7 @@ function switchPage(page) {
     if (isTarget) {
       clearTimeout(releaseTimers.get(p.id));
       mountFrames(p);           // 进入才加载
-      if (targetId === "pageHome") loadData();          // 切回首页即拉取最新（数据未变则跳过重渲染）
+      if (targetId === "pageHome") { loadData(); loadPet(); } // 切回首页即拉取最新（数据未变则跳过重渲染）
       else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
     } else {
       scheduleRelease(p);       // 离开延时释放
@@ -1681,6 +1683,193 @@ function ensurePaynewsMounted() {
       collapseBtn.title = collapsed ? "展开新闻模块" : "收起新闻模块";
     });
   }
+})();
+
+/* =====================================================================
+   宠物模块（共享：所有登录用户可操作/可见，数据全局共享）
+   - 图片存 Supabase Storage：pet bucket，status/、mood/ 两个路径前缀当文件夹
+   - 当前状态/心情 + 切换时间存 pet_state 表（全局单行 id=1）
+   - 中文文件名（去扩展名）即枚举值；重名覆盖；支持批量多选
+   ===================================================================== */
+const STORAGE_BASE = SUPABASE_URL + "/storage/v1";
+const PET_BUCKET = "pet";
+
+let petState = { current_status: null, current_status_time: null, current_mood: null, current_mood_time: null };
+let petStatusImgs = [];   // status/ 下文件名数组（含扩展名）
+let petMoodImgs = [];     // mood/ 下文件名数组（含扩展名）
+
+/* 文件名去扩展名作为枚举显示名（如 睡觉.png → 睡觉） */
+function petNameLabel(filename) {
+  if (!filename) return "";
+  return String(filename).replace(/\.[^.]+$/, "");
+}
+/* 公开访问 URL（bucket 公开，中文路径需逐段编码） */
+function petPublicUrl(folder, filename) {
+  return STORAGE_BASE + "/object/public/" + PET_BUCKET + "/" +
+    encodeURIComponent(folder) + "/" + encodeURIComponent(filename);
+}
+function fmtPetTime(t) {
+  if (!t) return "";
+  const d = new Date(t);
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+/* ---------- Storage 操作 ---------- */
+async function petStorageUpload(folder, file) {
+  const baseName = file.name.replace(/\s+/g, "_"); // 空白转下划线，避免路径异常
+  const res = await withTimeout(fetch(
+    STORAGE_BASE + "/object/" + PET_BUCKET + "/" + encodeURIComponent(folder) + "/" + encodeURIComponent(baseName),
+    {
+      method: "POST",
+      headers: Object.assign({}, API_HEADERS, {
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "true", // 重名覆盖
+      }),
+      body: file,
+    }
+  ), 30000, "上传宠物图");
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error("上传失败 " + res.status + " " + txt);
+  }
+  return baseName;
+}
+async function petStorageList(folder) {
+  const res = await withTimeout(fetch(STORAGE_BASE + "/object/list/" + PET_BUCKET, {
+    method: "POST",
+    headers: Object.assign({}, API_HEADERS, { "Content-Type": "application/json" }),
+    body: JSON.stringify({ prefix: folder + "/", limit: 1000, offset: 0 }),
+  }), 20000, "读取宠物图列表");
+  if (!res.ok) return [];
+  const arr = await res.json();
+  if (!Array.isArray(arr)) return [];
+  const prefix = folder + "/";
+  return arr
+    .map((o) => (o.name || ""))
+    .filter((n) => n.indexOf(prefix) === 0)
+    .map((n) => n.slice(prefix.length));
+}
+async function petStorageDelete(folder, filename) {
+  const res = await withTimeout(fetch(
+    STORAGE_BASE + "/object/" + PET_BUCKET + "/" + encodeURIComponent(folder) + "/" + encodeURIComponent(filename),
+    { method: "DELETE", headers: API_HEADERS }
+  ), 20000, "删除宠物图");
+  return res.ok;
+}
+
+/* ---------- pet_state 读写 ---------- */
+async function savePetState() {
+  const body = {
+    id: 1,
+    current_status: petState.current_status || null,
+    current_status_time: petState.current_status_time || null,
+    current_mood: petState.current_mood || null,
+    current_mood_time: petState.current_mood_time || null,
+    updated_at: new Date().toISOString(),
+  };
+  await withTimeout(fetch(REST_BASE + "/pet_state", {
+    method: "POST",
+    headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+    body: JSON.stringify(body),
+  }), 15000, "保存宠物状态");
+}
+
+/* ---------- 加载 + 渲染 ---------- */
+async function loadPet() {
+  if (!userId) return;
+  try { petStatusImgs = await petStorageList("status"); } catch (e) { petStatusImgs = []; }
+  try { petMoodImgs = await petStorageList("mood"); } catch (e) { petMoodImgs = []; }
+  try {
+    const res = await withTimeout(fetch(REST_BASE + "/pet_state?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取宠物状态");
+    if (res.ok) { const arr = await res.json(); if (arr && arr[0]) petState = arr[0]; }
+  } catch (e) {}
+  renderPet();
+}
+
+function renderPet() {
+  const ss = $("#petStatusSelect"), ms = $("#petMoodSelect");
+  if (!ss || !ms) return;
+  ss.innerHTML = '<option value="">（未选择）</option>' +
+    petStatusImgs.map((n) => '<option value="' + esc(n) + '">' + esc(petNameLabel(n)) + "</option>").join("");
+  ms.innerHTML = '<option value="">（未选择）</option>' +
+    petMoodImgs.map((n) => '<option value="' + esc(n) + '">' + esc(petNameLabel(n)) + "</option>").join("");
+  ss.value = petState.current_status || "";
+  ms.value = petState.current_mood || "";
+
+  const img = $("#petStatusImg"), mood = $("#petMoodImg");
+  if (img) img.src = petState.current_status ? petPublicUrl("status", petState.current_status) : "";
+  if (mood) mood.src = petState.current_mood ? petPublicUrl("mood", petState.current_mood) : "";
+
+  const sm = $("#petStatusMeta"), mm = $("#petMoodMeta");
+  if (sm) sm.textContent = "状态：" + (petState.current_status ? petNameLabel(petState.current_status) : "—") +
+    (petState.current_status_time ? " · " + fmtPetTime(petState.current_status_time) : "");
+  if (mm) mm.textContent = "心情：" + (petState.current_mood ? petNameLabel(petState.current_mood) : "—") +
+    (petState.current_mood_time ? " · " + fmtPetTime(petState.current_mood_time) : "");
+}
+
+/* ---------- 上传 / 切换 / 删除 ---------- */
+async function uploadPetImages(type, files) {
+  const list = Array.from(files || []);
+  if (!list.length) return;
+  setStatus("上传中…", "syncing");
+  let last = null;
+  for (const f of list) {
+    try { last = await petStorageUpload(type, f); }
+    catch (e) { console.warn("[pet] 上传失败", f.name, e); setStatus("部分图片上传失败", "err"); }
+  }
+  if (type === "status") petStatusImgs = await petStorageList("status");
+  else petMoodImgs = await petStorageList("mood");
+  // 当前未选时，自动选中最后上传的一张（并记录切换时间）
+  if (last) {
+    if (type === "status" && !petState.current_status) {
+      petState.current_status = last; petState.current_status_time = new Date().toISOString(); await savePetState();
+    }
+    if (type === "mood" && !petState.current_mood) {
+      petState.current_mood = last; petState.current_mood_time = new Date().toISOString(); await savePetState();
+    }
+  }
+  renderPet();
+  setStatus("宠物图已上传 ✓", "ok");
+}
+
+async function switchPetStatus(filename) {
+  if (filename) { petState.current_status = filename; petState.current_status_time = new Date().toISOString(); }
+  else { petState.current_status = null; petState.current_status_time = null; }
+  await savePetState(); renderPet();
+}
+async function switchPetMood(filename) {
+  if (filename) { petState.current_mood = filename; petState.current_mood_time = new Date().toISOString(); }
+  else { petState.current_mood = null; petState.current_mood_time = null; }
+  await savePetState(); renderPet();
+}
+async function deletePetImage(type, filename) {
+  if (!filename) return;
+  if (!confirm("确定删除「" + petNameLabel(filename) + "」？该图片将从共享库中移除（当前选中会自动清空）。")) return;
+  await petStorageDelete(type, filename);
+  if (type === "status" && petState.current_status === filename) {
+    petState.current_status = null; petState.current_status_time = null; await savePetState();
+  }
+  if (type === "mood" && petState.current_mood === filename) {
+    petState.current_mood = null; petState.current_mood_time = null; await savePetState();
+  }
+  if (type === "status") petStatusImgs = await petStorageList("status");
+  else petMoodImgs = await petStorageList("mood");
+  renderPet();
+}
+
+/* 事件绑定 */
+(function initPet() {
+  const us = $("#petUploadStatusBtn"), um = $("#petUploadMoodBtn");
+  const fs = $("#petStatusFile"), fm = $("#petMoodFile");
+  if (us && fs) us.addEventListener("click", () => fs.click());
+  if (um && fm) um.addEventListener("click", () => fm.click());
+  if (fs) fs.addEventListener("change", (e) => { uploadPetImages("status", e.target.files); e.target.value = ""; });
+  if (fm) fm.addEventListener("change", (e) => { uploadPetImages("mood", e.target.files); e.target.value = ""; });
+  const ss = $("#petStatusSelect"); if (ss) ss.addEventListener("change", () => switchPetStatus(ss.value || null));
+  const ms = $("#petMoodSelect"); if (ms) ms.addEventListener("change", () => switchPetMood(ms.value || null));
+  const ds = $("#petDelStatusBtn"); if (ds) ds.addEventListener("click", () => deletePetImage("status", petState.current_status));
+  const dm = $("#petDelMoodBtn"); if (dm) dm.addEventListener("click", () => deletePetImage("mood", petState.current_mood));
 })();
 
 /* =====================================================================
