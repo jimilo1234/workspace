@@ -148,13 +148,33 @@ const DEFAULT_LINKS = [
   { emoji: "🔍", name: "百度", url: "https://www.baidu.com" },
 ];
 
-// 账号表：账号名 -> SHA-256 密码哈希（数据按 user_id 自然隔离）
-const ACCOUNTS = {
-  "jimilo": "c91bbcd983458914acd70d06b43a9ec5bb5152e419b416ceee17e84178be66d4",
-  "gemmy110": "ac4c8e9867776e5909e2ed257a850642230962adba12e34121f05ce03642ae8f"
-};
+/* ---------- 菜单定义（与侧边栏 nav 一一对应，供权限过滤与树形勾选） ---------- */
+const MENUS = [
+  { id: "home", label: "首页", page: "home" },
+  { id: "study", label: "学习", children: [
+    { id: "study-english", label: "英语", page: "english" },
+    { id: "study-crossborder", label: "跨境", page: "crossborder" },
+    { id: "study-vcc", label: "VCC账户", page: "vcc" },
+    { id: "study-acquiring", label: "外卡收单", page: "acquiring" },
+  ]},
+  { id: "ai", label: "AI", children: [
+    { id: "ai-doujie", label: "豆姐", page: "doujie" },
+  ]},
+  { id: "work", label: "工作", children: [
+    { id: "work-mobile", label: "手机端", page: "mobile" },
+    { id: "work-coffee", label: "咖啡机", page: "coffee" },
+    { id: "work-miaoda", label: "妙搭", page: "miaoda" },
+    { id: "work-sticky", label: "便利贴", page: "sticky" },
+  ]},
+  { id: "system", label: "系统管理", children: [
+    { id: "system-homemanage", label: "首页管理", page: "homeManage" },
+  ]},
+];
+/* 「操作员管理」入口：仅超管可见，不参与普通用户勾选树 */
+const SUPER_MENU_ID = "system-operators";
+
 function defaultState() {
-  const defName = userId && ACCOUNTS[userId] ? (userId === "jimilo" ? "吉米" : userId) : "吉米";
+  const defName = userId === "jimilo" ? "吉米" : (userId || "吉米");
   return { name: defName, todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules()
   };
 }
@@ -335,6 +355,7 @@ async function sha256Hex(str) {
 }
 function setMsg(t) { $("#setupMsg").textContent = t; }
 
+/* ---------- 登录（users 表查库验证） ---------- */
 let _homePollId = null;
 function startHomePolling() {
   stopHomePolling();
@@ -343,12 +364,113 @@ function startHomePolling() {
 function stopHomePolling() {
   if (_homePollId) { clearInterval(_homePollId); _homePollId = null; }
 }
-function enterWorkbench(acc) {
-  userId = acc;
-  localStorage.setItem(SESSION_KEY, acc);
+
+/* 按用户名查 users 表 */
+async function fetchUserByUsername(username) {
+  const url = `${REST_BASE}/users?username=eq.${encodeURIComponent(username)}&limit=1`;
+  const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 20000, "读取账号");
+  if (!res.ok) throw new Error("fetch user " + res.status);
+  const arr = await res.json();
+  return arr && arr[0] ? arr[0] : null;
+}
+
+/* 登录成功：异步记录登录时间/IP（不阻塞进入） */
+async function recordLogin(user) {
+  let ip = "unknown";
+  try {
+    const r = await withTimeout(fetch("https://api.ipify.org?format=json", { cache: "no-store" }), 8000, "获取IP");
+    const d = await r.json();
+    if (d && d.ip) ip = d.ip;
+  } catch (e) {}
+  try {
+    await withTimeout(fetch(`${REST_BASE}/users?username=eq.${encodeURIComponent(user.username)}`, {
+      method: "PATCH",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+      body: JSON.stringify({ last_login_time: new Date().toISOString(), last_login_ip: ip, last_active_time: new Date().toISOString() }),
+    }), 10000, "记录登录");
+  } catch (e) {}
+}
+
+/* ---------- 心跳：定期上报活跃时间，支撑超管页在线/离线判定（5 分钟超时） ---------- */
+let heartbeatId = null;
+function startHeartbeat() {
+  stopHeartbeat();
+  reportHeartbeat();
+  heartbeatId = setInterval(reportHeartbeat, 90 * 1000); // 1.5 分钟上报一次
+}
+function stopHeartbeat() {
+  if (heartbeatId) { clearInterval(heartbeatId); heartbeatId = null; }
+}
+async function reportHeartbeat() {
+  if (!userId) return;
+  try {
+    await withTimeout(fetch(`${REST_BASE}/users?username=eq.${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+      body: JSON.stringify({ last_active_time: new Date().toISOString() }),
+    }), 10000, "心跳");
+  } catch (e) { /* 心跳失败静默，不打断使用 */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopHeartbeat();
+  else { if (userId) { reportHeartbeat(); startHeartbeat(); } }
+});
+
+/* ---------- 菜单权限：is_super=全量；未配置=全量；已配置按 user_menu 过滤 ---------- */
+let currentUser = null;   // users 表当前登录用户行
+let myMenuIds = null;     // null=未配置/超管（全量）；数组=已配置的可见 menu_id 列表
+
+async function refreshMenuPermission() {
+  myMenuIds = null;
+  if (!currentUser || currentUser.is_super) return;
+  try {
+    const url = `${REST_BASE}/user_menu?user_id=eq.${encodeURIComponent(userId)}&select=menu_id`;
+    const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 20000, "读取菜单权限");
+    if (!res.ok) return;
+    const arr = await res.json();
+    if (Array.isArray(arr)) myMenuIds = arr.map((r) => r.menu_id);
+    /* 空数组（配置过但全不选）≠ null（从未配置）：空数组照常过滤 → 全部隐藏 */
+  } catch (e) { myMenuIds = null; } /* 权限拉取失败按全量处理，不阻塞使用 */
+}
+function hasMenu(id) {
+  if (!currentUser || currentUser.is_super) return true;
+  if (!myMenuIds) return true; // 未配置 = 全量可见
+  return myMenuIds.indexOf(id) !== -1;
+}
+/* 按权限渲染侧边栏：隐藏无权限叶子；无可见子项的分组整体隐藏；当前页被隐藏则跳回首页 */
+function applyMenuPermission() {
+  document.querySelectorAll(".nav-item[data-menu-id]").forEach((el) => {
+    el.style.display = hasMenu(el.dataset.menuId) ? "" : "none";
+  });
+  document.querySelectorAll(".nav-parent[data-menu-id]").forEach((btn) => {
+    const sub = document.getElementById("sub" + btn.dataset.toggle);
+    let visible = hasMenu(btn.dataset.menuId);
+    if (sub) {
+      const kids = Array.from(sub.querySelectorAll(".nav-child"));
+      visible = kids.some((c) => c.style.display !== "none");
+    }
+    btn.style.display = visible ? "" : "none";
+  });
+  /* 操作员管理入口：仅超管显示 */
+  const opBtn = document.querySelector('[data-menu-id="system-operators"]');
+  if (opBtn) opBtn.style.display = (currentUser && currentUser.is_super) ? "" : "none";
+  /* 当前激活页被隐藏 → 切回首页 */
+  const active = document.querySelector(".nav-item.active");
+  if (active && active.style.display === "none") switchPage("home");
+}
+
+async function enterWorkbench(user) {
+  userId = user.username;
+  currentUser = user;
+  localStorage.setItem(SESSION_KEY, user.username);
   $("#setupModal").classList.add("hidden");
+  setMsg("");
+  recordLogin(user);               // 异步记录登录时间/IP
+  await refreshMenuPermission();   // 拉取菜单权限
+  applyMenuPermission();
   loadData();
   startHomePolling();
+  startHeartbeat();
 }
 
 async function handleLogin() {
@@ -358,13 +480,19 @@ async function handleLogin() {
   let passHash;
   try { passHash = await sha256Hex(pass); }
   catch (e) { setMsg("校验失败，请重试"); return; }
-  if (!ACCOUNTS[acc] || ACCOUNTS[acc] !== passHash) { setMsg("账号或密码错误"); return; }
-  enterWorkbench(acc);
+  let user;
+  try { user = await fetchUserByUsername(acc); }
+  catch (e) { setMsg("无法连接后端，请稍后重试"); return; }
+  if (!user || user.password_hash !== passHash) { setMsg("账号或密码错误"); return; }
+  if (user.status && user.status !== "active") { setMsg("账号已停用，请联系管理员"); return; }
+  await enterWorkbench(user);
 }
 
 function exitSpace() {
-  userId = null; state = defaultState();
+  userId = null; currentUser = null; myMenuIds = null;
+  state = defaultState();
   stopHomePolling();
+  stopHeartbeat();
   localStorage.removeItem(SESSION_KEY);
   $("#setupModal").classList.remove("hidden");
   $("#setupAccount").value = ""; $("#setupPass").value = "";
@@ -949,8 +1077,15 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
   const saved = localStorage.getItem(SESSION_KEY);
   if (saved) {
     const u = saved === "1" ? "jimilo" : saved; // 兼容旧登录格式
-    if (ACCOUNTS[u]) enterWorkbench(u);
-    else { localStorage.removeItem(SESSION_KEY); setStatus("未登录", ""); }
+    try {
+      const user = await fetchUserByUsername(u);
+      if (user && user.status !== "disabled") await enterWorkbench(user);
+      else { localStorage.removeItem(SESSION_KEY); setStatus("未登录", ""); }
+    } catch (e) {
+      /* 后端暂不可用（如冷启动中）：按用户名降级进入，功能操作时自会提示；权限按全量 */
+      currentUser = { username: u, is_super: u === "jimilo", status: "active" };
+      await enterWorkbench(currentUser);
+    }
   } else {
     setStatus("未登录", "");
   }
@@ -1069,23 +1204,24 @@ function releaseBackground() {
 
 // 页面切换（首页/英语/豆姐/DP 等带 data-page 的项）
 const allPages = document.querySelectorAll(".page");
-document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const page = btn.dataset.page;
-    const targetId = "page" + page.charAt(0).toUpperCase() + page.slice(1);
-    document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b === btn));
-    allPages.forEach((p) => {
-      const isTarget = p.id === targetId;
-      p.classList.toggle("hidden", !isTarget);
-      if (isTarget) {
-        clearTimeout(releaseTimers.get(p.id));
-        mountFrames(p);           // 进入才加载
-        if (targetId === "pageHome") loadData(); // 切回首页即拉取最新（数据未变则跳过重渲染）
-      } else {
-        scheduleRelease(p);       // 离开延时释放
-      }
-    });
+function switchPage(page) {
+  const targetId = "page" + page.charAt(0).toUpperCase() + page.slice(1);
+  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  allPages.forEach((p) => {
+    const isTarget = p.id === targetId;
+    p.classList.toggle("hidden", !isTarget);
+    if (isTarget) {
+      clearTimeout(releaseTimers.get(p.id));
+      mountFrames(p);           // 进入才加载
+      if (targetId === "pageHome") loadData();          // 切回首页即拉取最新（数据未变则跳过重渲染）
+      else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
+    } else {
+      scheduleRelease(p);       // 离开延时释放
+    }
   });
+}
+document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => switchPage(btn.dataset.page));
 });
 /* ---------- 首页模块显隐 + 顺序（注册表驱动，可配置） ---------- */
 function applyHomeLayout() {
@@ -1546,3 +1682,161 @@ function ensurePaynewsMounted() {
     });
   }
 })();
+
+/* =====================================================================
+   操作员管理（仅超管 · 系统管理 → 操作员管理）
+   列表：用户名/姓名/登录状态/最后登录时间/IP；树形勾选配置可见菜单
+   ===================================================================== */
+const OP_OFFLINE_MS = 5 * 60 * 1000; // 5 分钟无活跃上报判离线
+
+function isOnline(t) {
+  if (!t) return false;
+  return (Date.now() - new Date(t).getTime()) < OP_OFFLINE_MS;
+}
+
+async function loadOperators() {
+  const tbody = $("#opList");
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="op-empty">加载中…</td></tr>';
+  try {
+    const url = `${REST_BASE}/users?is_super=eq.false&order=username`;
+    const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 20000, "读取操作员");
+    if (!res.ok) throw new Error("fetch " + res.status);
+    const arr = await res.json();
+    if (!Array.isArray(arr) || !arr.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="op-empty">暂无普通操作员</td></tr>';
+      return;
+    }
+    tbody.innerHTML = arr.map((u) => {
+      const online = isOnline(u.last_active_time);
+      const lastLogin = u.last_login_time ? new Date(u.last_login_time).toLocaleString("zh-CN", { hour12: false }) : "—";
+      return `<tr data-user="${esc(u.username)}">` +
+        `<td><strong>${esc(u.username)}</strong></td>` +
+        `<td>${esc(u.name || "—")}</td>` +
+        `<td><span class="op-status ${online ? "online" : "offline"}"></span>${online ? "在线" : "离线"}</td>` +
+        `<td class="op-mono">${lastLogin}</td>` +
+        `<td class="op-mono">${esc(u.last_login_ip || "—")}</td>` +
+        `<td><button type="button" class="text-btn op-edit-btn" data-user="${esc(u.username)}">编辑菜单</button></td>` +
+        `</tr>`;
+    }).join("");
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="op-empty">加载失败，请检查网络</td></tr>';
+  }
+}
+
+/* ---------- 树形勾选配置菜单权限 ---------- */
+let opEditUser = null;       // 正在编辑的操作员用户名
+let opEditUserMenus = null;  // 该用户当前可见菜单（null=未配置）
+
+async function openOpMenuModal(username) {
+  opEditUser = username;
+  opEditUserMenus = null;
+  try {
+    const url = `${REST_BASE}/user_menu?user_id=eq.${encodeURIComponent(username)}&select=menu_id`;
+    const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 15000, "读取权限");
+    if (res.ok) {
+      const arr = await res.json();
+      /* 查询成功即视为已配置（含空数组=全不选），与「从未配置(null)」区分 */
+      if (Array.isArray(arr)) opEditUserMenus = arr.map((r) => r.menu_id);
+    }
+  } catch (e) {}
+  $("#opModalTitle").textContent = "配置菜单权限 · " + username;
+  buildOpTree();
+  $("#opMenuModal").hidden = false;
+}
+
+function buildOpTree() {
+  const box = $("#opTree");
+  if (!box) return;
+  const configured = opEditUserMenus !== null; // 未配置(null)=默认全选；已配置按记录勾选（空数组=全不选）
+  const html = MENUS.map((m) => {
+    if (m.children) {
+      const kidsHtml = m.children.map((c) => {
+        const on = configured ? opEditUserMenus.indexOf(c.id) !== -1 : true;
+        return `<label class="tree-leaf"><input type="checkbox" value="${c.id}" ${on ? "checked" : ""} /><span>${c.label}</span></label>`;
+      }).join("");
+      return `<div class="tree-group" data-group="${m.id}">` +
+        `<label class="tree-parent"><input type="checkbox" class="group-check" /><span>${m.label}</span></label>` +
+        `<div class="tree-children">${kidsHtml}</div></div>`;
+    }
+    const on = configured ? opEditUserMenus.indexOf(m.id) !== -1 : true;
+    return `<label class="tree-leaf tree-root"><input type="checkbox" value="${m.id}" ${on ? "checked" : ""} /><span>${m.label}</span></label>`;
+  }).join("");
+  box.innerHTML = html;
+  box.querySelectorAll(".tree-group").forEach((g) => syncGroupState(g));
+}
+
+function syncGroupState(g) {
+  const cbs = g.querySelectorAll(".tree-children input[type=checkbox]");
+  const parent = g.querySelector(".group-check");
+  const total = cbs.length;
+  const on = Array.prototype.filter.call(cbs, (c) => c.checked).length;
+  parent.checked = on > 0;
+  parent.indeterminate = on > 0 && on < total;
+}
+
+const opTreeEl = document.getElementById("opTree");
+if (opTreeEl) opTreeEl.addEventListener("change", (e) => {
+  const cb = e.target;
+  const g = cb.closest(".tree-group");
+  if (cb.classList.contains("group-check") && g) {
+    g.querySelectorAll(".tree-children input[type=checkbox]").forEach((c) => { c.checked = cb.checked; });
+  } else if (g) {
+    syncGroupState(g);
+  }
+});
+
+async function saveOpMenus() {
+  if (!opEditUser) return;
+  const checked = [];
+  document.querySelectorAll("#opTree input[type=checkbox]:checked").forEach((cb) => { if (cb.value) checked.push(cb.value); });
+  setStatus("保存权限中…", "syncing");
+  try {
+    /* 1. 清空旧记录 */
+    await withTimeout(fetch(`${REST_BASE}/user_menu?user_id=eq.${encodeURIComponent(opEditUser)}`, {
+      method: "DELETE",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+    }), 15000, "清除旧权限");
+    /* 2. 写入新记录（勾选的叶子 menu_id） */
+    if (checked.length) {
+      const rows = checked.map((menu_id) => ({ user_id: opEditUser, menu_id }));
+      await withTimeout(fetch(`${REST_BASE}/user_menu`, {
+        method: "POST",
+        headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+        body: JSON.stringify(rows),
+      }), 15000, "写入权限");
+    }
+    /* 3. 标记已配置（区分「配置过但全不选」与「从未配置=全量」） */
+    await withTimeout(fetch(`${REST_BASE}/users?username=eq.${encodeURIComponent(opEditUser)}`, {
+      method: "PATCH",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+      body: JSON.stringify({ menu_configured: true }),
+    }), 15000, "标记已配置");
+    closeOpMenuModal();
+    setStatus("菜单权限已保存 ✓", "ok");
+  } catch (e) {
+    setStatus("保存失败 · 请检查网络", "err");
+  }
+}
+
+function closeOpMenuModal() {
+  const m = $("#opMenuModal");
+  if (m) m.hidden = true;
+  opEditUser = null; opEditUserMenus = null;
+}
+
+/* 事件绑定：编辑按钮（事件委托，列表刷新后仍有效） */
+const opListEl = document.getElementById("opList");
+if (opListEl) opListEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".op-edit-btn");
+  if (btn && btn.dataset.user) openOpMenuModal(btn.dataset.user);
+});
+const opModalEl = document.getElementById("opMenuModal");
+if (opModalEl) {
+  opModalEl.addEventListener("click", (e) => { if (e.target === opModalEl) closeOpMenuModal(); });
+  const oc = document.getElementById("opMenuClose"); if (oc) oc.addEventListener("click", closeOpMenuModal);
+  const occ = document.getElementById("opMenuCancel"); if (occ) occ.addEventListener("click", closeOpMenuModal);
+  const os = document.getElementById("opMenuSave"); if (os) os.addEventListener("click", saveOpMenus);
+}
+const opRefreshEl = document.getElementById("opRefresh");
+if (opRefreshEl) opRefreshEl.addEventListener("click", loadOperators);
