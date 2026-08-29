@@ -828,11 +828,10 @@ async function doSendMessage() {
       if (_pageInner) _pageInner.classList.remove('has-comment-panel');
     }
     // 回到顶部（仅 workspace 超级管理员：workspace 登录时写入 window.__wbIsSuper）
-    // 工作台首页滚动容器是 #pageHome（非 window，window 无滚动条），故滚动该元素
+    // 只让「新闻模块」卡片内部的滚动容器回顶部，不滚动整个首页
     if (window.__wbIsSuper) {
-      const _home = window.document.getElementById('pageHome');
-      if (_home) _home.scrollTo({ top: 0, behavior: 'smooth' });
-      else window.scrollTo({ top: 0, behavior: 'smooth' });
+      const _host = window.document.getElementById('paynewsHost');
+      if (_host) _host.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
   } catch (err) {
