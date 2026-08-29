@@ -828,8 +828,11 @@ async function doSendMessage() {
       if (_pageInner) _pageInner.classList.remove('has-comment-panel');
     }
     // 回到顶部（仅 workspace 超级管理员：workspace 登录时写入 window.__wbIsSuper）
+    // 工作台首页滚动容器是 #pageHome（非 window，window 无滚动条），故滚动该元素
     if (window.__wbIsSuper) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const _home = window.document.getElementById('pageHome');
+      if (_home) _home.scrollTo({ top: 0, behavior: 'smooth' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
   } catch (err) {
