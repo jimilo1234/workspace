@@ -1853,11 +1853,10 @@ async function savePetState() {
   }), 15000, "保存宠物状态");
 }
 
-/* 记录一次状态/心情变化（最近 5 条，新的在前）。kind: "status" | "mood" */
+/* 记录一次状态/心情变化（最近 5 条，新的在前）。只存 类型/名称/时间，不记操作人。 */
 function pushPetHistory(kind, label) {
   if (!label) return;
-  const by = userId || "未知";
-  const entry = { kind: kind, label: label, time: new Date().toISOString(), by: by };
+  const entry = { kind: kind, label: label, time: new Date().toISOString() };
   const arr = Array.isArray(petState.history) ? petState.history : [];
   petState.history = [entry].concat(arr).slice(0, 5);
 }
@@ -1924,8 +1923,7 @@ function renderPet() {
         const kind = h.kind === "mood" ? "心情" : "状态";
         return '<li class="pet-hist-item"><span class="pet-hist-kind">' + esc(kind) + '</span>' +
           '<span class="pet-hist-label">' + esc(h.label || "—") + '</span>' +
-          '<span class="pet-hist-time">' + (h.time ? fmtPetTime(h.time) : "") + '</span>' +
-          (h.by ? '<span class="pet-hist-by">by ' + esc(h.by) + '</span>' : '') + '</li>';
+          '<span class="pet-hist-time">' + (h.time ? fmtPetTime(h.time) : "") + '</span></li>';
       }).join("");
     }
   }
