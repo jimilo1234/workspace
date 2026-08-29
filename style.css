@@ -913,13 +913,14 @@ html.pn-fs .topbar { display: none; }
 .pet-actions { display: flex; align-items: center; gap: 10px; }
 .pet-stage {
   position: relative; width: 160px; height: 160px; margin: 4px auto 0;
-  border-radius: 14px; overflow: hidden;
+  border-radius: 14px;
   background: var(--bg-soft); border: 1px solid var(--border);
 }
-.pet-status-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pet-status-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
 .pet-mood-img {
-  position: absolute; top: 6px; right: 6px;
-  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+  position: absolute; top: -18px; right: -18px;
+  width: 80px; height: 80px; border-radius: 12px; object-fit: cover;
+  box-shadow: 0 3px 10px rgba(0,0,0,.22); z-index: 2;
 }
 .pet-meta { text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
 .pet-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
