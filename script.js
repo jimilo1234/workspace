@@ -1758,20 +1758,34 @@ async function petImagesList(folder) {
   return Array.isArray(arr) ? arr : [];
 }
 async function petImagesUpsert(folder, label, storageName) {
-  /* 同 folder+label 已存在 → PATCH 更新 storage_name（实现重名覆盖）；否则 INSERT */
-  const head = Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" });
+  /* 修复：PATCH 即使 0 行受影响也返回 200 OK，必须以 return=representation 数行数判断是否真命中。
+     0 行 = (folder,label) 还不存在 → INSERT；POST 撞 409（唯一索引并发）→ 再 PATCH 兜底一次。 */
+  const headRep = Object.assign({}, API_HEADERS, { "Prefer": "return=representation" });
   const chk = await withTimeout(fetch(
     REST_BASE + "/pet_images?folder=eq." + encodeURIComponent(folder) + "&label=eq." + encodeURIComponent(label),
-    { method: "PATCH", headers: head, body: JSON.stringify({ storage_name: storageName }) }
-  ), 15000, "更新图片映射");
-  if (chk.ok) return;
-  const ins = await withTimeout(fetch(REST_BASE + "/pet_images",
-    { method: "POST", headers: head, body: JSON.stringify([{ folder, label, storage_name: storageName }]) }
-  ), 15000, "新增图片映射");
-  if (!ins.ok) {
-    const t = await ins.text().catch(() => "");
-    throw new Error("映射失败 " + ins.status + " " + t);
+    { method: "PATCH", headers: headRep, body: JSON.stringify({ storage_name: storageName }) }
+  ), 15000, "更新图片映射(PATCH)");
+  if (chk.ok) {
+    let arr = [];
+    try { arr = await chk.json(); } catch (e) {}
+    if (Array.isArray(arr) && arr.length > 0) return; // 真命中
   }
+  // 没命中 → INSERT
+  const headMin = Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" });
+  const ins = await withTimeout(fetch(REST_BASE + "/pet_images",
+    { method: "POST", headers: headMin, body: JSON.stringify([{ folder, label, storage_name: storageName }]) }
+  ), 15000, "新增图片映射(POST)");
+  if (ins.ok) return;
+  // 409 唯一冲突 = 别人刚写入 → 再 PATCH 一次兜底
+  if (ins.status === 409) {
+    const rep = await withTimeout(fetch(
+      REST_BASE + "/pet_images?folder=eq." + encodeURIComponent(folder) + "&label=eq." + encodeURIComponent(label),
+      { method: "PATCH", headers: headRep, body: JSON.stringify({ storage_name: storageName }) }
+    ), 15000, "并发兜底 PATCH");
+    if (rep.ok) return;
+  }
+  const t = await ins.text().catch(() => "");
+  throw new Error("映射失败 " + ins.status + " " + t);
 }
 async function petImagesDelete(folder, label) {
   const list = await petImagesList(folder).catch(() => []);
@@ -1808,12 +1822,25 @@ async function savePetState() {
 /* ---------- 加载 + 渲染 ---------- */
 async function loadPet() {
   if (!userId) return;
-  try { petStatusImgs = await petImagesList("status"); } catch (e) { petStatusImgs = []; }
-  try { petMoodImgs = await petImagesList("mood"); } catch (e) { petMoodImgs = []; }
+  try { petStatusImgs = await petImagesList("status"); } catch (e) { console.error("[pet] 读状态列表失败", e); petStatusImgs = []; }
+  try { petMoodImgs = await petImagesList("mood"); } catch (e) { console.error("[pet] 读心情列表失败", e); petMoodImgs = []; }
   try {
     const res = await withTimeout(fetch(REST_BASE + "/pet_state?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取宠物状态");
     if (res.ok) { const arr = await res.json(); if (arr && arr[0]) petState = arr[0]; }
   } catch (e) {}
+  /* 自愈：pet_state 里残留了"宠物图片库里没有"的 label（如旧 session 写入但映射已删），
+     自动清空 + 存回，杜绝"显示状态但下拉空 / 图片 404"的鬼样。 */
+  let needFix = false;
+  if (petState.current_status && !petFileNameOf(petStatusImgs, petState.current_status)) {
+    petState.current_status = null; petState.current_status_time = null; needFix = true;
+  }
+  if (petState.current_mood && !petFileNameOf(petMoodImgs, petState.current_mood)) {
+    petState.current_mood = null; petState.current_mood_time = null; needFix = true;
+  }
+  if (needFix) {
+    try { await savePetState(); console.info("[pet] 自愈：已清理 pet_state 残留 label"); }
+    catch (e) { console.error("[pet] 自愈保存失败", e); }
+  }
   renderPet();
 }
 
@@ -1849,17 +1876,19 @@ async function uploadPetImages(type, files) {
   const list = Array.from(files || []);
   if (!list.length) return;
   setStatus("上传中…", "syncing");
-  let failCount = 0, lastErrCode = null, lastLabel = null;
+  let successCount = 0, failCount = 0, lastErrCode = null, lastErrMsg = null, lastLabel = null;
   for (const f of list) {
     const label = petNameLabel(f.name); // 去扩展名的中文显示名
     try {
       const storageName = await petStorageUpload(type, f);
       await petImagesUpsert(type, label, storageName);
+      successCount++;
       lastLabel = label;
     } catch (e) {
       failCount++;
       const m = (e.message || "").match(/^上传失败\s+(\d+)/);
       if (m) lastErrCode = m[1];
+      lastErrMsg = e.message || String(e);
       console.error("[pet] 上传失败", f.name, e);
     }
   }
@@ -1877,11 +1906,13 @@ async function uploadPetImages(type, files) {
     }
   }
   renderPet();
-  if (failCount > 0) {
-    const code = lastErrCode ? "（HTTP " + lastErrCode + "）" : "";
-    setStatus("有 " + failCount + " 张上传失败" + code + " · 按 F12 看 Console 取完整报错", "err");
+  /* 显式报告：成功 / 失败 数字分别说，不再一键"全部成功 ✓"骗人 */
+  if (list.length === 1) {
+    if (failCount === 0) setStatus("已上传 1 张宠物图：" + (lastLabel || "✓"), "ok");
+    else setStatus("上传失败 " + (lastErrCode ? "HTTP " + lastErrCode : "") + " · " + (lastErrMsg || "未知错误"), "err");
   } else {
-    setStatus("宠物图已上传 ✓", "ok");
+    if (failCount === 0) setStatus("已上传 " + successCount + " 张宠物图 ✓", "ok");
+    else setStatus("成功 " + successCount + " / 失败 " + failCount + " 张 · " + (lastErrCode ? "HTTP " + lastErrCode + " · " : "") + "按 F12 看 Console", "err");
   }
 }
 
