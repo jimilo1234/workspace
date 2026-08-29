@@ -827,8 +827,8 @@ async function doSendMessage() {
       const _pageInner = document.querySelector('.page.active .page-inner');
       if (_pageInner) _pageInner.classList.remove('has-comment-panel');
     }
-    // 回到顶部（仅0110用户）
-    if (currentUser && currentUser.username === '0110') {
+    // 回到顶部（仅 workspace 超级管理员：workspace 登录时写入 window.__wbIsSuper）
+    if (window.__wbIsSuper) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 

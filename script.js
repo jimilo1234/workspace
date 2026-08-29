@@ -201,7 +201,7 @@ function normalizeHomeModules(arr) {
   const saved = (Array.isArray(arr) ? arr : []).filter((m) => m && m.id && MODULE_REGISTRY.some((r) => r.id === m.id));
   const savedIds = new Set(saved.map((m) => m.id));
   const added = MODULE_REGISTRY.filter((m) => !savedIds.has(m.id)).map((m) => ({ id: m.id, visible: true }));
-  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false }));
+  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false, height: (typeof m.height === "number" && m.height > 0) ? Math.round(m.height) : null }));
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -463,6 +463,7 @@ function applyMenuPermission() {
 async function enterWorkbench(user) {
   userId = user.username;
   currentUser = user;
+  window.__wbIsSuper = !!(user && user.is_super);
   localStorage.setItem(SESSION_KEY, user.username);
   $("#setupModal").classList.add("hidden");
   setMsg("");
@@ -492,6 +493,7 @@ async function handleLogin() {
 
 function exitSpace() {
   userId = null; currentUser = null; myMenuIds = null;
+  window.__wbIsSuper = false;
   state = defaultState();
   stopHomePolling();
   stopHeartbeat();
@@ -1086,6 +1088,7 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
     } catch (e) {
       /* 后端暂不可用（如冷启动中）：按用户名降级进入，功能操作时自会提示；权限按全量 */
       currentUser = { username: u, is_super: u === "jimilo", status: "active" };
+      window.__wbIsSuper = !!(currentUser && currentUser.is_super);
       await enterWorkbench(currentUser);
     }
   } else {
@@ -1239,12 +1242,58 @@ function applyHomeLayout() {
     const el = cards[m.id];
     if (!el) return;
     el.style.display = vis[m.id] ? "" : "none";
+    el.style.height = (m.height && m.height > 0) ? m.height + "px" : "";
     grid.appendChild(el);
   });
+  initCardResize();
   // 兜底：配置里没有的卡片（理论上不会）默认显示并追加到末尾
   grid.querySelectorAll(":scope > [data-module]").forEach((el) => {
     if (!order.find((m) => m.id === el.dataset.module)) el.style.display = "";
   });
+}
+
+/* ---------- 首页模块卡片高度拖拽（通用，按用户独立保存） ---------- */
+const CARD_MIN_H = 120, CARD_MAX_H = 800;
+function initCardResize() {
+  const grid = document.querySelector("#pageHome .grid");
+  if (!grid) return;
+  grid.querySelectorAll(":scope > .card[data-module]").forEach((card) => {
+    if (card.dataset.resizeInited) return;
+    card.dataset.resizeInited = "1";
+    const handle = document.createElement("div");
+    handle.className = "card-resize-handle";
+    handle.title = "拖拽调整高度";
+    card.appendChild(handle);
+    let startY = 0, startH = 0, dragging = false;
+    handle.addEventListener("pointerdown", (e) => {
+      dragging = true; startY = e.clientY; startH = card.getBoundingClientRect().height;
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+      document.body.style.userSelect = "none";
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      let h = startH + (e.clientY - startY);
+      h = Math.max(CARD_MIN_H, Math.min(CARD_MAX_H, h));
+      card.style.height = h + "px";
+    });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+      document.body.style.userSelect = "";
+      saveCardHeight(card.dataset.module, card.getBoundingClientRect().height);
+    };
+    handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", end);
+  });
+}
+function saveCardHeight(id, h) {
+  if (!Array.isArray(state.homeModules)) state.homeModules = defaultHomeModules();
+  const item = state.homeModules.find((m) => m.id === id);
+  const hh = Math.round(Math.max(CARD_MIN_H, Math.min(CARD_MAX_H, h)));
+  if (item) item.height = hh;
+  scheduleSave();
 }
 
 /* 首页管理页：可拖拽模块列表 */
@@ -1303,8 +1352,12 @@ function saveHomeManage() {
   const list = $("#moduleList");
   if (!list) return;
   const next = [];
+  const prevH = state.homeModules || [];
   list.querySelectorAll(".module-item").forEach((li) => {
-    next.push({ id: li.dataset.id, visible: li.querySelector(".mi-toggle").checked });
+    const id = li.dataset.id;
+    const old = prevH.find((p) => p.id === id);
+    const h = (old && typeof old.height === "number" && old.height > 0) ? old.height : null;
+    next.push({ id: id, visible: li.querySelector(".mi-toggle").checked, height: h });
   });
   state.homeModules = next;
   applyHomeLayout();
@@ -1556,7 +1609,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260826b";
+const PAYNEWS_VER = "20260829k";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -1864,19 +1917,21 @@ function pushPetHistory(kind, label) {
 /* ---------- 加载 + 渲染 ---------- */
 async function loadPet() {
   if (!userId) return;
-  try { petStatusImgs = await petImagesList("status"); } catch (e) { console.error("[pet] 读状态列表失败", e); petStatusImgs = []; }
-  try { petMoodImgs = await petImagesList("mood"); } catch (e) { console.error("[pet] 读心情列表失败", e); petMoodImgs = []; }
+  let statusOk = true, moodOk = true;
+  try { petStatusImgs = await petImagesList("status"); } catch (e) { console.error("[pet] 读状态列表失败", e); petStatusImgs = []; statusOk = false; }
+  try { petMoodImgs = await petImagesList("mood"); } catch (e) { console.error("[pet] 读心情列表失败", e); petMoodImgs = []; moodOk = false; }
   try {
     const res = await withTimeout(fetch(REST_BASE + "/pet_state?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取宠物状态");
     if (res.ok) { const arr = await res.json(); if (arr && arr[0]) { petState = arr[0]; if (!Array.isArray(petState.history)) petState.history = []; } }
   } catch (e) {}
-  /* 自愈：pet_state 里残留了"宠物图片库里没有"的 label（如旧 session 写入但映射已删），
-     自动清空 + 存回，杜绝"显示状态但下拉空 / 图片 404"的鬼样。 */
+  /* 自愈：仅当图片列表"成功加载"（statusOk/moodOk）且 pet_state 里的 label 确实不在库中时才清理。
+     若列表加载失败（瞬断/网络抖动/CDN 冷启动），绝不清空已选状态——避免误清用户数据、
+     把"下拉短暂空白"误当成"枚举被删除"写回库。 */
   let needFix = false;
-  if (petState.current_status && !petFileNameOf(petStatusImgs, petState.current_status)) {
+  if (statusOk && petState.current_status && !petFileNameOf(petStatusImgs, petState.current_status)) {
     petState.current_status = null; petState.current_status_time = null; needFix = true;
   }
-  if (petState.current_mood && !petFileNameOf(petMoodImgs, petState.current_mood)) {
+  if (moodOk && petState.current_mood && !petFileNameOf(petMoodImgs, petState.current_mood)) {
     petState.current_mood = null; petState.current_mood_time = null; needFix = true;
   }
   if (needFix) {
@@ -1977,12 +2032,28 @@ async function uploadPetImages(type, files) {
 async function switchPetStatus(filename) {
   if (filename) { petState.current_status = filename; petState.current_status_time = new Date().toISOString(); pushPetHistory("status", filename); }
   else { petState.current_status = null; petState.current_status_time = null; }
-  await savePetState(); renderPet();
+  try {
+    await savePetState();
+    renderPet();
+    setStatus("已切换状态：" + (filename || "（清空）"), "ok");
+  } catch (e) {
+    console.error("[pet] 切换状态失败", e);
+    setStatus("切换状态失败：" + (e && e.message ? e.message : e) + " · 按 F12 看 Console", "err");
+    renderPet();
+  }
 }
 async function switchPetMood(filename) {
   if (filename) { petState.current_mood = filename; petState.current_mood_time = new Date().toISOString(); pushPetHistory("mood", filename); }
   else { petState.current_mood = null; petState.current_mood_time = null; }
-  await savePetState(); renderPet();
+  try {
+    await savePetState();
+    renderPet();
+    setStatus("已切换心情：" + (filename || "（清空）"), "ok");
+  } catch (e) {
+    console.error("[pet] 切换心情失败", e);
+    setStatus("切换心情失败：" + (e && e.message ? e.message : e) + " · 按 F12 看 Console", "err");
+    renderPet();
+  }
 }
 async function deletePetImage(type, filename) {
   if (!filename) return;
@@ -2007,6 +2078,15 @@ async function deletePetImage(type, filename) {
   if (um && fm) um.addEventListener("click", () => fm.click());
   if (fs) fs.addEventListener("change", (e) => { uploadPetImages("status", e.target.files); e.target.value = ""; });
   if (fm) fm.addEventListener("change", (e) => { uploadPetImages("mood", e.target.files); e.target.value = ""; });
+  const rf = $("#petRefreshBtn");
+  if (rf) rf.addEventListener("click", async () => {
+    if (rf.disabled) return;
+    const oldLabel = rf.textContent;
+    rf.disabled = true; rf.textContent = "⟳ 刷新中…";
+    try { await loadPet(); setStatus("宠物已刷新 ✓", "ok"); }
+    catch (e) { console.error("[pet] 手动刷新失败", e); setStatus("刷新失败：" + (e && e.message ? e.message : e), "err"); }
+    finally { rf.disabled = false; rf.textContent = oldLabel; }
+  });
   const ss = $("#petStatusSelect"); if (ss) ss.addEventListener("change", () => switchPetStatus(ss.value || null));
   const ms = $("#petMoodSelect"); if (ms) ms.addEventListener("change", () => switchPetMood(ms.value || null));
   const ds = $("#petDelStatusBtn"); if (ds) ds.addEventListener("click", () => deletePetImage("status", petState.current_status));
