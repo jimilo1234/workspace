@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260829b" />
+  <link rel="stylesheet" href="style.css?v=20260829d" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -274,15 +274,20 @@
                   <select id="petStatusSelect"><option value="">（未选择）</option></select>
                 </label>
                 <button id="petDelStatusBtn" class="text-btn" type="button" title="删除当前状态图">🗑</button>
+                <button id="petRenameStatusBtn" class="text-btn" type="button" title="重命名当前状态">✎</button>
               </div>
               <div class="pet-row">
                 <label class="pet-select"><span>心情</span>
                   <select id="petMoodSelect"><option value="">（未选择）</option></select>
                 </label>
                 <button id="petDelMoodBtn" class="text-btn" type="button" title="删除当前心情图">🗑</button>
+                <button id="petRenameMoodBtn" class="text-btn" type="button" title="重命名当前心情">✎</button>
               </div>
             </div>
-            <p class="pet-tip">上传图片即新增状态/心情（文件名即名称），切换下拉即换图并记录时间。所有用户共享同一只宠物。</p>
+            <div class="pet-history">
+              <div class="pet-history-title">最近变化</div>
+              <ul id="petHistoryList" class="pet-history-list"><li class="pet-history-empty">暂无变化记录</li></ul>
+            </div>
             <input id="petStatusFile" type="file" accept="image/*" multiple hidden />
             <input id="petMoodFile" type="file" accept="image/*" multiple hidden />
           </section>
@@ -525,6 +530,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260829b"></script>
+  <script src="script.js?v=20260829d"></script>
 </body>
 </html>

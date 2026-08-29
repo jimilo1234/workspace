@@ -1694,7 +1694,7 @@ function ensurePaynewsMounted() {
 const STORAGE_BASE = SUPABASE_URL + "/storage/v1";
 const PET_BUCKET = "pet";
 
-let petState = { current_status: null, current_status_time: null, current_mood: null, current_mood_time: null };
+let petState = { current_status: null, current_status_time: null, current_mood: null, current_mood_time: null, history: [] };
 let petStatusImgs = [];   // status/ 下文件名数组（含扩展名）
 let petMoodImgs = [];     // mood/ 下文件名数组（含扩展名）
 
@@ -1802,6 +1802,39 @@ async function petImagesDelete(folder, label) {
   ), 15000, "删除图片映射").catch(() => {});
 }
 
+/* 仅改 pet_images.label 显示名；Storage 文件名/URL 完全不动（底图不变）。
+   若 oldLabel 恰好是当前选中状态/心情，则同步 pet_state.label（切换时间保留）。 */
+async function renamePetImage(type, oldLabel, newLabel) {
+  newLabel = (newLabel || "").trim();
+  if (!newLabel) throw new Error("名称不能为空");
+  if (newLabel === oldLabel) return;
+  const headRep = Object.assign({}, API_HEADERS, { "Prefer": "return=representation" });
+  const res = await withTimeout(fetch(
+    REST_BASE + "/pet_images?folder=eq." + encodeURIComponent(type) + "&label=eq." + encodeURIComponent(oldLabel),
+    { method: "PATCH", headers: headRep, body: JSON.stringify({ label: newLabel }) }
+  ), 15000, "重命名宠物图");
+  if (res.ok) {
+    let arr = [];
+    try { arr = await res.json(); } catch (e) {}
+    if (Array.isArray(arr) && arr.length > 0) {
+      // 命中：同步 pet_state 当前选中（保留切换时间）
+      if (type === "status" && petState.current_status === oldLabel) {
+        petState.current_status = newLabel; await savePetState();
+      }
+      if (type === "mood" && petState.current_mood === oldLabel) {
+        petState.current_mood = newLabel; await savePetState();
+      }
+      if (type === "status") petStatusImgs = await petImagesList("status");
+      else petMoodImgs = await petImagesList("mood");
+      renderPet();
+      return;
+    }
+  }
+  if (res.status === 409) throw new Error("名称「" + newLabel + "」已被占用，换一个");
+  const txt = await res.text().catch(() => "");
+  throw new Error("重命名失败 " + res.status + " " + txt);
+}
+
 /* ---------- pet_state 读写 ---------- */
 async function savePetState() {
   const body = {
@@ -1810,6 +1843,7 @@ async function savePetState() {
     current_status_time: petState.current_status_time || null,
     current_mood: petState.current_mood || null,
     current_mood_time: petState.current_mood_time || null,
+    history: petState.history || null,
     updated_at: new Date().toISOString(),
   };
   await withTimeout(fetch(REST_BASE + "/pet_state", {
@@ -1819,6 +1853,15 @@ async function savePetState() {
   }), 15000, "保存宠物状态");
 }
 
+/* 记录一次状态/心情变化（最近 5 条，新的在前）。kind: "status" | "mood" */
+function pushPetHistory(kind, label) {
+  if (!label) return;
+  const by = userId || "未知";
+  const entry = { kind: kind, label: label, time: new Date().toISOString(), by: by };
+  const arr = Array.isArray(petState.history) ? petState.history : [];
+  petState.history = [entry].concat(arr).slice(0, 5);
+}
+
 /* ---------- 加载 + 渲染 ---------- */
 async function loadPet() {
   if (!userId) return;
@@ -1826,7 +1869,7 @@ async function loadPet() {
   try { petMoodImgs = await petImagesList("mood"); } catch (e) { console.error("[pet] 读心情列表失败", e); petMoodImgs = []; }
   try {
     const res = await withTimeout(fetch(REST_BASE + "/pet_state?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取宠物状态");
-    if (res.ok) { const arr = await res.json(); if (arr && arr[0]) petState = arr[0]; }
+    if (res.ok) { const arr = await res.json(); if (arr && arr[0]) { petState = arr[0]; if (!Array.isArray(petState.history)) petState.history = []; } }
   } catch (e) {}
   /* 自愈：pet_state 里残留了"宠物图片库里没有"的 label（如旧 session 写入但映射已删），
      自动清空 + 存回，杜绝"显示状态但下拉空 / 图片 404"的鬼样。 */
@@ -1869,6 +1912,23 @@ function renderPet() {
     (petState.current_status_time ? " · " + fmtPetTime(petState.current_status_time) : "");
   if (mm) mm.textContent = "心情：" + (petState.current_mood ? petState.current_mood : "—") +
     (petState.current_mood_time ? " · " + fmtPetTime(petState.current_mood_time) : "");
+
+  // 最近变化（最多 5 条，新的在前）
+  const hl = $("#petHistoryList");
+  if (hl) {
+    const hist = Array.isArray(petState.history) ? petState.history : [];
+    if (!hist.length) {
+      hl.innerHTML = '<li class="pet-history-empty">暂无变化记录</li>';
+    } else {
+      hl.innerHTML = hist.map((h) => {
+        const kind = h.kind === "mood" ? "心情" : "状态";
+        return '<li class="pet-hist-item"><span class="pet-hist-kind">' + esc(kind) + '</span>' +
+          '<span class="pet-hist-label">' + esc(h.label || "—") + '</span>' +
+          '<span class="pet-hist-time">' + (h.time ? fmtPetTime(h.time) : "") + '</span>' +
+          (h.by ? '<span class="pet-hist-by">by ' + esc(h.by) + '</span>' : '') + '</li>';
+      }).join("");
+    }
+  }
 }
 
 /* ---------- 上传 / 切换 / 删除 ---------- */
@@ -1896,13 +1956,13 @@ async function uploadPetImages(type, files) {
     if (type === "status") petStatusImgs = await petImagesList("status");
     else petMoodImgs = await petImagesList("mood");
   } catch (e) { console.error("[pet] 刷新列表失败", e); }
-  // 当前未选时，自动选中最后上传成功的一张（并记录切换时间）
+  // 当前未选时，自动选中最后上传成功的一张（并记录切换时间 + 历史）
   if (lastLabel) {
     if (type === "status" && !petState.current_status) {
-      petState.current_status = lastLabel; petState.current_status_time = new Date().toISOString(); await savePetState();
+      petState.current_status = lastLabel; petState.current_status_time = new Date().toISOString(); pushPetHistory("status", lastLabel); await savePetState();
     }
     if (type === "mood" && !petState.current_mood) {
-      petState.current_mood = lastLabel; petState.current_mood_time = new Date().toISOString(); await savePetState();
+      petState.current_mood = lastLabel; petState.current_mood_time = new Date().toISOString(); pushPetHistory("mood", lastLabel); await savePetState();
     }
   }
   renderPet();
@@ -1917,12 +1977,12 @@ async function uploadPetImages(type, files) {
 }
 
 async function switchPetStatus(filename) {
-  if (filename) { petState.current_status = filename; petState.current_status_time = new Date().toISOString(); }
+  if (filename) { petState.current_status = filename; petState.current_status_time = new Date().toISOString(); pushPetHistory("status", filename); }
   else { petState.current_status = null; petState.current_status_time = null; }
   await savePetState(); renderPet();
 }
 async function switchPetMood(filename) {
-  if (filename) { petState.current_mood = filename; petState.current_mood_time = new Date().toISOString(); }
+  if (filename) { petState.current_mood = filename; petState.current_mood_time = new Date().toISOString(); pushPetHistory("mood", filename); }
   else { petState.current_mood = null; petState.current_mood_time = null; }
   await savePetState(); renderPet();
 }
@@ -1953,6 +2013,32 @@ async function deletePetImage(type, filename) {
   const ms = $("#petMoodSelect"); if (ms) ms.addEventListener("change", () => switchPetMood(ms.value || null));
   const ds = $("#petDelStatusBtn"); if (ds) ds.addEventListener("click", () => deletePetImage("status", petState.current_status));
   const dm = $("#petDelMoodBtn"); if (dm) dm.addEventListener("click", () => deletePetImage("mood", petState.current_mood));
+  const rs = $("#petRenameStatusBtn");
+  if (rs) rs.addEventListener("click", () => {
+    const old = petState.current_status;
+    if (!old) { setStatus("请先在「状态」下拉选中一项再重命名", "err"); return; }
+    const nv = window.prompt("重命名状态「" + old + "」为：", old);
+    if (nv === null) return;
+    const trimmed = nv.trim();
+    if (!trimmed) { setStatus("名称不能为空", "err"); return; }
+    if (trimmed === old) { setStatus("名称未变化", "syncing"); return; }
+    renamePetImage("status", old, trimmed)
+      .then(() => setStatus("已重命名「" + old + "」→「" + trimmed + "」✓", "ok"))
+      .catch((e) => setStatus("重命名失败：" + (e.message || e), "err"));
+  });
+  const rm = $("#petRenameMoodBtn");
+  if (rm) rm.addEventListener("click", () => {
+    const old = petState.current_mood;
+    if (!old) { setStatus("请先在「心情」下拉选中一项再重命名", "err"); return; }
+    const nv = window.prompt("重命名心情「" + old + "」为：", old);
+    if (nv === null) return;
+    const trimmed = nv.trim();
+    if (!trimmed) { setStatus("名称不能为空", "err"); return; }
+    if (trimmed === old) { setStatus("名称未变化", "syncing"); return; }
+    renamePetImage("mood", old, trimmed)
+      .then(() => setStatus("已重命名「" + old + "」→「" + trimmed + "」✓", "ok"))
+      .catch((e) => setStatus("重命名失败：" + (e.message || e), "err"));
+  });
 })();
 
 /* =====================================================================

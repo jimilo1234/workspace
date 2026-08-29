@@ -937,3 +937,12 @@ html.pn-fs .topbar { display: none; }
 .pet-select select:focus { border-color: var(--accent); background: var(--accent-soft); }
 .pet-row .text-btn { flex: none; font-size: 14px; }
 .pet-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.55; }
+.pet-history { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+.pet-history-title { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
+.pet-history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pet-history-empty { font-size: 11px; color: var(--text-faint); }
+.pet-hist-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-soft); font-family: var(--mono); }
+.pet-hist-kind { flex: none; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 10px; }
+.pet-hist-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.pet-hist-time { flex: none; color: var(--text-faint); }
+.pet-hist-by { flex: none; color: var(--text-faint); font-size: 10px; }
