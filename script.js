@@ -51,6 +51,7 @@ async function fetchState() {
 
 /* 直接写入后端（upsert：有则更新，无则插入） */
 let notesHistoryColReady = true; // notes_history 列就绪标志；列未建好时降级跳过，防整行 400
+let sharingColReady = true; // sharing 列就绪标志；列未建好时降级跳过，防整行 400
 
 async function saveState() {
   if (!dataConfirmed) {
@@ -97,29 +98,61 @@ async function saveState() {
     }
   } catch (e2) {}
   state.updated_at = new Date().toISOString();
-  const buildBody = (withHist) => ({
+  const buildBody = (withHist, withSharing) => ({
     user_id: userId, name: state.name, todos: state.todos,
     links: state.links, notes: state.notes, theme: state.theme,
     sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
     gh_arrival: state.ghArrival, updated_at: state.updated_at,
     homeModules: state.homeModules,
     ...(withHist ? { notes_history: state.notesHistory } : {}),
+    ...(withSharing ? { sharing: state.sharing } : {}),
   });
   let res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-    body: JSON.stringify(buildBody(notesHistoryColReady)),
+    body: JSON.stringify(buildBody(notesHistoryColReady, sharingColReady)),
   }), 20000, "写入后端");
-  /* notes_history 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带 notes_history，
-     保证待办/笔记/便利贴等核心数据可正常保存，历史暂只存本机 localStorage，加列后自动恢复。 */
-  if (!res.ok && notesHistoryColReady) {
-    notesHistoryColReady = false;
-    console.warn("[workbench] notes_history 列尚不存在，本次及之后保存暂不含历史；加列后将自动恢复");
-    res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
-      method: "POST",
-      headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-      body: JSON.stringify(buildBody(false)),
-    }), 20000, "写入后端(降级)");
+  /* notes_history / sharing 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带这些列，
+     保证待办/笔记/便利贴等核心数据可正常保存，历史/共享配置暂只存本机 localStorage，加列后自动恢复。 */
+  /* notes_history / sharing 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；顺序降级：
+     优先只丢弃「最可能缺失」的 sharing，尽量保留已存在的 notes_history；若仍失败再丢 notes_history。
+     保证待办/笔记/便利贴等核心数据可正常保存，缺失列的配置暂只存本机，加列后自动恢复。 */
+  /* 降级：列缺失导致 400 时，三步顺序试探，精确只丢「确实缺失」的列，尽量保留已存在的列：
+     ① 去 history 留 sharing —— 成功说明只缺 history；
+     ② 去 sharing 留 history —— 成功说明只缺 sharing（且不会误伤已存在的 history）；
+     ③ 两者都去 —— 兜底，说明两列都缺。 */
+  if (!res.ok && (notesHistoryColReady || sharingColReady)) {
+    if (notesHistoryColReady) {
+      res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
+        method: "POST",
+        headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+        body: JSON.stringify(buildBody(false, sharingColReady)),
+      }), 20000, "写入后端(降级·去history)");
+      if (res.ok) {
+        notesHistoryColReady = false;
+        console.warn("[workbench] notes_history 列尚不存在，本次及之后保存暂不含历史；加列后将自动恢复");
+      }
+    }
+    if (!res.ok && sharingColReady) {
+      res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
+        method: "POST",
+        headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+        body: JSON.stringify(buildBody(notesHistoryColReady, false)),
+      }), 20000, "写入后端(降级·去sharing)");
+      if (res.ok) {
+        sharingColReady = false;
+        console.warn("[workbench] sharing 列尚不存在，本次及之后保存暂不含共享配置；加列后将自动恢复");
+      }
+    }
+    if (!res.ok) {
+      res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
+        method: "POST",
+        headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
+        body: JSON.stringify(buildBody(false, false)),
+      }), 20000, "写入后端(降级·去全部)");
+      notesHistoryColReady = false; sharingColReady = false;
+      console.warn("[workbench] sharing / notes_history 两列均不存在，本次保存暂不含这两部分；加列后将自动恢复");
+    }
   }
   if (!res.ok) throw new Error("save " + res.status);
   return true;
@@ -175,8 +208,7 @@ const SUPER_MENU_ID = "system-operators";
 
 function defaultState() {
   const defName = userId === "jimilo" ? "吉米" : (userId || "吉米");
-  return { name: defName, todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules()
-  };
+  return { name: defName, todos: [], links: DEFAULT_LINKS.slice(), notes: "", theme: "dark", stickyNotes: [], calendarMarks: {}, ghArrival: "", updated_at: "1970-01-01T00:00:00Z", notesHistory: [], homeModules: defaultHomeModules(), sharing: {} };
 }
 
 /* 首页模块注册表：新增首页模块只需在此加一项，即自动出现在「首页管理」配置中 */
@@ -200,8 +232,8 @@ function defaultHomeModules() {
 function normalizeHomeModules(arr) {
   const saved = (Array.isArray(arr) ? arr : []).filter((m) => m && m.id && MODULE_REGISTRY.some((r) => r.id === m.id));
   const savedIds = new Set(saved.map((m) => m.id));
-  const added = MODULE_REGISTRY.filter((m) => !savedIds.has(m.id)).map((m) => ({ id: m.id, visible: true }));
-  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false, height: (typeof m.height === "number" && m.height > 0) ? Math.round(m.height) : null }));
+  const added = MODULE_REGISTRY.filter((m) => !savedIds.has(m.id)).map((m) => ({ id: m.id, visible: true, enabled: true }));
+  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false, enabled: m.enabled !== false, height: (typeof m.height === "number" && m.height > 0) ? Math.round(m.height) : null }));
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -215,6 +247,7 @@ function mapRow(row) {
   if (row.calendar_marks && typeof row.calendar_marks === "object") r.calendarMarks = row.calendar_marks;
   else if (row.calendarMarks && typeof row.calendarMarks === "object") r.calendarMarks = row.calendarMarks;
   else r.calendarMarks = {};
+  if (row.sharing && typeof row.sharing === "object") r.sharing = row.sharing; else r.sharing = {};
   if (typeof row.gh_arrival === "string") r.ghArrival = row.gh_arrival;
   else if (typeof row.ghArrival === "string") r.ghArrival = row.ghArrival;
   else r.ghArrival = "";
@@ -452,9 +485,11 @@ function applyMenuPermission() {
     }
     btn.style.display = visible ? "" : "none";
   });
-  /* 操作员管理入口：仅超管显示 */
+  /* 超管专属入口：仅 is_super 显示 */
   const opBtn = document.querySelector('[data-menu-id="system-operators"]');
   if (opBtn) opBtn.style.display = (currentUser && currentUser.is_super) ? "" : "none";
+  const mpBtn = document.querySelector('[data-menu-id="system-moduleperm"]');
+  if (mpBtn) mpBtn.style.display = (currentUser && currentUser.is_super) ? "" : "none";
   /* 当前激活页被隐藏 → 切回首页 */
   const active = document.querySelector(".nav-item.active");
   if (active && active.style.display === "none") switchPage("home");
@@ -941,13 +976,16 @@ function renderCalendar() {
     const c = document.createElement("div");
     let cls = "cal-cell";
     if (isToday) cls += " today";
-    if (marksData[key]) cls += " marked";
+    const dv = normalizeDayValue(marksData[key]);
+    const hasContent = (dv.marks && dv.marks.length) || (dv.life && Object.keys(dv.life).length);
+    if (hasContent) cls += " marked";
     c.className = cls;
-    const txt = marksData[key] ? marksData[key].replace(/"/g, "&quot;").replace(/</g, "&lt;") : "";
-    c.innerHTML = '<span class="cal-num">' + d + '</span>' + (marksData[key] ? '<span class="cal-dot" title="' + txt + '"></span>' : '');
+    const txt = dv.marks && dv.marks.length ? dv.marks.join("、") : "";
+    c.innerHTML = '<span class="cal-num">' + d + '</span>' + (hasContent ? '<span class="cal-dot" title="' + txt + '"></span>' : '');
     c.addEventListener("click", () => openMarkModal(key, calY, calM + 1, d));
     grid.appendChild(c);
   }
+  renderMonthOverview("drMonthOverview", calY, calM + 1);
 }
 function stepMonth(n) {
   calM += n;
@@ -961,34 +999,123 @@ $("#calPrevYear").addEventListener("click", () => { calY--; renderCalendar(); })
 $("#calNextYear").addEventListener("click", () => { calY++; renderCalendar(); });
 
 let markCurrentKey = null;
+let markTagsArr = [];
+/* 兼容历史数据：旧格式是字符串/数组（纯事件），新格式是 {marks:[], life:{}} */
+function normalizeDayValue(v) {
+  if (!v) return { marks: [], life: {} };
+  if (typeof v === "string") return { marks: v ? [v] : [], life: {} };
+  if (Array.isArray(v)) return { marks: v, life: {} };
+  return { marks: Array.isArray(v.marks) ? v.marks : [], life: (v.life && typeof v.life === "object") ? v.life : {} };
+}
+function renderMarkTags() {
+  const box = $("#markTags"); if (!box) return;
+  box.innerHTML = "";
+  markTagsArr.forEach((t, i) => {
+    const s = document.createElement("span"); s.className = "mark-tag"; s.textContent = t + " ";
+    const x = document.createElement("span"); x.className = "mark-tag-x"; x.textContent = "×";
+    x.addEventListener("click", () => { markTagsArr.splice(i, 1); renderMarkTags(); });
+    s.appendChild(x); box.appendChild(s);
+  });
+}
 function openMarkModal(key, y, m, d) {
   markCurrentKey = key;
-  $("#markDateLabel").textContent = `${y}年${m}月${d}日`;
-  $("#markInput").value = marksData[key] || "";
-  $("#markDelete").style.display = marksData[key] ? "inline-block" : "none";
+  const dv = normalizeDayValue(state.calendarMarks ? state.calendarMarks[key] : null);
+  markTagsArr = dv.marks.slice();
+  renderMarkTags();
+  const L = dv.life || {};
+  $("#lfExercise").checked = !!L.exercise;
+  $("#lfExerciseNote").value = L.exerciseNote || "";
+  $("#lfDiet").value = L.diet || "";
+  $("#lfFitness").checked = !!L.fitness;
+  $("#lfFitnessNote").value = L.fitnessNote || "";
+  $("#lfSleepBed").value = L.sleepBed || "";
+  $("#lfSleepWake").value = L.sleepWake || "";
+  $("#lfStudy").checked = !!L.study;
+  $("#lfStudyNote").value = L.studyNote || "";
+  $("#lfMood").value = L.mood || "";
+  $("#lfMoodNote").value = L.moodNote || "";
+  updateSleepDur();
+  $("#markDateLabel").textContent = y + "年" + m + "月" + d + "日";
+  const has = dv.marks.length || Object.keys(L).length;
+  $("#markDelete").style.display = has ? "inline-block" : "none";
+  renderMonthOverview("drOverview", calY, calM + 1);
   $("#markModal").hidden = false;
-  setTimeout(() => $("#markInput").focus(), 50);
+  setTimeout(() => { const t = $("#markTagInput"); if (t) t.focus(); }, 50);
+}
+function updateSleepDur() {
+  const b = $("#lfSleepBed").value, w = $("#lfSleepWake").value;
+  const el = $("#lfSleepDur"); if (!el) return;
+  if (b && w) {
+    let bh = parseInt(b.split(":")[0], 10), bm = parseInt(b.split(":")[1], 10);
+    let wh = parseInt(w.split(":")[0], 10), wm = parseInt(w.split(":")[1], 10);
+    let mins = (wh * 60 + wm) - (bh * 60 + bm); if (mins < 0) mins += 1440;
+    el.textContent = "（" + Math.floor(mins / 60) + "h" + (mins % 60) + "m）";
+  } else el.textContent = "";
+}
+function renderMonthOverview(targetId, y, m) {
+  const box = $("#" + targetId); if (!box) return;
+  const data = state.calendarMarks || {};
+  const prefix = y + "-" + (m < 10 ? "0" + m : m) + "-";
+  let ex = 0, fit = 0, st = 0, ss = 0, sn = 0; const moods = {};
+  Object.keys(data).forEach((k) => {
+    if (k.indexOf(prefix) !== 0) return;
+    const L = normalizeDayValue(data[k]).life || {};
+    if (L.exercise) ex++;
+    if (L.fitness) fit++;
+    if (L.study) st++;
+    if (L.sleepBed && L.sleepWake) {
+      let bh = parseInt(L.sleepBed.split(":")[0], 10), bm = parseInt(L.sleepBed.split(":")[1], 10);
+      let wh = parseInt(L.sleepWake.split(":")[0], 10), wm = parseInt(L.sleepWake.split(":")[1], 10);
+      let mins = (wh * 60 + wm) - (bh * 60 + bm); if (mins < 0) mins += 1440;
+      ss += mins; sn++;
+    }
+    if (L.mood) moods[L.mood] = (moods[L.mood] || 0) + 1;
+  });
+  const avg = sn ? (ss / sn / 60).toFixed(1) + "h" : "—";
+  const moodStr = Object.keys(moods).length ? Object.entries(moods).map((e) => e[0] + e[1]).join(" ") : "—";
+  box.innerHTML = "<b>本月概览</b>　运动 " + ex + " 天 · 健身 " + fit + " 天 · 学习 " + st + " 天 · 平均睡眠 " + avg + " · 心情 " + moodStr;
 }
 function closeMarkModal() { $("#markModal").hidden = true; markCurrentKey = null; }
 $("#markClose").addEventListener("click", closeMarkModal);
 $("#markModal").addEventListener("click", (e) => { if (e.target === $("#markModal")) closeMarkModal(); });
-$("#markSave").addEventListener("click", () => {
+$("#markTagInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const v = e.target.value.trim();
+    if (v && markTagsArr.indexOf(v) === -1) { markTagsArr.push(v); renderMarkTags(); }
+    e.target.value = "";
+  }
+});
+$("#lfSleepBed").addEventListener("change", updateSleepDur);
+$("#lfSleepWake").addEventListener("change", updateSleepDur);
+function saveMarkDay() {
   if (!markCurrentKey) return;
-  const v = $("#markInput").value.trim();
+  const life = {
+    exercise: $("#lfExercise").checked, exerciseNote: $("#lfExerciseNote").value.trim(),
+    diet: $("#lfDiet").value.trim(),
+    fitness: $("#lfFitness").checked, fitnessNote: $("#lfFitnessNote").value.trim(),
+    sleepBed: $("#lfSleepBed").value, sleepWake: $("#lfSleepWake").value,
+    study: $("#lfStudy").checked, studyNote: $("#lfStudyNote").value.trim(),
+    mood: $("#lfMood").value, moodNote: $("#lfMoodNote").value.trim(),
+  };
+  const hasLife = Object.keys(life).some((k) => life[k] !== false && life[k] !== "");
   if (!state.calendarMarks) state.calendarMarks = {};
-  if (v) state.calendarMarks[markCurrentKey] = v; else delete state.calendarMarks[markCurrentKey];
+  if (markTagsArr.length || hasLife) state.calendarMarks[markCurrentKey] = { marks: markTagsArr.slice(), life };
+  else delete state.calendarMarks[markCurrentKey];
   marksData = state.calendarMarks;
   scheduleSave();
-  renderCalendar();
+  renderCalendar(); renderMonthOverview("drOverview", calY, calM + 1); renderMonthOverview("drMonthOverview", calY, calM + 1);
   closeMarkModal();
-});
+}
+$("#markSave").addEventListener("click", saveMarkDay);
 $("#markDelete").addEventListener("click", () => {
   if (markCurrentKey) {
     if (!state.calendarMarks) state.calendarMarks = {};
     delete state.calendarMarks[markCurrentKey];
     marksData = state.calendarMarks;
     scheduleSave();
-    renderCalendar(); closeMarkModal();
+    renderCalendar(); renderMonthOverview("drOverview", calY, calM + 1); renderMonthOverview("drMonthOverview", calY, calM + 1);
+    closeMarkModal();
   }
 });
 renderCalendar();
@@ -1220,6 +1347,7 @@ function switchPage(page) {
       mountFrames(p);           // 进入才加载
       if (targetId === "pageHome") { loadData(); loadPet(); } // 切回首页即拉取最新（数据未变则跳过重渲染）
       else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
+      else if (targetId === "pageModulePerm") loadModulePerm(); // 进入模块权限即拉取列表
     } else {
       scheduleRelease(p);       // 离开延时释放
     }
@@ -1234,7 +1362,7 @@ function applyHomeLayout() {
   if (!grid) return;
   const order = Array.isArray(state.homeModules) ? state.homeModules : defaultHomeModules();
   const vis = {};
-  order.forEach((m) => { if (m && m.id) vis[m.id] = m.visible !== false; });
+  order.forEach((m) => { if (m && m.id) vis[m.id] = (m.visible !== false) && (m.enabled !== false); });
   const cards = {};
   grid.querySelectorAll(":scope > [data-module]").forEach((el) => { cards[el.dataset.module] = el; });
   // 按配置顺序重排（appendChild 自动移到末尾），并应用显隐
@@ -1296,11 +1424,13 @@ function saveCardHeight(id, h) {
   scheduleSave();
 }
 
-/* 首页管理页：可拖拽模块列表 */
+/* 首页管理页：可拖拽模块列表（含显隐 + 数据共享开关） */
+const NO_SHARE_MODULES = new Set(["hero", "fortune"]); // 无个人数据的模块不显示「共享」开关
 function renderHomeManage() {
   const list = $("#moduleList");
   if (!list) return;
   const cfg = Array.isArray(state.homeModules) ? state.homeModules : defaultHomeModules();
+  if (!state.sharing || typeof state.sharing !== "object") state.sharing = {};
   list.innerHTML = "";
   cfg.forEach((m) => {
     const meta = MODULE_REGISTRY.find((r) => r.id === m.id) || { label: m.id };
@@ -1308,15 +1438,30 @@ function renderHomeManage() {
     li.className = "module-item";
     li.draggable = true;
     li.dataset.id = m.id;
+    let shareHtml = "";
+    if (!NO_SHARE_MODULES.has(m.id)) {
+      const shared = state.sharing[m.id] === true;
+      shareHtml = '<label class="mi-share" title="开启后，其他成员可在其首页看到你该模块的数据"><span>共享</span><input type="checkbox" class="mi-share-toggle"' + (shared ? " checked" : "") + ' /></label>';
+    }
     li.innerHTML =
       '<span class="mi-handle" title="拖拽排序">⠿</span>' +
       '<span class="mi-label">' + meta.label + '</span>' +
-      '<label class="mi-switch"><input type="checkbox" class="mi-toggle"' + (m.visible !== false ? " checked" : "") + ' /><span class="mi-slider"></span></label>';
+      '<label class="mi-switch" title="在首页显示/隐藏"><input type="checkbox" class="mi-toggle"' + (m.visible !== false ? " checked" : "") + ' /><span class="mi-slider"></span></label>' +
+      shareHtml;
     list.appendChild(li);
   });
 }
-// 显隐开关即时写入 state（不立即保存，等「保存」按钮）
+// 显隐开关 / 共享开关写入 state
 $("#moduleList").addEventListener("change", (e) => {
+  if (e.target.classList.contains("mi-share-toggle")) {
+    const li = e.target.closest(".module-item");
+    const id = li && li.dataset.id;
+    if (!id) return;
+    if (!state.sharing || typeof state.sharing !== "object") state.sharing = {};
+    state.sharing[id] = e.target.checked;
+    scheduleSave(); // 共享开关即时保存，无需点「保存」
+    return;
+  }
   if (!e.target.classList.contains("mi-toggle")) return;
   const li = e.target.closest(".module-item");
   const id = li && li.dataset.id;
@@ -1357,7 +1502,9 @@ function saveHomeManage() {
     const id = li.dataset.id;
     const old = prevH.find((p) => p.id === id);
     const h = (old && typeof old.height === "number" && old.height > 0) ? old.height : null;
-    next.push({ id: id, visible: li.querySelector(".mi-toggle").checked, height: h });
+    // 保留超管配置的模块权限 enabled（首页管理只管顺序/显隐，不能把被关掉的模块权限覆盖掉）
+    const en = (old && old.enabled !== false);
+    next.push({ id: id, visible: li.querySelector(".mi-toggle").checked, height: h, enabled: en });
   });
   state.homeModules = next;
   applyHomeLayout();
@@ -1366,7 +1513,11 @@ function saveHomeManage() {
 }
 const hmSave = $("#hmSave"); if (hmSave) hmSave.addEventListener("click", saveHomeManage);
 const hmReset = $("#hmReset"); if (hmReset) hmReset.addEventListener("click", () => {
-  state.homeModules = defaultHomeModules();
+  // 恢复默认布局（顺序/显隐），但保留超管配置的模块权限 enabled，避免用户重置即绕过权限
+  state.homeModules = defaultHomeModules().map((d) => {
+    const cur = (state.homeModules || []).find((x) => x.id === d.id);
+    return Object.assign({}, d, { enabled: cur ? (cur.enabled !== false) : true });
+  });
   renderHomeManage(); applyHomeLayout(); scheduleSave();
   setStatus("已恢复默认 ✓", "ok");
 });
@@ -1609,7 +1760,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260829m";
+const PAYNEWS_VER = "20260830b";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -2159,6 +2310,73 @@ async function loadOperators() {
     tbody.innerHTML = '<tr><td colspan="6" class="op-empty">加载失败，请检查网络</td></tr>';
   }
 }
+
+/* ---------- 模块权限管理（仅超管） ---------- */
+let mpData = null;
+async function loadModulePerm() {
+  const box = $("#mpTable");
+  if (!box) return;
+  box.innerHTML = "加载中…";
+  try {
+    const url = `${REST_BASE}/${TABLE}?select=user_id,name,home_modules&order=user_id`;
+    const res = await withTimeout(fetch(url, { headers: API_HEADERS, cache: "no-store" }), 20000, "读取模块权限");
+    if (!res.ok) throw new Error("fetch " + res.status);
+    const arr = await res.json();
+    if (!Array.isArray(arr) || !arr.length) { box.innerHTML = "暂无用户数据"; return; }
+    mpData = arr;
+    renderModulePermTable(arr);
+  } catch (e) {
+    box.innerHTML = "加载失败，请检查网络";
+  }
+}
+function renderModulePermTable(arr) {
+  const box = $("#mpTable"); if (!box) return;
+  const mods = MODULE_REGISTRY;
+  let html = '<table class="mp-grid"><thead><tr><th>用户</th><th>姓名</th>';
+  mods.forEach((m) => { html += `<th class="mp-mod">${m.label}</th>`; });
+  html += '</tr></thead><tbody>';
+  arr.forEach((u) => {
+    const hm = normalizeHomeModules(u.home_modules);
+    html += `<tr data-uid="${esc(u.user_id)}"><td><strong>${esc(u.user_id)}</strong></td><td>${esc(u.name || "—")}</td>`;
+    mods.forEach((m) => {
+      const item = hm.find((x) => x.id === m.id) || {};
+      const on = item.enabled !== false;
+      html += `<td class="mp-cell"><input type="checkbox" class="mp-chk" data-uid="${esc(u.user_id)}" data-mod="${m.id}" ${on ? "checked" : ""} /></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  box.innerHTML = html;
+}
+async function saveModulePerm() {
+  if (!mpData) { setStatus("请先加载列表", "warn"); return; }
+  setStatus("保存权限中…", "syncing");
+  try {
+    const checks = document.querySelectorAll("#mpTable .mp-chk");
+    const byUser = {};
+    mpData.forEach((u) => { byUser[u.user_id] = normalizeHomeModules(u.home_modules); });
+    checks.forEach((cb) => {
+      const uid = cb.dataset.uid, mod = cb.dataset.mod;
+      const hm = byUser[uid];
+      const item = hm.find((x) => x.id === mod);
+      if (item) item.enabled = cb.checked;
+    });
+    for (const uid in byUser) {
+      await withTimeout(fetch(`${REST_BASE}/${TABLE}?user_id=eq.${encodeURIComponent(uid)}`, {
+        method: "PATCH",
+        headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+        body: JSON.stringify({ home_modules: byUser[uid] }),
+      }), 15000, "保存" + uid);
+    }
+    setStatus("模块权限已保存 ✓", "ok");
+  } catch (e) {
+    setStatus("保存失败 · 请检查网络", "err");
+  }
+}
+const mpRefreshEl = document.getElementById("mpRefresh");
+if (mpRefreshEl) mpRefreshEl.addEventListener("click", loadModulePerm);
+const mpSaveEl = document.getElementById("mpSave");
+if (mpSaveEl) mpSaveEl.addEventListener("click", saveModulePerm);
 
 /* ---------- 树形勾选配置菜单权限 ---------- */
 let opEditUser = null;       // 正在编辑的操作员用户名

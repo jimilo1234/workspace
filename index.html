@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260829l" />
+  <link rel="stylesheet" href="style.css?v=20260830b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -100,6 +100,9 @@
           <button class="nav-item nav-child" data-page="operators" data-menu-id="system-operators" style="display:none">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-label">操作员管理</span>
           </button>
+          <button class="nav-item nav-child" data-page="modulePerm" data-menu-id="system-moduleperm" style="display:none">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">模块权限</span>
+          </button>
         </div>
       </nav>
     </aside>
@@ -182,7 +185,8 @@
               <button id="calNextYear" class="cal-nav" title="下一年">»</button>
             </div>
             <div id="calGrid" class="cal-grid"></div>
-            <div class="cal-legend"><span class="cal-dot"></span>有标记的日子</div>
+            <div class="cal-legend"><span class="cal-dot"></span>有记录的日子</div>
+            <div id="drMonthOverview" class="dr-month-overview"></div>
           </section>
 
           <!-- 每日运势 -->
@@ -450,7 +454,7 @@
         </div>
         <div class="hm-wrap">
           <ul id="moduleList" class="module-list"></ul>
-          <p class="hm-tip">提示：关闭的模块在首页隐藏，但其数据不会丢失，重新打开即可恢复。后续新增首页模块会自动出现在此列表中。</p>
+          <p class="hm-tip">提示：关闭的模块在首页隐藏，但其数据不会丢失，重新打开即可恢复。后续新增首页模块会自动出现在此列表中。<br>「共享」开关：开启后，其他成员可在其首页看到你该模块的数据（仅影响展示，不改变你自己的显隐）。</p>
         </div>
       </div>
 
@@ -483,16 +487,49 @@
     <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
   </div>
 
-  <!-- 日历标记弹窗 -->
+  <!-- 每日记录弹窗（事件 + 生活维度 + 当月概览） -->
   <div id="markModal" class="modal-overlay" hidden>
-    <div class="modal-card mark-modal">
+    <div class="modal-card mark-modal dr-modal">
       <div class="mark-modal-head">
         <span id="markDateLabel" class="mark-date"></span>
         <button id="markClose" class="modal-x" aria-label="关闭">×</button>
       </div>
-      <textarea id="markInput" class="mark-input" placeholder="写点什么…（如：开会 / 生日 / 缴费提醒）"></textarea>
+
+      <div class="dr-section">
+        <h4>📌 今日事件</h4>
+        <div id="markTags" class="mark-tags"></div>
+        <input id="markTagInput" class="mark-tag-input" placeholder="输入事件后回车，如：迟到 / 外出 / 请假" />
+      </div>
+
+      <div class="dr-section">
+        <h4>🌿 生活记录</h4>
+        <div class="dr-grid">
+          <label class="dr-chk"><input type="checkbox" id="lfExercise" /> 运动</label>
+          <input id="lfExerciseNote" class="dr-note" placeholder="内容/时长" />
+          <label class="dr-chk"><input type="checkbox" id="lfFitness" /> 健身</label>
+          <input id="lfFitnessNote" class="dr-note" placeholder="内容" />
+          <label class="dr-full">饮食（早/午/晚）</label>
+          <input id="lfDiet" class="dr-full-input" placeholder="早：燕麦　午：沙拉　晚：牛肉面" />
+          <label class="dr-chk">睡眠</label>
+          <div class="dr-sleep">睡 <input id="lfSleepBed" type="time" /> 起 <input id="lfSleepWake" type="time" /> <span id="lfSleepDur" class="dr-dur"></span></div>
+          <label class="dr-chk"><input type="checkbox" id="lfStudy" /> 学习</label>
+          <input id="lfStudyNote" class="dr-note" placeholder="内容" />
+          <label class="dr-full">心情</label>
+          <div class="dr-mood">
+            <select id="lfMood">
+              <option value="">--</option>
+              <option>开心</option><option>平静</option><option>充实</option>
+              <option>疲惫</option><option>焦虑</option><option>低落</option>
+            </select>
+            <input id="lfMoodNote" class="dr-note" placeholder="备注" />
+          </div>
+        </div>
+      </div>
+
+      <div class="dr-overview" id="drOverview"></div>
+
       <div class="mark-modal-foot">
-        <button id="markDelete" class="btn-ghost">删除标记</button>
+        <button id="markDelete" class="btn-ghost">清空当天</button>
         <button id="markSave" class="btn-primary">保存</button>
       </div>
     </div>
@@ -515,7 +552,25 @@
     </div>
   </div>
 
-  <!-- 操作员菜单权限配置弹层（树形勾选） -->
+      <!-- 模块权限管理（仅超管可见） -->
+      <div id="pageModulePerm" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">🔐 模块权限</span>
+            <span class="page-bar-hint">按用户分配可用模块 · 默认全开 · 取消勾选即收回</span>
+          </div>
+          <div class="page-bar-right">
+            <button id="mpRefresh" class="open-new op-refresh" type="button">刷新</button>
+            <button id="mpSave" class="open-new btn-primary" type="button">保存</button>
+          </div>
+        </div>
+        <div class="mp-wrap">
+          <div id="mpTable" class="mp-table"></div>
+          <p class="mp-tip">提示：取消勾选即收回该用户对应模块，保存后即时生效。这是前端软权限（非服务端安全边界），适合互信小团队。</p>
+        </div>
+      </div>
+
+      <!-- 操作员菜单权限配置弹层（树形勾选） -->
   <div id="opMenuModal" class="modal-overlay" hidden>
     <div class="modal-card op-modal">
       <div class="mark-modal-head">
@@ -531,6 +586,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260829m"></script>
+  <script src="script.js?v=20260830b"></script>
 </body>
 </html>

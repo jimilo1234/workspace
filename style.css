@@ -378,6 +378,39 @@ body {
 .btn-ghost { border: 1px solid var(--border); background: transparent; color: var(--text-faint); padding: 8px 14px; border-radius: 9px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
 .btn-ghost:hover { color: #ff6b6b; border-color: #ff6b6b; }
 
+/* 每日记录弹窗（事件 + 生活维度） */
+.dr-modal { width: min(94vw, 420px); }
+.dr-section { margin-bottom: 14px; }
+.dr-section h4 { margin: 0 0 8px; font-size: 13px; color: var(--text-faint); font-weight: 600; }
+.mark-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; min-height: 4px; }
+.mark-tag { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.mark-tag-x { cursor: pointer; opacity: 0.6; font-weight: 700; }
+.mark-tag-x:hover { opacity: 1; }
+.mark-tag-input { width: 100%; box-sizing: border-box; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 8px 10px; font-size: 13px; }
+.mark-tag-input:focus { outline: none; border-color: var(--accent); }
+.dr-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+.dr-chk { font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.dr-note { box-sizing: border-box; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 6px 9px; font-size: 12px; }
+.dr-note:focus { outline: none; border-color: var(--accent); }
+.dr-full { grid-column: 1 / -1; font-size: 13px; color: var(--text); }
+.dr-full-input, .dr-sleep, .dr-mood { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dr-sleep input, .dr-mood select, .dr-mood input { border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 6px 9px; font-size: 12px; }
+.dr-sleep input[type="time"] { width: 110px; }
+.dr-dur { font-size: 12px; color: var(--text-faint); }
+.dr-overview { background: var(--bg-soft); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--text); line-height: 1.7; margin-top: 4px; }
+.dr-month-overview { font-size: 12px; color: var(--text-faint); padding: 8px 2px 2px; line-height: 1.7; }
+
+/* 模块权限管理表 */
+.mp-wrap { padding: 4px 2px; }
+.mp-grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mp-grid th, .mp-grid td { border: 1px solid var(--border); padding: 8px 10px; text-align: center; }
+.mp-grid th:first-child, .mp-grid td:first-child { text-align: left; white-space: nowrap; }
+.mp-grid thead th { background: var(--bg-soft); color: var(--text-faint); font-weight: 600; }
+.mp-grid .mp-mod { min-width: 60px; }
+.mp-grid .mp-cell { width: 42px; }
+.mp-grid input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+.mp-tip { font-size: 12px; color: var(--text-faint); margin-top: 12px; }
+
 /* NOTES / NEWS 合并切换面板 */
 .panel { height: 380px; display: flex; flex-direction: column; }
 .panel.hidden { display: none; }
@@ -956,3 +989,15 @@ html.pn-fs .topbar { display: none; }
 .pet-hist-kind { flex: none; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 10px; }
 .pet-hist-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
 .pet-hist-time { flex: none; color: var(--text-faint); }
+
+/* ===== 数据共享开关（首页管理内，每个可共享模块一行） ===== */
+.mi-share {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-soft); cursor: pointer; user-select: none;
+  flex-shrink: 0; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-soft);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.mi-share:hover { color: var(--text); border-color: var(--border-strong); }
+.mi-share input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.mi-share:has(input:checked) { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-soft); }
