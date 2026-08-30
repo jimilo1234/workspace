@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260830b" />
+  <link rel="stylesheet" href="style.css?v=20260830e" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -504,12 +504,15 @@
       <div class="dr-section">
         <h4>🌿 生活记录</h4>
         <div class="dr-grid">
-          <label class="dr-chk"><input type="checkbox" id="lfExercise" /> 运动</label>
-          <input id="lfExerciseNote" class="dr-note" placeholder="内容/时长" />
-          <label class="dr-chk"><input type="checkbox" id="lfFitness" /> 健身</label>
-          <input id="lfFitnessNote" class="dr-note" placeholder="内容" />
-          <label class="dr-full">饮食（早/午/晚）</label>
-          <input id="lfDiet" class="dr-full-input" placeholder="早：燕麦　午：沙拉　晚：牛肉面" />
+          <label class="dr-chk"><input type="checkbox" id="lfExercise" /> 运动健身</label>
+          <div class="dr-exrow">
+            <input id="lfExerciseMin" class="dr-min" type="number" min="0" inputmode="numeric" placeholder="分钟" />
+            <input id="lfExerciseNote" class="dr-note" placeholder="内容" />
+          </div>
+          <label class="dr-full">饮食（早 / 中 / 晚）</label>
+          <input id="lfDietBreakfast" class="dr-full-input" placeholder="早：燕麦牛奶" />
+          <input id="lfDietLunch" class="dr-full-input" placeholder="午：沙拉鸡胸" />
+          <input id="lfDietDinner" class="dr-full-input" placeholder="晚：牛肉面" />
           <label class="dr-chk">睡眠</label>
           <div class="dr-sleep">睡 <input id="lfSleepBed" type="time" /> 起 <input id="lfSleepWake" type="time" /> <span id="lfSleepDur" class="dr-dur"></span></div>
           <label class="dr-chk"><input type="checkbox" id="lfStudy" /> 学习</label>
@@ -586,6 +589,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260830b"></script>
+  <script src="script.js?v=20260830e"></script>
 </body>
 </html>

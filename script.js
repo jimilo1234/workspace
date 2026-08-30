@@ -82,7 +82,7 @@ async function saveState() {
     }
   } catch (e) { /* 核对失败不阻断，交给下方正式写入的错误处理 */ }
   /* 防误清空·基线保护（前端兜底）：若三个核心字段同时为空——典型是逻辑异常导致 state 被 default 覆盖——
-     而载入基线中本来有内容，则回退到基线值，绝不向云端提交空数据。真正的“旧链接清不掉”靠后端触发器。 */
+     而载入基线中本来有内容，则回退到基线值，绝不向云端提交空数据。真正的"旧链接清不掉"靠后端触发器。 */
   try {
     const base = window.__loadBase;
     if (base) {
@@ -94,6 +94,15 @@ async function saveState() {
         state.todos = base.todos || [];
         state.stickyNotes = base.stickyNotes || [];
         state.notes = base.notes || "";
+      }
+      /* 日历数据防误清空（与三核心同等级保护）：载入基线有日历、但当前内存为空（异常或被旧实例清空过），
+         则回退到基线，绝不向云端提交空日历。 */
+      const calEmpty = !state.calendarMarks || typeof state.calendarMarks !== "object" || !Object.keys(state.calendarMarks).length;
+      const baseCal = base.calendarMarks && typeof base.calendarMarks === "object" && Object.keys(base.calendarMarks).length;
+      if (calEmpty && baseCal) {
+        console.warn("[workbench] 检测到日历数据异常为空，回退到载入基线，不提交空日历");
+        setStatus("保存拦截 · 日历空数据已拦截", "warn");
+        state.calendarMarks = base.calendarMarks;
       }
     }
   } catch (e2) {}
@@ -298,15 +307,23 @@ async function loadData() {
     const incoming = mapRow(data || {});
     // 智能比对：云端 updated_at 与本地一致则数据未变，仅同步内存、跳过重渲染（不打断正在编辑的笔记/待办）
     if (dataConfirmed && state.updated_at && incoming.updated_at && incoming.updated_at === state.updated_at) {
+      /* 云端日历异常为空（[]/{}）但内存中已有日历时，保留内存，避免被空覆盖 */
+      if ((!incoming.calendarMarks || !Object.keys(incoming.calendarMarks).length) && state.calendarMarks && Object.keys(state.calendarMarks).length) {
+        incoming.calendarMarks = state.calendarMarks;
+      }
       state = Object.assign(defaultState(), incoming);
-      try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
+      try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "", calendarMarks: state.calendarMarks }; } catch (e2) {}
       setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
       return;
+    }
+    /* 云端日历异常为空（[]/{}）但内存中已有日历时，保留内存，避免被空覆盖 */
+    if ((!incoming.calendarMarks || !Object.keys(incoming.calendarMarks).length) && state.calendarMarks && Object.keys(state.calendarMarks).length) {
+      incoming.calendarMarks = state.calendarMarks;
     }
     state = Object.assign(defaultState(), incoming);
     dataConfirmed = true; // 读取成功（无论有无记录），后续保存才被允许
     // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
-    try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "" }; } catch (e2) {}
+    try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "", calendarMarks: state.calendarMarks }; } catch (e2) {}
     applyState();
     /* 迁移/合并：把本机 localStorage 的历史并入内存（以后端为准、按 ts 去重），
        若有本机独占的历史则静默补传上云；列未建时静默失败、不影响使用，本机不丢。 */
@@ -981,7 +998,16 @@ function renderCalendar() {
     if (hasContent) cls += " marked";
     c.className = cls;
     const txt = dv.marks && dv.marks.length ? dv.marks.join("、") : "";
-    c.innerHTML = '<span class="cal-num">' + d + '</span>' + (hasContent ? '<span class="cal-dot" title="' + txt + '"></span>' : '');
+    /* 运动健身时长小标记：勾选且有分钟数时，格子右上角显示（如 30m / 1h20） */
+    let exBadge = "";
+    const exMinRaw = (dv.life && typeof dv.life.exerciseMin === "number") ? dv.life.exerciseMin
+      : (dv.life && typeof dv.life.fitness === "number") ? dv.life.fitness : 0;
+    if (exMinRaw > 0) {
+      const eh = Math.floor(exMinRaw / 60), em = exMinRaw % 60;
+      const exLabel = eh > 0 ? (em > 0 ? eh + "h" + em : eh + "h") : em + "m";
+      exBadge = '<span class="cal-exmin" title="运动健身 ' + exMinRaw + ' 分钟">' + exLabel + '</span>';
+    }
+    c.innerHTML = '<span class="cal-num">' + d + '</span>' + exBadge + (hasContent ? '<span class="cal-dot" title="' + txt + '"></span>' : '');
     c.addEventListener("click", () => openMarkModal(key, calY, calM + 1, d));
     grid.appendChild(c);
   }
@@ -1023,11 +1049,14 @@ function openMarkModal(key, y, m, d) {
   markTagsArr = dv.marks.slice();
   renderMarkTags();
   const L = dv.life || {};
-  $("#lfExercise").checked = !!L.exercise;
-  $("#lfExerciseNote").value = L.exerciseNote || "";
-  $("#lfDiet").value = L.diet || "";
-  $("#lfFitness").checked = !!L.fitness;
-  $("#lfFitnessNote").value = L.fitnessNote || "";
+  $("#lfExercise").checked = !!(L.exercise || L.fitness);
+  const exMinInit = (typeof L.exerciseMin === "number") ? L.exerciseMin : (typeof L.fitness === "number" ? L.fitness : "");
+  $("#lfExerciseMin").value = (exMinInit !== "" && !isNaN(exMinInit)) ? exMinInit : "";
+  $("#lfExerciseMin").disabled = !$("#lfExercise").checked;
+  $("#lfExerciseNote").value = L.exerciseNote || L.fitnessNote || "";
+  $("#lfDietBreakfast").value = L.dietBreakfast || (typeof L.diet === "string" ? L.diet : "");
+  $("#lfDietLunch").value = L.dietLunch || "";
+  $("#lfDietDinner").value = L.dietDinner || "";
   $("#lfSleepBed").value = L.sleepBed || "";
   $("#lfSleepWake").value = L.sleepWake || "";
   $("#lfStudy").checked = !!L.study;
@@ -1056,12 +1085,15 @@ function renderMonthOverview(targetId, y, m) {
   const box = $("#" + targetId); if (!box) return;
   const data = state.calendarMarks || {};
   const prefix = y + "-" + (m < 10 ? "0" + m : m) + "-";
-  let ex = 0, fit = 0, st = 0, ss = 0, sn = 0; const moods = {};
+  let ex = 0, exMinSum = 0, exMinN = 0, st = 0, ss = 0, sn = 0; const moods = {};
   Object.keys(data).forEach((k) => {
     if (k.indexOf(prefix) !== 0) return;
     const L = normalizeDayValue(data[k]).life || {};
-    if (L.exercise) ex++;
-    if (L.fitness) fit++;
+    if (L.exercise || L.fitness) {
+      ex++;
+      const m = (typeof L.exerciseMin === "number") ? L.exerciseMin : (typeof L.fitness === "number" ? L.fitness : 0);
+      if (m > 0) { exMinSum += m; exMinN++; }
+    }
     if (L.study) st++;
     if (L.sleepBed && L.sleepWake) {
       let bh = parseInt(L.sleepBed.split(":")[0], 10), bm = parseInt(L.sleepBed.split(":")[1], 10);
@@ -1072,8 +1104,9 @@ function renderMonthOverview(targetId, y, m) {
     if (L.mood) moods[L.mood] = (moods[L.mood] || 0) + 1;
   });
   const avg = sn ? (ss / sn / 60).toFixed(1) + "h" : "—";
+  const avgMin = exMinN ? Math.round(exMinSum / exMinN) + "m" : "—";
   const moodStr = Object.keys(moods).length ? Object.entries(moods).map((e) => e[0] + e[1]).join(" ") : "—";
-  box.innerHTML = "<b>本月概览</b>　运动 " + ex + " 天 · 健身 " + fit + " 天 · 学习 " + st + " 天 · 平均睡眠 " + avg + " · 心情 " + moodStr;
+  box.innerHTML = "<b>本月概览</b>　运动健身 " + ex + " 天（均 " + avgMin + "）· 学习 " + st + " 天 · 平均睡眠 " + avg + " · 心情 " + moodStr;
 }
 function closeMarkModal() { $("#markModal").hidden = true; markCurrentKey = null; }
 $("#markClose").addEventListener("click", closeMarkModal);
@@ -1088,17 +1121,22 @@ $("#markTagInput").addEventListener("keydown", (e) => {
 });
 $("#lfSleepBed").addEventListener("change", updateSleepDur);
 $("#lfSleepWake").addEventListener("change", updateSleepDur);
+$("#lfExercise").addEventListener("change", () => { const m = $("#lfExerciseMin"); if (m) m.disabled = !$("#lfExercise").checked; });
 function saveMarkDay() {
   if (!markCurrentKey) return;
+  const exMinRaw = parseInt($("#lfExerciseMin").value, 10);
   const life = {
-    exercise: $("#lfExercise").checked, exerciseNote: $("#lfExerciseNote").value.trim(),
-    diet: $("#lfDiet").value.trim(),
-    fitness: $("#lfFitness").checked, fitnessNote: $("#lfFitnessNote").value.trim(),
+    exercise: $("#lfExercise").checked,
+    exerciseMin: ($("#lfExercise").checked && !isNaN(exMinRaw) && exMinRaw > 0) ? exMinRaw : 0,
+    exerciseNote: $("#lfExerciseNote").value.trim(),
+    dietBreakfast: $("#lfDietBreakfast").value.trim(),
+    dietLunch: $("#lfDietLunch").value.trim(),
+    dietDinner: $("#lfDietDinner").value.trim(),
     sleepBed: $("#lfSleepBed").value, sleepWake: $("#lfSleepWake").value,
     study: $("#lfStudy").checked, studyNote: $("#lfStudyNote").value.trim(),
     mood: $("#lfMood").value, moodNote: $("#lfMoodNote").value.trim(),
   };
-  const hasLife = Object.keys(life).some((k) => life[k] !== false && life[k] !== "");
+  const hasLife = Object.keys(life).some((k) => { const v = life[k]; return v !== false && v !== "" && v !== 0; });
   if (!state.calendarMarks) state.calendarMarks = {};
   if (markTagsArr.length || hasLife) state.calendarMarks[markCurrentKey] = { marks: markTagsArr.slice(), life };
   else delete state.calendarMarks[markCurrentKey];
@@ -1760,7 +1798,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260830b";
+const PAYNEWS_VER = "20260830e";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {

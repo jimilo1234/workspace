@@ -360,6 +360,14 @@ body {
 .cal-num { line-height: 1; }
 .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .cal-cell.today .cal-dot { background: #fff; }
+/* 运动健身时长小标记：格子右上角胶囊 */
+.cal-exmin {
+  position: absolute; top: 2px; right: 3px;
+  font-size: 9px; line-height: 1.1; font-family: var(--mono); font-weight: 700;
+  padding: 1px 3px; border-radius: 6px;
+  background: var(--accent); color: #fff; pointer-events: none; white-space: nowrap;
+}
+.cal-cell.today .cal-exmin { background: #fff; color: var(--accent); }
 .cal-legend { display: flex; align-items: center; gap: 6px; justify-content: center; margin-top: 8px; font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
 .cal-legend .cal-dot { background: var(--accent); }
 
@@ -392,6 +400,10 @@ body {
 .dr-chk { font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
 .dr-note { box-sizing: border-box; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 6px 9px; font-size: 12px; }
 .dr-note:focus { outline: none; border-color: var(--accent); }
+.dr-exrow { grid-column: 2; display: flex; gap: 8px; align-items: center; }
+.dr-min { width: 74px; flex: none; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 6px 8px; font-size: 13px; }
+.dr-min:disabled { opacity: .45; }
+.dr-exrow .dr-note { flex: 1; min-width: 0; }
 .dr-full { grid-column: 1 / -1; font-size: 13px; color: var(--text); }
 .dr-full-input, .dr-sleep, .dr-mood { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dr-sleep input, .dr-mood select, .dr-mood input { border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); padding: 6px 9px; font-size: 12px; }
