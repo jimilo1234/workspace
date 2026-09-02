@@ -53,6 +53,27 @@ async function fetchState() {
 let notesHistoryColReady = true; // notes_history 列就绪标志；列未建好时降级跳过，防整行 400
 let sharingColReady = true; // sharing 列就绪标志；列未建好时降级跳过，防整行 400
 
+/* 根治·只传变更字段：记录上次成功保存到云端的字段快照，保存时只把"与快照不同"的字段上送，
+   未变更的字段不传（merge-duplicates 下不传=不动），从源头杜绝"前端某字段意外为空→整列被覆盖成空"。
+   lastSavedState 为 null 时（首次/未知）全传，等价于原行为。 */
+let lastSavedState = null;
+function _wbClone(v){ try { return JSON.parse(JSON.stringify(v)); } catch(e){ return v; } }
+function _wbFieldChanged(stKey, col){
+  if (lastSavedState === null) return true;
+  const a = lastSavedState[stKey], b = state[stKey];
+  if (a === b) return false;
+  try { return JSON.stringify(a) !== JSON.stringify(b); } catch(e){ return true; }
+}
+function _wbSyncSnapshot(){
+  lastSavedState = {
+    name: state.name, todos: _wbClone(state.todos), links: _wbClone(state.links),
+    notes: state.notes, theme: state.theme, stickyNotes: _wbClone(state.stickyNotes),
+    calendarMarks: _wbClone(state.calendarMarks), ghArrival: state.ghArrival,
+    homeModules: _wbClone(state.homeModules), notesHistory: _wbClone(state.notesHistory),
+    sharing: _wbClone(state.sharing),
+  };
+}
+
 async function saveState() {
   if (!dataConfirmed) {
     // 数据未从后端成功加载，禁止用可能的空状态覆盖云端，避免误清空
@@ -107,19 +128,26 @@ async function saveState() {
     }
   } catch (e2) {}
   state.updated_at = new Date().toISOString();
-  const buildBody = (withHist, withSharing) => ({
-    user_id: userId, name: state.name, todos: state.todos,
-    links: state.links, notes: state.notes, theme: state.theme,
-    sticky_notes: state.stickyNotes, calendar_marks: state.calendarMarks,
-    gh_arrival: state.ghArrival, updated_at: state.updated_at,
-    homeModules: state.homeModules,
-    ...(withHist ? { notes_history: state.notesHistory } : {}),
-    ...(withSharing ? { sharing: state.sharing } : {}),
-  });
+  const buildBody = (withHist, withSharing, changedOnly) => {
+    // 根治：只把"与上次成功保存快照不同"的字段上送；未变更字段不传，不会被误覆盖。
+    const b = { user_id: userId, updated_at: state.updated_at, name: state.name };
+    const map = [
+      ["todos", "todos"], ["links", "links"], ["notes", "notes"], ["theme", "theme"],
+      ["stickyNotes", "sticky_notes"], ["calendarMarks", "calendar_marks"],
+      ["ghArrival", "gh_arrival"], ["homeModules", "homeModules"],
+    ];
+    for (const [stKey, col] of map) {
+      if (changedOnly && !_wbFieldChanged(stKey, col)) continue;
+      b[col] = state[stKey];
+    }
+    if (withHist && notesHistoryColReady) b.notes_history = state.notesHistory;
+    if (withSharing && sharingColReady) b.sharing = state.sharing;
+    return b;
+  };
   let res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
     method: "POST",
     headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-    body: JSON.stringify(buildBody(notesHistoryColReady, sharingColReady)),
+    body: JSON.stringify(buildBody(notesHistoryColReady, sharingColReady, true)),
   }), 20000, "写入后端");
   /* notes_history / sharing 列尚未创建（用户还没 Run 加列 SQL）时整行会 400；降级重试不带这些列，
      保证待办/笔记/便利贴等核心数据可正常保存，历史/共享配置暂只存本机 localStorage，加列后自动恢复。 */
@@ -135,7 +163,7 @@ async function saveState() {
       res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
         method: "POST",
         headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-        body: JSON.stringify(buildBody(false, sharingColReady)),
+        body: JSON.stringify(buildBody(false, sharingColReady, true)),
       }), 20000, "写入后端(降级·去history)");
       if (res.ok) {
         notesHistoryColReady = false;
@@ -146,7 +174,7 @@ async function saveState() {
       res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
         method: "POST",
         headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-        body: JSON.stringify(buildBody(notesHistoryColReady, false)),
+        body: JSON.stringify(buildBody(notesHistoryColReady, false, true)),
       }), 20000, "写入后端(降级·去sharing)");
       if (res.ok) {
         sharingColReady = false;
@@ -157,13 +185,14 @@ async function saveState() {
       res = await withTimeout(fetch(`${REST_BASE}/${TABLE}`, {
         method: "POST",
         headers: Object.assign({}, API_HEADERS, { "Prefer": "resolution=merge-duplicates" }),
-        body: JSON.stringify(buildBody(false, false)),
+        body: JSON.stringify(buildBody(false, false, true)),
       }), 20000, "写入后端(降级·去全部)");
       notesHistoryColReady = false; sharingColReady = false;
       console.warn("[workbench] sharing / notes_history 两列均不存在，本次保存暂不含这两部分；加列后将自动恢复");
     }
   }
   if (!res.ok) throw new Error("save " + res.status);
+  _wbSyncSnapshot(); // 保存成功后记录快照，下次保存只传变更字段
   return true;
 }
 
@@ -314,6 +343,7 @@ async function loadData() {
       state = Object.assign(defaultState(), incoming);
       try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "", calendarMarks: state.calendarMarks }; } catch (e2) {}
       setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
+      _wbSyncSnapshot();
       return;
     }
     /* 云端日历异常为空（[]/{}）但内存中已有日历时，保留内存，避免被空覆盖 */
@@ -324,6 +354,7 @@ async function loadData() {
     dataConfirmed = true; // 读取成功（无论有无记录），后续保存才被允许
     // 记录载入基线：供 saveState 的“防误清空基线保护”使用（前端兜底）
     try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "", calendarMarks: state.calendarMarks }; } catch (e2) {}
+    _wbSyncSnapshot();
     applyState();
     /* 迁移/合并：把本机 localStorage 的历史并入内存（以后端为准、按 ts 去重），
        若有本机独占的历史则静默补传上云；列未建时静默失败、不影响使用，本机不丢。 */
@@ -1798,7 +1829,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260830e";
+const PAYNEWS_VER = "20260902a";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
