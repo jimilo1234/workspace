@@ -131,6 +131,7 @@ body {
 .card-resize-handle {
   position: absolute; left: 0; right: 0; bottom: 0; height: 10px;
   cursor: ns-resize; z-index: 6; opacity: 0; transition: opacity 0.15s ease;
+  touch-action: none; /* 触屏拖拽调高度时阻止页面滚动抢手势 */
   background: linear-gradient(to bottom, transparent 0 3px, var(--border) 3px 5px, transparent 5px 10px);
 }
 .card:hover .card-resize-handle, .card-resize-handle:active { opacity: 0.9; }
@@ -496,6 +497,14 @@ body {
   .hero { flex-direction: column; align-items: flex-start; gap: 14px; }
   .hero-right { text-align: left; }
   .news-frame { height: 600px; }
+  /* 移动端首页滚动顺手：隐藏滚动条 + 惯性滚动 + 阻止滚动穿透 + 动态视口高度（防地址栏跳动） */
+  .app { height: 100dvh; }
+  #pageHome {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  #pageHome::-webkit-scrollbar { display: none; }
   /* 侧边栏改为左侧抽屉：默认滑出屏幕外，点 ☰ 滑入覆盖主内容，文字标签恢复显示 */
   .sidebar {
     position: fixed; top: 0; bottom: 0; left: 0;
