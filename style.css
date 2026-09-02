@@ -971,6 +971,7 @@ html.pn-fs .topbar { display: none; }
   position: relative; width: 160px; height: 160px; margin: 4px auto 0;
   border-radius: 14px;
   background: var(--bg-soft); border: 1px solid var(--border);
+  overflow: hidden; /* 状态图无论原始多大都被 160 框裁切，不再溢出卡片 */
 }
 .pet-status-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
 .pet-mood-img {
@@ -993,7 +994,10 @@ html.pn-fs .topbar { display: none; }
 .pet-select select:focus { border-color: var(--accent); background: var(--accent-soft); }
 .pet-row .text-btn { flex: none; font-size: 14px; }
 .pet-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.55; }
-.pet-history { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+.pet-history {
+  margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px;
+  max-height: 132px; overflow-y: auto; padding-right: 4px; /* 历史过多时内部滚动，不再撑出卡片 */
+}
 .pet-history-title { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
 .pet-history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .pet-history-empty { font-size: 11px; color: var(--text-faint); }
