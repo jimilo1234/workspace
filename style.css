@@ -1027,3 +1027,26 @@ html.pn-fs .topbar { display: none; }
 .mi-share:hover { color: var(--text); border-color: var(--border-strong); }
 .mi-share input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; margin: 0; }
 .mi-share:has(input:checked) { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-soft); }
+
+/* ===== 手机端抽屉修正（必须放在基础 .sidebar / .app 规则【之后】，勿上移） =====
+   问题：原先 @media(max-width:860px) 的抽屉样式写在 .sidebar 基础样式之前，
+   两者特异性相同 → 基础样式（后写）覆盖了 position:fixed 与 z-index:45，
+   导致手机端侧边栏实际 z-index 只有 5，被抽屉遮罩层（z-index:44，fixed 铺满全屏）压在下面。
+   后果：点菜单项其实点到了遮罩 → 只收起抽屉、不切换页面（表现为「菜单收起但仍停在首页」）。
+   附带修复：.app 的 height:100dvh 同样被后面的 height:100vh 覆盖，导致手机地址栏跳动。 */
+@media (max-width: 860px) {
+  .app { height: 100dvh; }
+  .sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0;
+    width: min(280px, 82vw); height: 100%;
+    z-index: 45;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+  }
+  .app:not(.nav-collapsed) .sidebar { transform: translateX(0); }
+  .sidebar.collapsed {
+    width: min(280px, 82vw); padding: 18px 14px;
+    border-right: 1px solid var(--border);
+    transform: translateX(-100%);
+  }
+}
