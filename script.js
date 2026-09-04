@@ -1332,13 +1332,16 @@ menuFab.addEventListener("click", () => {
   localStorage.setItem("wb_sb_collapsed", "0");
   syncSidebarUI();
 });
-// 移动端：点击遮罩收起抽屉
-sidebarOverlay.addEventListener("click", () => {
+// 移动端：收起抽屉（点遮罩 / 点选菜单项后共用）
+function closeMobileDrawer() {
+  if (!isMobile()) return;
   sidebar.classList.add("collapsed");
   appEl.classList.add("nav-collapsed");
   localStorage.setItem("wb_sb_collapsed", "1");
   syncSidebarUI();
-});
+}
+// 移动端：点击遮罩收起抽屉
+sidebarOverlay.addEventListener("click", closeMobileDrawer);
 // 跨断点（旋转屏幕 / 缩放窗口）时刷新图标与遮罩
 window.addEventListener("resize", syncSidebarUI);
 /* ---------- 侧边栏：一级菜单折叠 + 页面切换 ---------- */
@@ -1425,7 +1428,10 @@ function switchPage(page) {
   });
 }
 document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
-  btn.addEventListener("click", () => switchPage(btn.dataset.page));
+  btn.addEventListener("click", () => {
+    switchPage(btn.dataset.page);
+    closeMobileDrawer(); // 手机端：选完菜单自动收起抽屉，否则抽屉+遮罩会挡住刚打开的页面
+  });
 });
 /* ---------- 首页模块显隐 + 顺序（注册表驱动，可配置） ---------- */
 function applyHomeLayout() {
@@ -1754,6 +1760,7 @@ function enableStickyDrag(el, n, onCommit) {
     startX = e.clientX; startY = e.clientY;
     origX = el.offsetLeft; origY = el.offsetTop;   // 以真实渲染位置为基准，避免 state 缺 x/y 时跳位
     try { el.setPointerCapture(pid); } catch (err) {}
+    if (onCommit) sharedStickyLastEdit = Date.now(); // 共享便签：拖动开始即进冷却，防轮询把内存位置冲回旧值
     e.preventDefault();
   };
   const onMove = (e) => {
@@ -1772,6 +1779,7 @@ function enableStickyDrag(el, n, onCommit) {
     }
     el.style.left = nx + "px"; el.style.top = ny + "px";
     n.x = nx; n.y = ny;   // 直接写对象引用（个人/共享通用），提交时由 onCommit 或 scheduleSave 落库
+    if (onCommit) sharedStickyLastEdit = Date.now(); // 共享便签：拖动全程刷新冷却，轮询不覆盖内存位置
   };
   const onUp = (e) => {
     if (!dragging) return;
@@ -1930,7 +1938,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260904c";
+const PAYNEWS_VER = "20260904e";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
