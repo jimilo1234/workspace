@@ -344,6 +344,7 @@ async function loadData() {
       try { window.__loadBase = { todos: state.todos || [], stickyNotes: state.stickyNotes || [], notes: state.notes || "", calendarMarks: state.calendarMarks }; } catch (e2) {}
       setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
       _wbSyncSnapshot();
+      loadSharedSticky();
       return;
     }
     /* 云端日历异常为空（[]/{}）但内存中已有日历时，保留内存，避免被空覆盖 */
@@ -373,6 +374,7 @@ async function loadData() {
       }
     } catch (e2) {}
     setStatus(data ? "已就绪 ✓" : "首次使用 · 已就绪");
+    loadSharedSticky();
   } catch (e) {
     setStatus("读取失败 · 请检查网络", "err");
     dataConfirmed = false; // 读取异常：禁止保存，避免用空白覆盖云端
@@ -1622,6 +1624,9 @@ updateMemPill();
 /* ---------- 便利贴（可拖动 / 增删改） ---------- */
 const STICKY_COLORS = ["#ffe9a8", "#c9e7ff", "#d6f5d6", "#ffd6e7", "#e3d6ff"];
 let stickyColorIdx = 0;
+// 共享便利贴（独立于个人 stickyNotes，存 shared_sticky 表；所有人可读可编辑、不可删除）
+let sharedSticky = null;
+let sharedStickySaveTimer = null;
 const stickyBoard = $("#stickyBoard");
 function findSticky(id) { return (state.stickyNotes || []).find((x) => x.id === id); }
 function renderStickyBoard() {
@@ -1656,6 +1661,51 @@ function renderStickyBoard() {
     enableStickyDrag(el, n);
     stickyBoard.appendChild(el);
   });
+  // 共享便利贴：常驻最后（DOM 末尾），所有人可读可编辑同一张，不可删除。
+  // 外观与普便利贴完全一致（含删除按钮但点击拦截），以满足「不要被人看出来」。
+  if (sharedSticky) {
+    const s = sharedSticky;
+    const el = document.createElement("div");
+    el.className = "sticky";
+    el.dataset.id = s.id;
+    el.dataset.shared = "1";
+    el.style.left = (typeof s.x === "number" ? s.x : 24) + "px";
+    el.style.top = (typeof s.y === "number" ? s.y : 24) + "px";
+    el.style.background = s.color || "#ffd6e7";
+    el.innerHTML =
+      '<div class="sticky-head">' +
+        '<span class="sticky-grip" title="按住拖动">⠿</span>' +
+        '<input class="sticky-title" value="' + esc(s.title || "") + '" placeholder="标题" />' +
+        '<button class="sticky-copy" title="一键复制内容">📋</button>' +
+        '<button class="sticky-del" title="删除">×</button>' +
+      '</div>' +
+      '<textarea class="sticky-body" placeholder="写点什么…">' + esc(s.body || "") + '</textarea>';
+    el.querySelector(".sticky-title").addEventListener("input", (e) => {
+      sharedSticky.title = e.target.value; saveSharedSticky();
+    });
+    el.querySelector(".sticky-body").addEventListener("input", (e) => {
+      sharedSticky.body = e.target.value; saveSharedSticky();
+    });
+    el.querySelector(".sticky-copy").addEventListener("click", (ev) => {
+      const btn = ev.currentTarget;
+      const text = [sharedSticky.title, sharedSticky.body].map((x) => String(x || "")).join("\n").replace(/\n{2,}/g, "\n").trim();
+      const flash = (ok, msg) => {
+        const o = btn.innerHTML, t = btn.getAttribute("title");
+        if (ok) { btn.classList.add("copied"); btn.innerHTML = "✓"; btn.setAttribute("title", msg || "已复制"); }
+        else { btn.innerHTML = "✕"; btn.setAttribute("title", msg || "复制失败"); }
+        setTimeout(() => { btn.classList.remove("copied"); btn.innerHTML = o; btn.setAttribute("title", t); }, 1300);
+      };
+      if (!text) { flash(false, "没有内容可复制"); return; }
+      const done = () => flash(true, "已复制"), fail = () => flash(false, "复制失败");
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => legacyCopy(text, done, fail));
+      else legacyCopy(text, done, fail);
+    });
+    el.querySelector(".sticky-del").addEventListener("click", () => {
+      // 不可删除：静默拦截（不弹特殊提示，保持隐蔽）
+    });
+    enableStickyDrag(el, sharedSticky, saveSharedSticky);
+    stickyBoard.appendChild(el);
+  }
 }
 function copySticky(id, btn) {
   const item = findSticky(id);
@@ -1689,7 +1739,7 @@ function legacyCopy(text, done, fail) {
   } catch (e) { fail(); }
 }
 let stickyZ = 10;
-function enableStickyDrag(el, n) {
+function enableStickyDrag(el, n, onCommit) {
   let startX = 0, startY = 0, origX = 0, origY = 0, dragging = false, pid = null, moved = false;
   const onDown = (e) => {
     if (e.button != null && e.button !== 0) return;
@@ -1720,20 +1770,61 @@ function enableStickyDrag(el, n) {
       nx = Math.max(0, nx); ny = Math.max(0, ny);
     }
     el.style.left = nx + "px"; el.style.top = ny + "px";
-    const it = findSticky(n.id); if (it) { it.x = nx; it.y = ny; }
+    n.x = nx; n.y = ny;   // 直接写对象引用（个人/共享通用），提交时由 onCommit 或 scheduleSave 落库
   };
   const onUp = (e) => {
     if (!dragging) return;
     dragging = false; el.classList.remove("dragging");
     try { el.releasePointerCapture(pid); } catch (err) {}
     pid = null;
-    if (moved) scheduleSave();
+    if (moved) { if (onCommit) onCommit(n.x, n.y); else scheduleSave(); }
   };
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);
   el.addEventListener("pointerup", onUp);
   el.addEventListener("pointercancel", onUp);
   el.addEventListener("lostpointercapture", onUp);
+}
+// ---------- 共享便利贴（shared_sticky 表，单行 id='global'，所有人可读可编辑、不可删除） ----------
+function loadSharedSticky() {
+  return (async () => {
+    try {
+      const res = await withTimeout(fetch(REST_BASE + "/shared_sticky?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取共享便利贴");
+      if (res.ok) {
+        const arr = await res.json();
+        if (Array.isArray(arr) && arr.length) sharedSticky = arr[0];
+        else sharedSticky = null;
+      }
+    } catch (e) {
+      console.warn("[sharedSticky] 读取失败（不影响个人便利贴）：", e);
+    }
+    renderStickyBoard(); // 读取完成后补渲染（含共享便利贴）
+  })();
+}
+function saveSharedSticky() {
+  if (!sharedSticky) return;
+  clearTimeout(sharedStickySaveTimer);
+  sharedStickySaveTimer = setTimeout(async () => {
+    try {
+      const head = Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" });
+      const res = await withTimeout(fetch(REST_BASE + "/shared_sticky?id=eq.global", {
+        method: "PATCH",
+        headers: head,
+        body: JSON.stringify({
+          title: sharedSticky.title,
+          body: sharedSticky.body,
+          x: typeof sharedSticky.x === "number" ? sharedSticky.x : 24,
+          y: typeof sharedSticky.y === "number" ? sharedSticky.y : 24,
+          color: sharedSticky.color || "#ffd6e7",
+          updated_by: userId || "jimilo",
+          updated_at: new Date().toISOString(),
+        }),
+      }), 15000, "保存共享便利贴");
+      if (!res.ok) console.warn("[sharedSticky] 保存失败", res.status);
+    } catch (e) {
+      console.warn("[sharedSticky] 保存异常", e);
+    }
+  }, 400);
 }
 function addSticky() {
   state.stickyNotes = state.stickyNotes || [];
@@ -1829,7 +1920,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260903a";
+const PAYNEWS_VER = "20260904a";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
