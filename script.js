@@ -1627,6 +1627,7 @@ let stickyColorIdx = 0;
 // 共享便利贴（独立于个人 stickyNotes，存 shared_sticky 表；所有人可读可编辑、不可删除）
 let sharedSticky = null;
 let sharedStickySaveTimer = null;
+let sharedStickyLastEdit = 0; // 最近一次编辑时间戳，用于轮询同步时避免冲掉未落库内容
 const stickyBoard = $("#stickyBoard");
 function findSticky(id) { return (state.stickyNotes || []).find((x) => x.id === id); }
 function renderStickyBoard() {
@@ -1669,8 +1670,8 @@ function renderStickyBoard() {
     el.className = "sticky";
     el.dataset.id = s.id;
     el.dataset.shared = "1";
-    el.style.left = (typeof s.x === "number" ? s.x : 24) + "px";
-    el.style.top = (typeof s.y === "number" ? s.y : 24) + "px";
+    el.style.left = (typeof s.x === "number" ? s.x : 20) + "px";
+    el.style.top = (typeof s.y === "number" ? s.y : 20) + "px";
     el.style.background = s.color || "#ffd6e7";
     el.innerHTML =
       '<div class="sticky-head">' +
@@ -1681,10 +1682,10 @@ function renderStickyBoard() {
       '</div>' +
       '<textarea class="sticky-body" placeholder="写点什么…">' + esc(s.body || "") + '</textarea>';
     el.querySelector(".sticky-title").addEventListener("input", (e) => {
-      sharedSticky.title = e.target.value; saveSharedSticky();
+      sharedSticky.title = e.target.value; sharedStickyLastEdit = Date.now(); saveSharedSticky();
     });
     el.querySelector(".sticky-body").addEventListener("input", (e) => {
-      sharedSticky.body = e.target.value; saveSharedSticky();
+      sharedSticky.body = e.target.value; sharedStickyLastEdit = Date.now(); saveSharedSticky();
     });
     el.querySelector(".sticky-copy").addEventListener("click", (ev) => {
       const btn = ev.currentTarget;
@@ -1792,17 +1793,26 @@ function loadSharedSticky() {
       const res = await withTimeout(fetch(REST_BASE + "/shared_sticky?limit=1", { headers: API_HEADERS, cache: "no-store" }), 15000, "读取共享便利贴");
       if (res.ok) {
         const arr = await res.json();
-        if (Array.isArray(arr) && arr.length) sharedSticky = arr[0];
-        else sharedSticky = null;
+        const remote = (Array.isArray(arr) && arr.length) ? arr[0] : null;
+        if (!remote) return; // 无数据不处理，避免把已有内存清空
+        // 保护：用户正在编辑，或刚编辑完（5s 冷却）内 → 跳过覆盖，避免轮询/切页把未落库内容冲掉
+        const boardEl = stickyBoard;
+        const sharedEl = boardEl ? boardEl.querySelector('.sticky[data-shared="1"]') : null;
+        const focused = sharedEl && (sharedEl.querySelector(".sticky-title") === document.activeElement ||
+                                     sharedEl.querySelector(".sticky-body") === document.activeElement);
+        const cooling = sharedStickyLastEdit && (Date.now() - sharedStickyLastEdit < 5000);
+        if (focused || cooling) return;
+        sharedSticky = remote;
+        renderStickyBoard();
       }
     } catch (e) {
       console.warn("[sharedSticky] 读取失败（不影响个人便利贴）：", e);
     }
-    renderStickyBoard(); // 读取完成后补渲染（含共享便利贴）
   })();
 }
 function saveSharedSticky() {
   if (!sharedSticky) return;
+  sharedStickyLastEdit = Date.now(); // 标记编辑时间，进入冷却期，避免轮询/切页把未落库内容覆盖
   clearTimeout(sharedStickySaveTimer);
   sharedStickySaveTimer = setTimeout(async () => {
     try {
@@ -1813,8 +1823,8 @@ function saveSharedSticky() {
         body: JSON.stringify({
           title: sharedSticky.title,
           body: sharedSticky.body,
-          x: typeof sharedSticky.x === "number" ? sharedSticky.x : 24,
-          y: typeof sharedSticky.y === "number" ? sharedSticky.y : 24,
+          x: typeof sharedSticky.x === "number" ? sharedSticky.x : 20,
+          y: typeof sharedSticky.y === "number" ? sharedSticky.y : 20,
           color: sharedSticky.color || "#ffd6e7",
           updated_by: userId || "jimilo",
           updated_at: new Date().toISOString(),
@@ -1920,7 +1930,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260904a";
+const PAYNEWS_VER = "20260904c";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
