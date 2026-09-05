@@ -1635,6 +1635,213 @@ let sharedSticky = null;
 let sharedStickySaveTimer = null;
 let sharedStickyLastEdit = 0; // 最近一次编辑时间戳，用于轮询同步时避免冲掉未落库内容
 const stickyBoard = $("#stickyBoard");
+/* =====================================================================
+   便利贴附件（图片 / 视频 / 音频）
+   - 文件存 Supabase Storage 的 sticky 桶，路径 <便利贴ID>/<uuid>.<ext>
+     （Storage key 不接受中文：云端用 UUID 名，原始文件名存在元数据里）
+   - 元数据挂在该便利贴对象的 attachments 数组：
+     个人贴随 workbench_data.sticky_notes 一起保存；共享贴存 shared_sticky.attachments 列
+   - 单文件上限 50MB（与桶的 file_size_limit 一致，前端先拦，免得白等上传）
+   - 删除权限：所有人可删（软权限架构，与共享贴「全员可编辑」定位一致）
+   ===================================================================== */
+const STICKY_BUCKET = "sticky";
+const STICKY_STORAGE = SUPABASE_URL + "/storage/v1";
+const STICKY_FILE_MAX = 50 * 1024 * 1024;
+let stickyFileInput = null;      // 全局隐藏 input（避免每张便利贴各建一个）
+let stickyUploadTarget = null;   // { shared:bool, id:string }
+let stickyUploading = 0;         // 上传中的批次数（>0 时按钮显示「上传中…」）
+
+function stickyKindOf(mime, name) {
+  const m = String(mime || "");
+  if (m.indexOf("image/") === 0) return "image";
+  if (m.indexOf("video/") === 0) return "video";
+  if (m.indexOf("audio/") === 0) return "audio";
+  const ext = (String(name || "").split(".").pop() || "").toLowerCase();
+  if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "heif", "svg"].indexOf(ext) >= 0) return "image";
+  if (["mp4", "mov", "webm", "avi", "3gp", "3gpp", "m4v", "mkv"].indexOf(ext) >= 0) return "video";
+  if (["mp3", "m4a", "aac", "wav", "ogg", "amr", "flac"].indexOf(ext) >= 0) return "audio";
+  return "";
+}
+function fmtSize(n) {
+  const b = Number(n) || 0;
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1024 / 1024).toFixed(1) + " MB";
+}
+function stickyNoteById(shared, id) { return shared ? sharedSticky : findSticky(id); }
+
+function pickStickyFiles(shared, id) {
+  if (!stickyFileInput) {
+    stickyFileInput = document.createElement("input");
+    stickyFileInput.type = "file";
+    stickyFileInput.multiple = true;
+    stickyFileInput.accept = "image/*,video/*,audio/*";
+    stickyFileInput.style.display = "none";
+    stickyFileInput.addEventListener("change", () => {
+      const files = stickyFileInput.files;
+      const target = stickyUploadTarget;
+      stickyFileInput.value = "";
+      if (target && files && files.length) uploadStickyFiles(target.shared, target.id, files);
+    });
+    document.body.appendChild(stickyFileInput);
+  }
+  stickyUploadTarget = { shared: !!shared, id: id };
+  stickyFileInput.click();
+}
+
+async function uploadStickyFiles(shared, noteId, fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  const accepted = [], rejected = [];
+  files.forEach((f) => {
+    const kind = stickyKindOf(f.type, f.name);
+    if (!kind) rejected.push(f.name + "（仅支持图片/视频/音频）");
+    else if (f.size > STICKY_FILE_MAX) rejected.push(f.name + "（" + fmtSize(f.size) + "，超过 50MB）");
+    else accepted.push({ file: f, kind: kind });
+  });
+  if (rejected.length) alert("以下文件未上传：\n· " + rejected.join("\n· "));
+  if (!accepted.length) return;
+  if (shared) sharedStickyLastEdit = Date.now(); // 共享贴：上传期间进冷却，防轮询冲掉
+  stickyUploading++;
+  renderStickyBoard();
+  const added = [];
+  let errMsg = "";
+  for (const it of accepted) {
+    const f = it.file;
+    try {
+      const dot = f.name.lastIndexOf(".");
+      const ext = dot >= 0 ? f.name.slice(dot).toLowerCase() : "";
+      const storageName = (crypto.randomUUID ? crypto.randomUUID() : ("id" + Date.now() + Math.random().toString(16).slice(2))) + ext;
+      const path = encodeURIComponent(noteId) + "/" + encodeURIComponent(storageName);
+      const res = await withTimeout(fetch(
+        STICKY_STORAGE + "/object/" + STICKY_BUCKET + "/" + path,
+        {
+          method: "POST",
+          headers: Object.assign({}, API_HEADERS, {
+            "Content-Type": f.type || "application/octet-stream",
+            "x-upsert": "true",
+          }),
+          body: f,
+        }
+      ), 120000, "上传便利贴附件");
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(f.name + "：" + res.status + " " + txt.slice(0, 120));
+      }
+      added.push({
+        name: f.name,
+        url: STICKY_STORAGE + "/object/public/" + STICKY_BUCKET + "/" + path,
+        type: it.kind, size: f.size, path: path,
+        by: userId || "jimilo", at: Date.now(),
+      });
+    } catch (e) {
+      errMsg += "· " + (e && e.message ? e.message : e) + "\n";
+    }
+  }
+  stickyUploading = Math.max(0, stickyUploading - 1);
+  if (added.length) {
+    const note = stickyNoteById(shared, noteId); // 异步完成后重取引用，避免期间被轮询替换成新对象
+    if (note) {
+      note.attachments = (note.attachments || []).concat(added);
+      if (shared) { sharedStickyLastEdit = Date.now(); saveSharedSticky(); }
+      else scheduleSave();
+    }
+  }
+  if (errMsg) alert("部分文件上传失败：\n" + errMsg);
+  renderStickyBoard();
+}
+
+/* 静默清理云端文件（失败不打扰用户，仅控制台留痕） */
+async function stickyPurgeFile(path) {
+  if (!path) return;
+  try {
+    const res = await withTimeout(fetch(
+      STICKY_STORAGE + "/object/" + STICKY_BUCKET + "/" + path,
+      { method: "DELETE", headers: API_HEADERS }
+    ), 20000, "清理便利贴附件");
+    if (!res.ok) console.warn("[sticky] 云端附件清理失败", res.status, path);
+  } catch (e) { console.warn("[sticky] 云端附件清理异常", e); }
+}
+
+async function deleteStickyFile(shared, noteId, idx) {
+  const note = stickyNoteById(shared, noteId);
+  const list = note ? (note.attachments || []) : [];
+  const att = list[idx];
+  if (!att) return;
+  if (!confirm("确定删除附件「" + att.name + "」吗？\n删除后所有人都看不到了，且无法恢复。")) return;
+  list.splice(idx, 1);                       // 先摘内存，UI 立即响应
+  if (shared) { sharedStickyLastEdit = Date.now(); saveSharedSticky(); }
+  else scheduleSave();
+  renderStickyBoard();
+  if (att.path) stickyPurgeFile(att.path); // 再删云端；失败不影响使用，仅控制台记录
+}
+
+/* 附件区 HTML：图片走缩略图（点击放大），音视频走内嵌播放器 */
+function stickyFilesHtml(note) {
+  const list = note.attachments || [];
+  let html = '<div class="sticky-files">';
+  list.forEach((a, i) => {
+    const kind = a.type || stickyKindOf("", a.name);
+    const name = esc(a.name || "附件");
+    if (kind === "image") {
+      html +=
+        '<div class="sf-item">' +
+          '<img class="sf-thumb" src="' + esc(a.url) + '" data-idx="' + i + '" alt="' + name + '" title="点击放大" />' +
+          '<div class="sf-meta">' +
+            '<div class="sf-name" title="' + name + '">' + name + '</div>' +
+            '<div class="sf-sub">图片 · ' + fmtSize(a.size) + '</div>' +
+          '</div>' +
+          '<button class="sf-del" type="button" data-idx="' + i + '" title="删除附件">×</button>' +
+        '</div>';
+    } else {
+      const media = kind === "video"
+        ? '<video class="sf-media" src="' + esc(a.url) + '" preload="metadata" playsinline controls></video>'
+        : '<audio class="sf-media" src="' + esc(a.url) + '" preload="metadata" controls></audio>';
+      html +=
+        '<div class="sf-item sf-item-col">' +
+          '<div class="sf-row">' +
+            '<div class="sf-meta">' +
+              '<div class="sf-name" title="' + name + '">' + name + '</div>' +
+              '<div class="sf-sub">' + (kind === "video" ? "视频" : "音频") + ' · ' + fmtSize(a.size) + '</div>' +
+            '</div>' +
+            '<button class="sf-del" type="button" data-idx="' + i + '" title="删除附件">×</button>' +
+          '</div>' + media +
+        '</div>';
+    }
+  });
+  html += '<button class="sf-add" type="button">' + (stickyUploading > 0 ? "上传中…" : "＋ 添加附件") + '</button>';
+  html += '</div>';
+  return html;
+}
+function bindStickyFiles(el, shared, noteId) {
+  const box = el.querySelector(".sticky-files");
+  if (!box) return;
+  const addBtn = box.querySelector(".sf-add");
+  if (addBtn) addBtn.addEventListener("click", () => pickStickyFiles(shared, noteId));
+  box.querySelectorAll(".sf-thumb").forEach((im) => {
+    im.addEventListener("click", () => {
+      const note = stickyNoteById(shared, noteId);
+      const a = note && (note.attachments || [])[Number(im.dataset.idx)];
+      if (a) openStickyPreview(a);
+    });
+  });
+  box.querySelectorAll(".sf-del").forEach((b) => {
+    b.addEventListener("click", () => deleteStickyFile(shared, noteId, Number(b.dataset.idx)));
+  });
+}
+function openStickyPreview(att) {
+  const kind = att.type || stickyKindOf("", att.name);
+  let inner = "";
+  if (kind === "image") inner = '<img src="' + esc(att.url) + '" alt="" />';
+  else if (kind === "video") inner = '<video src="' + esc(att.url) + '" controls autoplay playsinline></video>';
+  else inner = '<audio src="' + esc(att.url) + '" controls autoplay></audio>';
+  const ov = document.createElement("div");
+  ov.className = "sf-preview";
+  ov.innerHTML = '<div class="sf-preview-box">' + inner + '<div class="sf-preview-tip">点击任意处关闭</div></div>';
+  ov.addEventListener("click", () => { try { ov.remove(); } catch (e) {} });
+  document.body.appendChild(ov);
+}
+
 function findSticky(id) { return (state.stickyNotes || []).find((x) => x.id === id); }
 function renderStickyBoard() {
   if (!stickyBoard) return;
@@ -1653,7 +1860,8 @@ function renderStickyBoard() {
         '<button class="sticky-copy" title="一键复制内容">📋</button>' +
         '<button class="sticky-del" title="删除">×</button>' +
       '</div>' +
-      '<textarea class="sticky-body" placeholder="写点什么…">' + esc(n.body || "") + '</textarea>';
+      '<textarea class="sticky-body" placeholder="写点什么…">' + esc(n.body || "") + '</textarea>' +
+      stickyFilesHtml(n);
     el.querySelector(".sticky-title").addEventListener("input", (e) => {
       const item = findSticky(n.id); if (item) { item.title = e.target.value; scheduleSave(); }
     });
@@ -1662,9 +1870,13 @@ function renderStickyBoard() {
     });
     el.querySelector(".sticky-copy").addEventListener("click", () => copySticky(n.id, el.querySelector(".sticky-copy")));
     el.querySelector(".sticky-del").addEventListener("click", () => {
+      const doomed = findSticky(n.id);
+      const atts = doomed && doomed.attachments ? doomed.attachments.slice() : [];
       state.stickyNotes = (state.stickyNotes || []).filter((x) => x.id !== n.id);
       renderStickyBoard(); scheduleSave();
+      atts.forEach((a) => { if (a && a.path) stickyPurgeFile(a.path); }); // 整张贴删掉时，云端附件一并清理
     });
+    bindStickyFiles(el, false, n.id);
     enableStickyDrag(el, n);
     stickyBoard.appendChild(el);
   });
@@ -1686,7 +1898,8 @@ function renderStickyBoard() {
         '<button class="sticky-copy" title="一键复制内容">📋</button>' +
         '<button class="sticky-del" title="删除">×</button>' +
       '</div>' +
-      '<textarea class="sticky-body" placeholder="写点什么…">' + esc(s.body || "") + '</textarea>';
+      '<textarea class="sticky-body" placeholder="写点什么…">' + esc(s.body || "") + '</textarea>' +
+      stickyFilesHtml(s);
     el.querySelector(".sticky-title").addEventListener("input", (e) => {
       sharedSticky.title = e.target.value; sharedStickyLastEdit = Date.now(); saveSharedSticky();
     });
@@ -1710,6 +1923,7 @@ function renderStickyBoard() {
     el.querySelector(".sticky-del").addEventListener("click", () => {
       // 不可删除：静默拦截（不弹特殊提示，保持隐蔽）
     });
+    bindStickyFiles(el, true, s.id);
     enableStickyDrag(el, sharedSticky, saveSharedSticky);
     stickyBoard.appendChild(el);
   }
@@ -1754,6 +1968,8 @@ function enableStickyDrag(el, n, onCommit) {
     // 手柄始终可拖；输入框 / 文本域 / 按钮内不触发拖动（保证正常编辑与删除）
     if (!(t.classList && t.classList.contains("sticky-grip")) &&
         t.closest && t.closest("input, textarea, button")) return;
+    // 附件区不触发拖动：否则点缩略图/播放器/删除按钮会变成拖便利贴
+    if (t.closest && t.closest(".sticky-files")) return;
     dragging = true; moved = false; pid = e.pointerId;
     el.classList.add("dragging");
     el.style.zIndex = ++stickyZ;
@@ -1809,7 +2025,11 @@ function loadSharedSticky() {
         const focused = sharedEl && (sharedEl.querySelector(".sticky-title") === document.activeElement ||
                                      sharedEl.querySelector(".sticky-body") === document.activeElement);
         const cooling = sharedStickyLastEdit && (Date.now() - sharedStickyLastEdit < 5000);
-        if (focused || cooling) return;
+        // 有附件正在播放（音频/视频）时也跳过：避免轮询重渲染把播放打断
+        const playing = boardEl
+          ? Array.prototype.some.call(boardEl.querySelectorAll("audio, video"), (m) => !m.paused && m.currentTime > 0)
+          : false;
+        if (focused || cooling || playing) return;
         sharedSticky = remote;
         renderStickyBoard();
       }
@@ -1825,19 +2045,31 @@ function saveSharedSticky() {
   sharedStickySaveTimer = setTimeout(async () => {
     try {
       const head = Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" });
-      const res = await withTimeout(fetch(REST_BASE + "/shared_sticky?id=eq.global", {
-        method: "PATCH",
-        headers: head,
-        body: JSON.stringify({
-          title: sharedSticky.title,
-          body: sharedSticky.body,
-          x: typeof sharedSticky.x === "number" ? sharedSticky.x : 20,
-          y: typeof sharedSticky.y === "number" ? sharedSticky.y : 20,
-          color: sharedSticky.color || "#ffd6e7",
-          updated_by: userId || "jimilo",
-          updated_at: new Date().toISOString(),
-        }),
+      const payload = {
+        title: sharedSticky.title,
+        body: sharedSticky.body,
+        x: typeof sharedSticky.x === "number" ? sharedSticky.x : 20,
+        y: typeof sharedSticky.y === "number" ? sharedSticky.y : 20,
+        color: sharedSticky.color || "#ffd6e7",
+        attachments: sharedSticky.attachments || [],
+        updated_by: userId || "jimilo",
+        updated_at: new Date().toISOString(),
+      };
+      const url = REST_BASE + "/shared_sticky?id=eq.global";
+      let res = await withTimeout(fetch(url, {
+        method: "PATCH", headers: head, body: JSON.stringify(payload),
       }), 15000, "保存共享便利贴");
+      if (!res.ok) {
+        // 降级：attachments 列还没建（SQL 未执行）时，去掉该字段重试，保证正文照常保存
+        const txt = await res.text().catch(() => "");
+        if (/attachments/i.test(txt)) {
+          const p2 = Object.assign({}, payload); delete p2.attachments;
+          res = await withTimeout(fetch(url, {
+            method: "PATCH", headers: head, body: JSON.stringify(p2),
+          }), 15000, "保存共享便利贴(降级)");
+          if (res.ok) console.warn("[sharedSticky] attachments 列未建，已降级：仅保存正文，附件需先执行 supabase_sticky_attachments.sql");
+        }
+      }
       if (!res.ok) console.warn("[sharedSticky] 保存失败", res.status);
     } catch (e) {
       console.warn("[sharedSticky] 保存异常", e);
@@ -1938,7 +2170,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260904e";
+const PAYNEWS_VER = "20260905a";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
