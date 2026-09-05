@@ -1647,8 +1647,6 @@ const stickyBoard = $("#stickyBoard");
 const STICKY_BUCKET = "sticky";
 const STICKY_STORAGE = SUPABASE_URL + "/storage/v1";
 const STICKY_FILE_MAX = 50 * 1024 * 1024;
-let stickyFileInput = null;      // 全局隐藏 input（避免每张便利贴各建一个）
-let stickyUploadTarget = null;   // { shared:bool, id:string }
 let stickyUploading = 0;         // 上传中的批次数（>0 时按钮显示「上传中…」）
 
 function stickyKindOf(mime, name) {
@@ -1669,25 +1667,6 @@ function fmtSize(n) {
   return (b / 1024 / 1024).toFixed(1) + " MB";
 }
 function stickyNoteById(shared, id) { return shared ? sharedSticky : findSticky(id); }
-
-function pickStickyFiles(shared, id) {
-  if (!stickyFileInput) {
-    stickyFileInput = document.createElement("input");
-    stickyFileInput.type = "file";
-    stickyFileInput.multiple = true;
-    stickyFileInput.accept = "image/*,video/*,audio/*";
-    stickyFileInput.style.display = "none";
-    stickyFileInput.addEventListener("change", () => {
-      const files = stickyFileInput.files;
-      const target = stickyUploadTarget;
-      stickyFileInput.value = "";
-      if (target && files && files.length) uploadStickyFiles(target.shared, target.id, files);
-    });
-    document.body.appendChild(stickyFileInput);
-  }
-  stickyUploadTarget = { shared: !!shared, id: id };
-  stickyFileInput.click();
-}
 
 async function uploadStickyFiles(shared, noteId, fileList) {
   const files = Array.from(fileList || []);
@@ -1809,15 +1788,24 @@ function stickyFilesHtml(note) {
         '</div>';
     }
   });
-  html += '<button class="sf-add" type="button">' + (stickyUploading > 0 ? "上传中…" : "＋ 添加附件") + '</button>';
+  /* 「添加附件」用 <label> 包住 file input：点击由浏览器原生转发给 input，
+     不依赖 JS 调用 input.click()（后者在 iOS Safari / 部分手机浏览器上不会弹选择器）。 */
+  html += '<label class="sf-add">' + (stickyUploading > 0 ? "上传中…" : "＋ 添加附件") +
+    '<input type="file" class="sf-file" multiple accept="image/*,video/*,audio/*" /></label>';
   html += '</div>';
   return html;
 }
 function bindStickyFiles(el, shared, noteId) {
   const box = el.querySelector(".sticky-files");
   if (!box) return;
-  const addBtn = box.querySelector(".sf-add");
-  if (addBtn) addBtn.addEventListener("click", () => pickStickyFiles(shared, noteId));
+  // 每个 file input 的 change：选完文件即上传（闭包记住所属便利贴）
+  box.querySelectorAll(".sf-file").forEach((inp) => {
+    inp.addEventListener("change", () => {
+      const files = inp.files;
+      inp.value = ""; // 清空以便同一文件可再次选择
+      if (files && files.length) uploadStickyFiles(shared, noteId, files);
+    });
+  });
   box.querySelectorAll(".sf-thumb").forEach((im) => {
     im.addEventListener("click", () => {
       const note = stickyNoteById(shared, noteId);
@@ -2170,7 +2158,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260905a";
+const PAYNEWS_VER = "20260905b";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
