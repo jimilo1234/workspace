@@ -1647,6 +1647,20 @@ const stickyBoard = $("#stickyBoard");
 const STICKY_BUCKET = "sticky";
 const STICKY_STORAGE = SUPABASE_URL + "/storage/v1";
 const STICKY_FILE_MAX = 50 * 1024 * 1024;
+/* 文件选择器打开期间禁止重渲染便利贴：
+   共享贴每 30s 轮询会调用 renderStickyBoard() 全量重建 DOM，
+   若此时用户正在挑文件，承载选择的 input 会被销毁 → change 永远不触发（表现为「点了没反应」）。 */
+let stickyPickerOpen = false;
+let stickyPickerTimer = null;
+let stickyRenderPending = false;
+function stickyPickerMark(open) {
+  stickyPickerOpen = open;
+  clearTimeout(stickyPickerTimer);
+  if (open) stickyPickerTimer = setTimeout(() => { stickyPickerOpen = false; stickyFlushRender(); }, 180000); // 3 分钟兜底
+}
+function stickyFlushRender() {
+  if (stickyRenderPending) { stickyRenderPending = false; setTimeout(renderStickyBoard, 0); }
+}
 let stickyUploading = 0;         // 上传中的批次数（>0 时按钮显示「上传中…」）
 
 function stickyKindOf(mime, name) {
@@ -1667,6 +1681,12 @@ function fmtSize(n) {
   return (b / 1024 / 1024).toFixed(1) + " MB";
 }
 function stickyNoteById(shared, id) { return shared ? sharedSticky : findSticky(id); }
+/* 共享便利贴的内容指纹：用于判断远端数据是否真变了，避免无谓重渲染打断交互 */
+function stickySnapshot(s) {
+  if (!s) return "";
+  return JSON.stringify([s.title || "", s.body || "", s.x, s.y, s.color || "",
+    (s.attachments || []).map((a) => a.url || "").join("|")]);
+}
 
 async function uploadStickyFiles(shared, noteId, fileList) {
   const files = Array.from(fileList || []);
@@ -1790,7 +1810,7 @@ function stickyFilesHtml(note) {
   });
   /* 「添加附件」用 <label> 包住 file input：点击由浏览器原生转发给 input，
      不依赖 JS 调用 input.click()（后者在 iOS Safari / 部分手机浏览器上不会弹选择器）。 */
-  html += '<label class="sf-add">' + (stickyUploading > 0 ? "上传中…" : "＋ 添加附件") +
+  html += '<label class="sf-add"><span class="sf-add-txt">' + (stickyUploading > 0 ? "上传中…" : "＋ 添加附件") + '</span>' +
     '<input type="file" class="sf-file" multiple accept="image/*,video/*,audio/*" /></label>';
   html += '</div>';
   return html;
@@ -1800,10 +1820,26 @@ function bindStickyFiles(el, shared, noteId) {
   if (!box) return;
   // 每个 file input 的 change：选完文件即上传（闭包记住所属便利贴）
   box.querySelectorAll(".sf-file").forEach((inp) => {
+    const txt = box.querySelector(".sf-add-txt");
+    const setTxt = (s) => { if (txt) txt.textContent = s; };
+    // 选择器一打开就上锁，禁止轮询重渲染销毁本 input；同时给可见反馈，便于判断点击是否被接收
+    inp.addEventListener("click", () => { stickyPickerMark(true); setTxt("选择文件中…"); });
+    inp.addEventListener("cancel", () => { stickyPickerMark(false); setTxt("＋ 添加附件"); stickyFlushRender(); });
     inp.addEventListener("change", () => {
-      const files = inp.files;
+      /* 关键：input.files 是「活引用」而非快照——一旦执行 inp.value = ""，
+         之前保存的 files 会被同步清空，files.length 恒为 0，上传被静默跳过
+        （表现为「选完文件啥事没发生」）。必须先把文件复制成普通数组再清空。 */
+      const files = Array.prototype.slice.call(inp.files || []);
       inp.value = ""; // 清空以便同一文件可再次选择
-      if (files && files.length) uploadStickyFiles(shared, noteId, files);
+      stickyPickerMark(false);
+      if (files.length) {
+        setTxt("上传中…");
+        try { uploadStickyFiles(shared, noteId, files); }
+        catch (e) { setTxt("＋ 添加附件"); alert("上传失败：" + (e && e.message ? e.message : e)); }
+      } else {
+        setTxt("＋ 添加附件");
+        stickyFlushRender();
+      }
     });
   });
   box.querySelectorAll(".sf-thumb").forEach((im) => {
@@ -1833,6 +1869,7 @@ function openStickyPreview(att) {
 function findSticky(id) { return (state.stickyNotes || []).find((x) => x.id === id); }
 function renderStickyBoard() {
   if (!stickyBoard) return;
+  if (stickyPickerOpen) { stickyRenderPending = true; return; } // 选择器打开中：推迟渲染，保住 input
   stickyBoard.innerHTML = "";
   (state.stickyNotes || []).forEach((n) => {
     const el = document.createElement("div");
@@ -2018,6 +2055,8 @@ function loadSharedSticky() {
           ? Array.prototype.some.call(boardEl.querySelectorAll("audio, video"), (m) => !m.paused && m.currentTime > 0)
           : false;
         if (focused || cooling || playing) return;
+        // 远端数据无实质变化就不重建 DOM：减少无谓重绘，也避免打断正在进行的交互
+        if (sharedSticky && stickySnapshot(remote) === stickySnapshot(sharedSticky)) return;
         sharedSticky = remote;
         renderStickyBoard();
       }
@@ -2158,7 +2197,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260905b";
+const PAYNEWS_VER = "20260905d";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
