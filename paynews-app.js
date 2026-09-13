@@ -205,8 +205,13 @@ async function fetchLatestNews() {
   btn.textContent = "获取最新新闻";
 }
 
+// ===== 首页新闻：默认只展示前 3 条，可展开全部 =====
+let _newsExpanded = false;
+let _lastNewsState = null;
+
 // ===== 渲染新闻 =====
 function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
+  _lastNewsState = { containerId: containerId, dateId: dateId, messages: userMessages };
   const container = document.getElementById(containerId);
   const dateEl = document.getElementById(dateId);
   dateEl.textContent = getDateStr();
@@ -234,7 +239,8 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     lastMessageSnapshot = newSnapshot;
   }
 
-  let html = MOCK_NEWS.map(item => {
+  const _displayNews = _newsExpanded ? MOCK_NEWS : MOCK_NEWS.slice(0, 3);
+  let html = _displayNews.map(item => {
     const catClass = hasNewMessages ? 'news-category new-msg' : 'news-category';
     return `
     <div class="news-item">
@@ -284,11 +290,24 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     html += msgHtml;
   }
 
+  // 折叠/展开全部新闻（首页默认只显示前 3 条）
+  if (MOCK_NEWS.length > 3) {
+    const _label = _newsExpanded ? '▲ 收起' : '▼ 显示全部 ' + MOCK_NEWS.length + ' 条';
+    html += '<div class="news-more-row" style="text-align:center;margin:10px 0 2px;"><span class="news-more-btn" role="button" tabindex="0" onclick="toggleNewsExpand()" style="display:inline-block;cursor:pointer;color:var(--accent,#4f7cff);font-size:13px;padding:6px 14px;border:1px solid var(--accent,#4f7cff);border-radius:18px;user-select:none;">' + _label + '</span></div>';
+  }
   container.innerHTML = html;
   // 同步更新五子棋页面的新闻摘要（五子棋tab已移除，跳过）
   // if (containerId === 'member-news-grid' && userMessages && userMessages.length > 0) {
   //   gkRenderNews(userMessages);
   // }
+}
+
+// 切换新闻展开/折叠（首页默认只显示前 3 条）
+function toggleNewsExpand() {
+  _newsExpanded = !_newsExpanded;
+  if (_lastNewsState) {
+    renderNews(_lastNewsState.containerId, _lastNewsState.dateId, _lastNewsState.messages || [], false);
+  }
 }
 
 function escapeHtml(str) {
@@ -2915,5 +2934,6 @@ setInterval(async () => {
   if (typeof toggleImg === 'function') window.toggleImg = toggleImg;
   if (typeof toggleVideo === 'function') window.toggleVideo = toggleVideo;
   if (typeof toggleWalkieSub === 'function') window.toggleWalkieSub = toggleWalkieSub;
+  if (typeof toggleNewsExpand === 'function') window.toggleNewsExpand = toggleNewsExpand;
   if (typeof verifyAdminPassword === 'function') window.verifyAdminPassword = verifyAdminPassword;
 } catch(e){ console.warn("[paynews-embed] expose handlers:", e); }
