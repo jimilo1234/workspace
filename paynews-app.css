@@ -706,8 +706,8 @@ html.light .walkie-sub-toggle.on .toggle-knob { background: var(--accent-light);
 .guest-id { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; transition: color 0.3s; }
 .guest-id.broadcasting { color: #111; }
 html.light .guest-id.broadcasting { color: #222; }
-/* 「行业评论」行右上角：guest-id 推向右侧，发布新闻按钮紧随其后 */
-.news-category-line .guest-id { margin-left: auto; }
+/* 仅对「行业评论」行（带发布按钮的那行）生效，避免误伤「最新评论」行 */
+.news-category-line.has-publish-btn .guest-id { margin-left: auto; }
 .news-publish-btn {
   display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
   padding: 3px 10px; border: 1px solid var(--border-card); border-radius: 999px;
