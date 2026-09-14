@@ -816,7 +816,7 @@ html.light .guest-id.broadcasting { color: #222; }
   border-top: none; padding: 0; z-index: auto;
 }
 .input-row { display: flex; gap: 8px; align-items: stretch; max-width: none; margin: 0; }
-.input-col { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.input-col { display: flex; flex-direction: row; gap: 8px; flex: 1; align-items: stretch; }
 .input-col textarea {
   flex: 1; padding: 5px 10px; border-radius: 10px;
   border: 1px solid var(--border-input); background: var(--bg-input);
@@ -826,7 +826,7 @@ html.light .guest-id.broadcasting { color: #222; }
 }
 .input-col textarea:focus { border-color: var(--accent); }
 .input-col .send-btn {
-  width: 100%; padding: 10px; border: none; border-radius: 10px;
+  width: auto; padding: 10px 16px; border: none; border-radius: 10px;
   background: var(--accent); color: #fff; font-size: 13px;
   font-weight: 600; cursor: pointer; transition: background 0.2s;
   white-space: nowrap; flex-shrink: 0;
