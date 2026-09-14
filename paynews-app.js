@@ -265,7 +265,7 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     const hh = String(ts.getHours()).padStart(2,'0');
     const mm = String(ts.getMinutes()).padStart(2,'0');
     const ss = String(ts.getSeconds()).padStart(2,'0');
-    msgHtml += `<div class="news-category-line has-publish-btn"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div><button class="news-publish-btn" onclick="toggleCommentPanel()" title="发布新闻"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>发布新闻</button></div>`;
+    msgHtml += `<div class="news-category-line has-publish-btn"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div><button class="news-publish-btn" onclick="toggleCommentPanel(this)" title="发布新闻"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>发布新闻</button></div>`;
     if (newestMsg.text) msgHtml += `<h3>${escapeHtml(newestMsg.text)}</h3>`;
     // 评论下方添加伪装描述（取第一条新闻摘要）
     let summaryContent = '';
@@ -838,6 +838,8 @@ async function doSendMessage() {
     const _fab = document.getElementById('comment-fab');
     if (_panel && _panel.classList.contains('open')) {
       _panel.classList.remove('open');
+      _panel.classList.remove('anchored');
+      _panel.style.top = '';
       _fab.classList.remove('open');
       document.getElementById('fab-icon-edit').style.display = '';
       document.getElementById('fab-icon-close').style.display = 'none';
@@ -1999,7 +2001,9 @@ function gomokuBackLobby() {
 }
 
 // ===== 悬浮评论窗 =====
-function toggleCommentPanel() {
+// anchor：传入触发按钮时，浮窗贴着该按钮下方展开（「行业评论」行右上角的「发布新闻」按钮）；
+//         不传时恢复右下角悬浮（传统的圆形按钮）。两种入口共用同一套输入能力。
+function toggleCommentPanel(anchor) {
   const panel = document.getElementById('comment-panel');
   const fab = document.getElementById('comment-fab');
   const iconEdit = document.getElementById('fab-icon-edit');
@@ -2009,6 +2013,8 @@ function toggleCommentPanel() {
   const activePageInner = document.querySelector('.page.active .page-inner');
   if (isOpen) {
     panel.classList.remove('open');
+    panel.classList.remove('anchored');
+    panel.style.top = '';
     fab.classList.remove('open');
     iconEdit.style.display = '';
     iconClose.style.display = 'none';
@@ -2016,6 +2022,7 @@ function toggleCommentPanel() {
     if (activePageInner) activePageInner.classList.remove('has-comment-panel');
   } else {
     panel.classList.add('open');
+    _anchorCommentPanel(panel, anchor);
     fab.classList.add('open');
     iconEdit.style.display = 'none';
     iconClose.style.display = '';
@@ -2024,6 +2031,33 @@ function toggleCommentPanel() {
     // 聚焦到输入框
     setTimeout(() => { const ta = document.getElementById('msg-text'); if(ta) ta.focus(); }, 200);
   }
+}
+
+// 把浮窗锚定到触发按钮的正下方；空间不足时上移，避免溢出可滚动容器。
+// 定位容器是 #paynewsHost（position:relative + overflow-y:auto），内容坐标系需叠加 scrollTop。
+function _anchorCommentPanel(panel, btn) {
+  if (!btn) {                      // 无锚点 → 回到右下角悬浮，交给 CSS 默认位置
+    panel.classList.remove('anchored');
+    panel.style.top = '';
+    return;
+  }
+  const parent = panel.offsetParent || panel.parentElement;
+  if (!parent) return;
+  const pr = parent.getBoundingClientRect();
+  const br = btn.getBoundingClientRect();
+  const scrollTop = parent.scrollTop || 0;
+  let top = br.bottom - pr.top + scrollTop + 8;
+  panel.classList.add('anchored');
+  panel.style.top = top + 'px';
+  // 打开后再测真实高度，必要时整体上移
+  requestAnimationFrame(() => {
+    if (!panel.classList.contains('open')) return;
+    const h = panel.offsetHeight;
+    const limit = scrollTop + pr.height - 8;
+    if (top + h > limit) {
+      panel.style.top = Math.max(scrollTop + 8, limit - h) + 'px';
+    }
+  });
 }
 
 // ==================== Hidden Admin Panel ====================

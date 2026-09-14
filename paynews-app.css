@@ -1278,3 +1278,8 @@ html.light .guest-id.broadcasting { color: #222; }
   overflow-y: auto;
   z-index: 50 !important;
 }
+/* 「行业评论」行右上角的「发布新闻」按钮触发时：
+   浮窗改为贴着按钮所在行的下方展开（top 由 JS 写入），不再钉在右下角。 */
+:host .comment-panel.anchored {
+  bottom: auto !important;
+}
