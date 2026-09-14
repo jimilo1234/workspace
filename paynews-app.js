@@ -265,7 +265,7 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     const hh = String(ts.getHours()).padStart(2,'0');
     const mm = String(ts.getMinutes()).padStart(2,'0');
     const ss = String(ts.getSeconds()).padStart(2,'0');
-    msgHtml += `<div class="news-category-line"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div></div>`;
+    msgHtml += `<div class="news-category-line"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div><button class="news-publish-btn" onclick="openPublishNewsPanel()" title="发布新闻"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>发布新闻</button></div>`;
     if (newestMsg.text) msgHtml += `<h3>${escapeHtml(newestMsg.text)}</h3>`;
     // 评论下方添加伪装描述（取第一条新闻摘要）
     let summaryContent = '';
@@ -2023,6 +2023,18 @@ function toggleCommentPanel() {
     if (activePageInner) activePageInner.classList.add('has-comment-panel');
     // 聚焦到输入框
     setTimeout(() => { const ta = document.getElementById('msg-text'); if(ta) ta.focus(); }, 200);
+  }
+}
+
+// 「行业评论」模块右上角的「发布新闻」按钮：确保面板处于打开状态（已打开时不重复关闭）
+function openPublishNewsPanel() {
+  const panel = document.getElementById('comment-panel');
+  if (!panel) return;
+  if (!panel.classList.contains('open')) toggleCommentPanel();
+  const ta = document.getElementById('msg-text');
+  if (ta) setTimeout(() => ta.focus(), 260);
+  if (window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
   }
 }
 
