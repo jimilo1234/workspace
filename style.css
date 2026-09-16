@@ -125,9 +125,9 @@ body {
   transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
 }
 .card:hover { transform: translateY(-3px); border-color: var(--border-strong); background: var(--card-hover); }
-/* 卡片高度拖拽：默认裁剪避免溢出；宠物/新闻保持可见以保留心情图与内嵌应用 */
+/* 卡片高度拖拽：默认裁剪避免溢出；新闻保持可见以保留内嵌应用的浮层 */
 .card { overflow: hidden; }
-.pet-card, .news-card { overflow: visible; }
+.news-card { overflow: visible; }
 .card-resize-handle {
   position: absolute; left: 0; right: 0; bottom: 0; height: 10px;
   cursor: ns-resize; z-index: 6; opacity: 0; transition: opacity 0.15s ease;
@@ -1033,26 +1033,42 @@ html.pn-fs .topbar { display: none; }
 .tree-root { margin: 4px 0; }
 .op-tree-tip { margin: 10px 2px 0; font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
 
-/* ===== 宠物模块（共享：所有用户可操作/可见） ===== */
-.pet-card .card-head { margin-bottom: 6px; }
+/* ===== 宠物模块（共享：所有用户可操作/可见） =====
+   卡片高度可拖拽，所以内部全部改成自适应：状态图跟着剩余高度缩放，
+   心情图叠在状态图内而非浮出框外，缩小时不会溢出压住下方卡片。 */
+.pet-card .card-head { margin-bottom: 6px; flex: none; }
 .pet-actions { display: flex; align-items: center; gap: 10px; }
-.pet-figure { position: relative; width: 160px; margin: 4px auto 0; } /* 包住 stage + 浮出心情图，作为绝对定位参考 */
+.pet-figure {
+  position: relative;
+  flex: 1 1 160px;           /* 基准 160：卡片没设高度时撑到 160，被拖小时可压缩 */
+  min-height: 64px; max-height: 220px;
+  width: 100%; max-width: 160px;
+  margin: 4px auto 0;
+}
 .pet-stage {
-  position: relative; width: 160px; height: 160px;
+  position: absolute; inset: 0;
   border-radius: 14px;
   background: var(--bg-soft); border: 1px solid var(--border);
-  overflow: hidden; /* 状态图无论原始多大都被 160 框裁切，不再溢出卡片 */
+  overflow: hidden;          /* 状态图无论原始多大都被框裁切，不再溢出卡片 */
 }
-.pet-status-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
+.pet-status-img {
+  width: 100%; height: 100%; display: block; border-radius: 14px;
+  object-fit: contain;       /* 完整显示不裁头，框变扁时自动留白 */
+}
 .pet-mood-img {
-  position: absolute; top: -14px; right: -50px;
-  width: 60px; height: 60px; border-radius: 10px; object-fit: cover;
-  z-index: 2;
+  position: absolute; top: 6px; right: 6px;
+  width: clamp(28px, 30%, 46px);
+  aspect-ratio: 1 / 1; height: auto;   /* 始终正方形，跟着卡片缩放 */
+  border-radius: 10px; object-fit: cover; z-index: 2;
+  border: 1px solid var(--border); background: var(--bg-soft);
 }
-.pet-meta { text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.pet-meta {
+  flex: none; text-align: center; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+}
 .pet-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
 .pet-mood-time { font-size: 10px; }
-.pet-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.pet-controls { flex: none; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .pet-row { display: flex; align-items: center; gap: 8px; }
 .pet-select { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px; color: var(--text-soft); }
 .pet-select select {
@@ -1065,8 +1081,9 @@ html.pn-fs .topbar { display: none; }
 .pet-row .text-btn { flex: none; font-size: 14px; }
 .pet-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.55; }
 .pet-history {
+  flex: 0 1 auto; min-height: 0;          /* 空间不足时自己压缩并内部滚动 */
   margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px;
-  max-height: 132px; overflow-y: auto; padding-right: 4px; /* 历史过多时内部滚动，不再撑出卡片 */
+  overflow-y: auto; padding-right: 4px;
 }
 .pet-history-title { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
 .pet-history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
