@@ -260,17 +260,23 @@
             <div class="card-head">
               <h2>🔄 无限刷新</h2>
               <div class="link-actions infinite-actions">
-                <span class="infinite-count" id="infiniteCount" title="今日条数">—</span>
-                <button id="infiniteRefreshBtn" class="text-btn" type="button" title="手动刷新">⟳ 刷新</button>
-                <button id="infiniteAddBtn" class="text-btn" type="button" aria-expanded="false">＋ 发布</button>
+                <span class="infinite-count" id="infiniteCount" title="今日条数" hidden>—</span>
+                <button id="infiniteAddBtn" class="text-btn" type="button" aria-expanded="false" hidden>＋ 发布</button>
+                <button id="infiniteModeBtn" class="text-btn" type="button" title="切换模板 / 留言流">无限</button>
               </div>
             </div>
-            <div class="infinite-list" id="infiniteList">
-              <div class="infinite-empty">加载中…</div>
-            </div>
 
-            <!-- 模块内发布面板（与首页新闻输入区同款：左输入 + 右侧图标按钮） -->
-            <div class="infinite-panel" id="infinitePanel" hidden>
+            <!-- A 面：空白模板（默认，完全空白，不加载任何数据） -->
+            <div class="infinite-face-a" id="infiniteFaceA"></div>
+
+            <!-- B 面：跨用户留言流 + 模块内发布面板 -->
+            <div class="infinite-face-b" id="infiniteFaceB" hidden>
+              <div class="infinite-list" id="infiniteList">
+                <div class="infinite-empty">加载中…</div>
+              </div>
+
+              <!-- 模块内发布面板（与首页新闻输入区同款：左输入 + 右侧图标按钮） -->
+              <div class="infinite-panel" id="infinitePanel" hidden>
               <div class="input-row">
                 <div class="input-col">
                   <textarea id="infiniteText" placeholder="写点什么..." maxlength="200" rows="2"></textarea>
@@ -299,6 +305,7 @@
               </div>
               <div class="infinite-preview" id="infinitePreview"></div>
               <p class="infinite-tip">所有登录用户可见 · 最多 10 条 · 每日 00:00 清空</p>
+              </div>
             </div>
           </section>
 
@@ -638,6 +645,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260916b"></script>
+  <script src="script.js?v=20260916c"></script>
 </body>
 </html>

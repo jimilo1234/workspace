@@ -3055,6 +3055,7 @@ function infRender(rows) {
 }
 
 async function infRefresh() {
+  if (infMode !== "b") return;            // A 面不请求数据库
   const box = document.getElementById("infiniteList");
   try {
     await infPurgeOld();
@@ -3062,6 +3063,46 @@ async function infRefresh() {
   } catch (e) {
     if (box) box.innerHTML = `<div class="infinite-empty">加载失败：${infEsc(e.message || e)}</div>`;
   }
+}
+
+/* ---- A / B 双面 ----
+   A 面 = 空白模板（默认，不加载数据）
+   B 面 = 跨用户留言流 + 模块内发布面板
+   状态不记忆：每次进入工作台都回到 A 面                                */
+let infMode = "a";
+let infPollTimer = null;
+
+function infSetMode(mode) {
+  infMode = mode === "b" ? "b" : "a";
+  const faceA = document.getElementById("infiniteFaceA");
+  const faceB = document.getElementById("infiniteFaceB");
+  const cnt = document.getElementById("infiniteCount");
+  const addBtn = document.getElementById("infiniteAddBtn");
+  const modeBtn = document.getElementById("infiniteModeBtn");
+  const isB = infMode === "b";
+
+  if (faceA) faceA.hidden = isB;
+  if (faceB) faceB.hidden = !isB;
+  if (cnt) cnt.hidden = !isB;
+  if (addBtn) addBtn.hidden = !isB;
+  if (modeBtn) {
+    modeBtn.textContent = isB ? "空白" : "无限";
+    modeBtn.title = isB ? "返回空白模板" : "查看留言流";
+  }
+
+  if (!isB) infClosePanel();   // 回 A 面时收起发布面板
+
+  // A 面停轮询，B 面每 20 秒自动拉取
+  clearInterval(infPollTimer);
+  infPollTimer = null;
+  if (isB) {
+    infRefresh();
+    infPollTimer = setInterval(infRefresh, 20000);
+  }
+}
+
+function infToggleMode() {
+  infSetMode(infMode === "b" ? "a" : "b");
 }
 
 /* ---- 模块内发布面板（与首页新闻输入区同款，展开在卡片内部而非全屏弹窗） ---- */
@@ -3205,7 +3246,7 @@ function infStopRec(silent) {
 (function initInfiniteModule() {
   function bind() {
     const addBtn = document.getElementById("infiniteAddBtn");
-    const refBtn = document.getElementById("infiniteRefreshBtn");
+    const modeBtn = document.getElementById("infiniteModeBtn");
     const subBtn = document.getElementById("infiniteSubmit");
     const imgInput = document.getElementById("infiniteImage");
     const vidInput = document.getElementById("infiniteVideo");
@@ -3214,7 +3255,7 @@ function infStopRec(silent) {
     const pv = document.getElementById("infinitePreview");
 
     if (addBtn) addBtn.addEventListener("click", infTogglePanel);
-    if (refBtn) refBtn.addEventListener("click", infRefresh);
+    if (modeBtn) modeBtn.addEventListener("click", infToggleMode);
     if (subBtn) subBtn.addEventListener("click", infSubmit);
 
     if (imgInput) imgInput.addEventListener("change", () => {
@@ -3239,8 +3280,7 @@ function infStopRec(silent) {
       infRenderPreview();
     });
 
-    infRefresh();
-    setInterval(infRefresh, 20000);   // 每 20 秒自动拉取，别人发的内容会自动出现
+    infSetMode("a");   // 默认 A 面：空白模板，不加载数据、不起轮询
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();

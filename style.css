@@ -1123,6 +1123,14 @@ html.pn-fs .topbar { display: none; }
 .infinite-card.panel-open { height: calc(var(--mini-h) + 142px); }
 .infinite-actions { display: flex; align-items: center; gap: 8px; }
 .infinite-count { font-size: 11.5px; color: var(--text-faint); font-family: var(--mono); }
+/* A 面：空白模板（完全空白，只占位保持卡片高度） */
+.infinite-face-a { flex: 1; min-height: 0; }
+.infinite-face-a[hidden] { display: none; }
+/* B 面：留言流 + 发布面板 */
+.infinite-face-b {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.infinite-face-b[hidden] { display: none; }
 .infinite-list {
   flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
   padding-right: 4px;
