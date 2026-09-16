@@ -261,6 +261,7 @@ const MODULE_REGISTRY = [
   { id: "gh",       label: "GH时间" },
   { id: "notes",    label: "随手笔记" },
   { id: "news",     label: "新闻" },
+  { id: "infinite", label: "无限刷新" },
   { id: "pet",      label: "宠物" },
 ];
 function defaultHomeModules() {
@@ -1288,6 +1289,8 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
       currentUser = { username: u, is_super: u === "jimilo", status: "active" };
       window.__wbIsSuper = !!(currentUser && currentUser.is_super);
       await enterWorkbench(currentUser);
+      // 登录后刷新「无限刷新」模块（初始化时可能尚未登录）
+      if (window.__infiniteRefresh) window.__infiniteRefresh();
     }
   } else {
     setStatus("未登录", "");
@@ -2931,3 +2934,306 @@ if (opModalEl) {
 }
 const opRefreshEl = document.getElementById("opRefresh");
 if (opRefreshEl) opRefreshEl.addEventListener("click", loadOperators);
+
+/* =====================================================================
+   无限刷新模块（data-module="infinite"）
+   - 跨用户共享留言流：文字 / 图片 / 视频 / 语音
+   - 最多保留 10 条，超出滚动覆盖最旧的
+   - 每日北京时间 00:00 清空（真正删除，不是前端过滤）
+   - 媒体与新闻共用 paynews 项目的 media 桶（私有桶 + 7 天签名 URL）
+   ===================================================================== */
+const INF_URL = "https://wwxzycfdfyyljkjfcbjt.supabase.co";
+const INF_KEY = "sb_publishable_0WePrzUk-LVH3TK7RFT_fQ_5r3C0dvP";
+const INF_TABLE = "infinite_feed";
+const INF_BUCKET = "media";
+const INF_MAX = 10;
+const INF_REST = INF_URL + "/rest/v1";
+const INF_JSON = {
+  apikey: INF_KEY,
+  "Authorization": "Bearer " + INF_KEY,
+  "Content-Type": "application/json",
+};
+
+/* 北京时间当天 00:00 所对应的 UTC 时刻（ISO 串），用于「今日」分界 */
+function infDayStart() {
+  const bj = new Date(Date.now() + 8 * 3600 * 1000); // 以 UTC 字段表达北京时间
+  const midnight = Date.UTC(bj.getUTCFullYear(), bj.getUTCMonth(), bj.getUTCDate(), 0, 0, 0, 0);
+  return new Date(midnight - 8 * 3600 * 1000).toISOString();
+}
+
+function infEsc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function infTime(iso) {
+  if (!iso) return "";
+  const bj = new Date(new Date(iso).getTime() + 8 * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return p(bj.getUTCHours()) + ":" + p(bj.getUTCMinutes());
+}
+
+/* 删除今天零点之前的全部记录：幂等，等效于每日 00:00 清空，无需后端定时任务 */
+async function infPurgeOld() {
+  try {
+    await fetch(
+      `${INF_REST}/${INF_TABLE}?created_at=lt.${encodeURIComponent(infDayStart())}`,
+      { method: "DELETE", headers: INF_JSON }
+    );
+  } catch (e) {
+    console.warn("[infinite] 清理旧数据失败:", e);
+  }
+}
+
+async function infFetch() {
+  const res = await fetch(
+    `${INF_REST}/${INF_TABLE}?select=*&created_at=gte.${encodeURIComponent(infDayStart())}&order=id.asc`,
+    { headers: INF_JSON, cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("读取失败 " + res.status + " " + (await res.text()).slice(0, 120));
+  return (await res.json()) || [];
+}
+
+/* 只保留最新 10 条，删除更早的 */
+async function infTrim() {
+  try {
+    const all = await infFetch();
+    if (all.length <= INF_MAX) return;
+    const ids = all.slice(0, all.length - INF_MAX).map((r) => r.id).join(",");
+    await fetch(`${INF_REST}/${INF_TABLE}?id=in.(${ids})`, { method: "DELETE", headers: INF_JSON });
+  } catch (e) {
+    console.warn("[infinite] 裁剪失败:", e);
+  }
+}
+
+/* 上传媒体到 media 桶并换取 7 天签名 URL（与新闻完全同一套机制） */
+async function infUpload(file) {
+  const ext = (file.name && file.name.split(".").pop()) || "bin";
+  const path = `infinite/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${String(ext).toLowerCase()}`;
+  const up = await fetch(`${INF_URL}/storage/v1/object/${INF_BUCKET}/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: INF_KEY,
+      "Authorization": "Bearer " + INF_KEY,
+      "Content-Type": file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+  if (!up.ok) throw new Error("上传失败 " + up.status + " " + (await up.text()).slice(0, 120));
+  const sign = await fetch(`${INF_URL}/storage/v1/object/sign/${INF_BUCKET}/${path}`, {
+    method: "POST", headers: INF_JSON, body: JSON.stringify({ expiresIn: 604800 }),
+  });
+  if (!sign.ok) throw new Error("签名失败 " + sign.status);
+  const j = await sign.json();
+  return INF_URL + (j.signedURL || j.signedUrl);
+}
+
+function infRender(rows) {
+  const box = document.getElementById("infiniteList");
+  const cnt = document.getElementById("infiniteCount");
+  if (cnt) cnt.textContent = rows.length + "/" + INF_MAX;
+  if (!box) return;
+  if (!rows.length) {
+    box.innerHTML = '<div class="infinite-empty">今天还没有内容，点右上角「＋ 发布」来一条</div>';
+    return;
+  }
+  box.innerHTML = rows.map((r) => {
+    const media = [];
+    if (r.image_url) media.push(`<img src="${infEsc(r.image_url)}" alt="图片">`);
+    if (r.video_url) media.push(`<video src="${infEsc(r.video_url)}" controls preload="metadata"></video>`);
+    if (r.audio_url) media.push(`<audio src="${infEsc(r.audio_url)}" controls preload="metadata"></audio>`);
+    return `<div class="infinite-item">
+      <div class="infinite-item-bar"></div>
+      <div class="infinite-item-main">
+        ${r.content ? `<div class="infinite-item-text">${infEsc(r.content)}</div>` : ""}
+        ${media.length ? `<div class="infinite-item-media">${media.join("")}</div>` : ""}
+        <div class="infinite-meta"><b>${infEsc(r.display_name || r.username || "匿名")}</b><span>${infTime(r.created_at)}</span></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function infRefresh() {
+  const box = document.getElementById("infiniteList");
+  try {
+    await infPurgeOld();
+    infRender(await infFetch());
+  } catch (e) {
+    if (box) box.innerHTML = `<div class="infinite-empty">加载失败：${infEsc(e.message || e)}</div>`;
+  }
+}
+
+/* ---- 发布弹窗 ---- */
+let infPending = { image: null, video: null, audio: null };
+let infRecorder = null, infChunks = [], infTimer = null, infSec = 0;
+
+function infOpenModal() {
+  if (!currentUser) { alert("请先登录"); return; }
+  const m = document.getElementById("infiniteModal");
+  if (m) m.hidden = false;
+  infPending = { image: null, video: null, audio: null };
+  const pv = document.getElementById("infinitePreview");
+  if (pv) { pv.innerHTML = ""; pv.classList.remove("show"); }
+  const ta = document.getElementById("infiniteText");
+  if (ta) { ta.value = ""; setTimeout(() => ta.focus(), 60); }
+}
+
+function infCloseModal() {
+  const m = document.getElementById("infiniteModal");
+  if (m) m.hidden = true;
+  if (infRecorder && infRecorder.state === "recording") infStopRec(true);
+}
+
+function infRenderPreview() {
+  const pv = document.getElementById("infinitePreview");
+  if (!pv) return;
+  const parts = [];
+  if (infPending.image) {
+    parts.push(`<div class="infinite-preview-item"><img src="${URL.createObjectURL(infPending.image)}"><span>图片</span><span class="infinite-del" data-del="image">✕</span></div>`);
+  }
+  if (infPending.video) {
+    parts.push(`<div class="infinite-preview-item"><video src="${URL.createObjectURL(infPending.video)}"></video><span>视频</span><span class="infinite-del" data-del="video">✕</span></div>`);
+  }
+  if (infPending.audio) {
+    parts.push(`<div class="infinite-preview-item"><audio src="${URL.createObjectURL(infPending.audio)}" controls></audio><span>语音</span><span class="infinite-del" data-del="audio">✕</span></div>`);
+  }
+  pv.innerHTML = parts.join("");
+  pv.classList.toggle("show", parts.length > 0);
+}
+
+async function infSubmit() {
+  if (!currentUser) { alert("请先登录"); return; }
+  const ta = document.getElementById("infiniteText");
+  const text = ((ta && ta.value) || "").trim();
+  if (!text && !infPending.image && !infPending.video && !infPending.audio) {
+    alert("写点什么，或添加图片 / 视频 / 语音");
+    return;
+  }
+  const btn = document.getElementById("infiniteSubmit");
+  if (btn) { btn.disabled = true; btn.textContent = "发布中…"; }
+  try {
+    let imageUrl = null, videoUrl = null, audioUrl = null;
+    if (infPending.image) imageUrl = await infUpload(infPending.image);
+    if (infPending.video) videoUrl = await infUpload(infPending.video);
+    if (infPending.audio) audioUrl = await infUpload(infPending.audio);
+    const res = await fetch(`${INF_REST}/${INF_TABLE}`, {
+      method: "POST",
+      headers: Object.assign({}, INF_JSON, { Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        username: currentUser.username || "",
+        display_name: currentUser.username || "",
+        content: text,
+        image_url: imageUrl,
+        audio_url: audioUrl,
+        video_url: videoUrl,
+      }),
+    });
+    if (!res.ok) throw new Error("发布失败 " + res.status + " " + (await res.text()).slice(0, 160));
+    await infTrim();
+    infCloseModal();
+    await infRefresh();
+  } catch (e) {
+    alert("发布失败：" + (e.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "发布"; }
+  }
+}
+
+/* ---- 语音录制 ---- */
+async function infStartRec() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    infChunks = [];
+    infRecorder = new MediaRecorder(stream);
+    infRecorder.ondataavailable = (e) => { if (e.data && e.data.size) infChunks.push(e.data); };
+    infRecorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      if (!infChunks.length) return;
+      const blob = new Blob(infChunks, { type: (infChunks[0] && infChunks[0].type) || "audio/webm" });
+      blob.name = "voice.webm";       // 供 infUpload 推断扩展名
+      infPending.audio = blob;
+      infRenderPreview();
+    };
+    infRecorder.start();
+    const bar = document.getElementById("infiniteVoiceBar");
+    const vb = document.getElementById("infiniteVoiceBtn");
+    if (bar) bar.hidden = false;
+    if (vb) { vb.classList.add("recording"); vb.textContent = "● 录音中"; }
+    infSec = 0;
+    const tm = document.getElementById("infiniteRecTimer");
+    if (tm) tm.textContent = "0:00";
+    infTimer = setInterval(() => {
+      infSec++;
+      const t = document.getElementById("infiniteRecTimer");
+      if (t) t.textContent = Math.floor(infSec / 60) + ":" + String(infSec % 60).padStart(2, "0");
+    }, 1000);
+  } catch (e) {
+    alert("无法录音：" + (e.message || e) + "\n请允许麦克风权限，或用「视频」按钮上传音频文件");
+  }
+}
+
+function infStopRec(silent) {
+  if (infRecorder && infRecorder.state === "recording") infRecorder.stop();
+  clearInterval(infTimer); infTimer = null;
+  infRecorder = null;
+  const bar = document.getElementById("infiniteVoiceBar");
+  const vb = document.getElementById("infiniteVoiceBtn");
+  if (bar) bar.hidden = true;
+  if (vb) { vb.classList.remove("recording"); vb.textContent = "🎙️ 录音"; }
+  if (silent) infPending.audio = null;
+}
+
+/* ---- 事件绑定与启动 ---- */
+(function initInfiniteModule() {
+  function bind() {
+    const addBtn = document.getElementById("infiniteAddBtn");
+    const refBtn = document.getElementById("infiniteRefreshBtn");
+    const closeBtn = document.getElementById("infiniteClose");
+    const cancelBtn = document.getElementById("infiniteCancel");
+    const subBtn = document.getElementById("infiniteSubmit");
+    const modal = document.getElementById("infiniteModal");
+    const imgInput = document.getElementById("infiniteImage");
+    const vidInput = document.getElementById("infiniteVideo");
+    const voiceBtn = document.getElementById("infiniteVoiceBtn");
+    const stopBtn = document.getElementById("infiniteRecStop");
+    const pv = document.getElementById("infinitePreview");
+
+    if (addBtn) addBtn.addEventListener("click", infOpenModal);
+    if (refBtn) refBtn.addEventListener("click", infRefresh);
+    if (closeBtn) closeBtn.addEventListener("click", infCloseModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", infCloseModal);
+    if (subBtn) subBtn.addEventListener("click", infSubmit);
+    if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) infCloseModal(); });
+
+    if (imgInput) imgInput.addEventListener("change", () => {
+      const f = imgInput.files && imgInput.files[0];
+      if (f) { infPending.image = f; infPending.video = null; infRenderPreview(); }
+      imgInput.value = "";
+    });
+    if (vidInput) vidInput.addEventListener("change", () => {
+      const f = vidInput.files && vidInput.files[0];
+      if (f) { infPending.video = f; infPending.image = null; infRenderPreview(); }
+      vidInput.value = "";
+    });
+    if (voiceBtn) voiceBtn.addEventListener("click", () => {
+      if (infRecorder && infRecorder.state === "recording") infStopRec();
+      else infStartRec();
+    });
+    if (stopBtn) stopBtn.addEventListener("click", () => infStopRec());
+    if (pv) pv.addEventListener("click", (e) => {
+      const d = e.target.closest("[data-del]");
+      if (!d) return;
+      infPending[d.dataset.del] = null;
+      infRenderPreview();
+    });
+
+    infRefresh();
+    setInterval(infRefresh, 20000);   // 每 20 秒自动拉取，别人发的内容会自动出现
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
+
+/* 供 enterWorkbench 在登录后触发一次刷新 */
+window.__infiniteRefresh = infRefresh;

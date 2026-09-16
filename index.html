@@ -255,6 +255,21 @@
             <div id="paynewsHost"></div>
           </section>
 
+          <!-- 无限刷新（跨用户共享留言流：最多 10 条滚动覆盖，每日 00:00 清空） -->
+          <section class="card infinite-card" data-module="infinite">
+            <div class="card-head">
+              <h2>🔄 无限刷新</h2>
+              <div class="link-actions infinite-actions">
+                <span class="infinite-count" id="infiniteCount" title="今日剩余条数">—</span>
+                <button id="infiniteRefreshBtn" class="text-btn" type="button" title="手动刷新">⟳ 刷新</button>
+                <button id="infiniteAddBtn" class="text-btn" type="button">＋ 发布</button>
+              </div>
+            </div>
+            <div class="infinite-list" id="infiniteList">
+              <div class="infinite-empty">加载中…</div>
+            </div>
+          </section>
+
           <!-- 宠物（共享模块：所有登录用户可操作、可见，数据全局共享） -->
           <section class="card pet-card" data-module="pet">
             <div class="card-head">
@@ -591,6 +606,37 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260905d"></script>
+  <!-- 无限刷新：发布弹窗（文字 / 图片 / 视频 / 语音，与新闻共用 media 桶） -->
+  <div id="infiniteModal" class="modal-overlay" hidden>
+    <div class="modal-card infinite-modal">
+      <div class="mark-modal-head">
+        <span class="mark-date">发布新内容</span>
+        <button id="infiniteClose" class="modal-x" aria-label="关闭">×</button>
+      </div>
+      <textarea id="infiniteText" class="infinite-textarea" placeholder="写点什么…（最多 200 字）" maxlength="200" rows="3"></textarea>
+      <div class="infinite-media-bar">
+        <label class="infinite-media-btn" title="上传图片">
+          🖼️ 图片<input type="file" id="infiniteImage" accept="image/*" hidden>
+        </label>
+        <label class="infinite-media-btn" title="上传视频">
+          🎬 视频<input type="file" id="infiniteVideo" accept="video/*,audio/*" hidden>
+        </label>
+        <button id="infiniteVoiceBtn" class="infinite-media-btn" type="button" title="录制语音">🎙️ 录音</button>
+      </div>
+      <div id="infiniteVoiceBar" class="infinite-voice-bar" hidden>
+        <span class="infinite-rec-dot"></span>
+        <span id="infiniteRecTimer">0:00</span>
+        <button id="infiniteRecStop" class="btn-ghost" type="button">停止</button>
+      </div>
+      <div id="infinitePreview" class="infinite-preview"></div>
+      <p class="infinite-tip">所有登录用户可见 · 最多保留 10 条 · 每日 00:00 清空</p>
+      <div class="mark-modal-foot">
+        <button id="infiniteCancel" class="btn-ghost">取消</button>
+        <button id="infiniteSubmit" class="btn-primary">发布</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js?v=20260916a"></script>
 </body>
 </html>

@@ -1110,3 +1110,93 @@ html.pn-fs .topbar { display: none; }
     transform: translateX(-100%);
   }
 }
+
+/* =====================================================
+   【无限刷新模块】跨用户共享留言流
+   最多 10 条滚动覆盖，每日 00:00 清空，媒体与新闻共用 media 桶
+   ===================================================== */
+.infinite-card { height: var(--mini-h); overflow: hidden; }
+.infinite-actions { display: flex; align-items: center; gap: 8px; }
+.infinite-count { font-size: 11.5px; color: var(--text-faint); font-family: var(--mono); }
+.infinite-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  padding-right: 4px;
+}
+.infinite-empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 28px 0; }
+
+.infinite-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 9px 11px; border-radius: 10px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  transition: background 0.18s;
+}
+.infinite-item:hover { background: var(--card-hover); }
+.infinite-item-bar {
+  width: 3px; align-self: stretch; border-radius: 2px;
+  background: var(--accent-dim); flex-shrink: 0;
+}
+.infinite-item-main { flex: 1; min-width: 0; }
+.infinite-item-text {
+  font-size: 13.5px; color: var(--text); line-height: 1.55;
+  word-break: break-word; white-space: pre-wrap;
+}
+.infinite-meta {
+  margin-top: 4px; font-size: 11px; color: var(--text-faint);
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.infinite-meta b { color: var(--text-soft); font-weight: 600; }
+
+.infinite-item-media { margin-top: 7px; display: flex; flex-direction: column; gap: 6px; }
+.infinite-item-media img {
+  max-width: 100%; max-height: 150px; border-radius: 8px;
+  cursor: zoom-in; display: block;
+}
+.infinite-item-media video { max-width: 100%; max-height: 180px; border-radius: 8px; display: block; }
+.infinite-item-media audio { width: 100%; max-width: 260px; height: 32px; }
+
+/* 发布弹窗 */
+.infinite-modal { width: min(440px, calc(100vw - 40px)); }
+.infinite-textarea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  background: var(--bg-soft); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-family: var(--sans); font-size: 13.5px; line-height: 1.6;
+}
+.infinite-textarea:focus { outline: none; border-color: var(--accent); }
+.infinite-media-bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.infinite-media-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  color: var(--text-soft); font-size: 12px; font-family: var(--sans);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.infinite-media-btn:hover {
+  background: var(--accent-soft); color: var(--accent); border-color: var(--accent-dim);
+}
+.infinite-media-btn.recording {
+  background: rgba(231, 76, 60, 0.15); color: #ff6b5b; border-color: rgba(231, 76, 60, 0.4);
+}
+.infinite-voice-bar {
+  display: flex; align-items: center; gap: 9px; margin-top: 10px;
+  font-size: 12.5px; color: var(--text-soft); font-family: var(--mono);
+}
+.infinite-rec-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #e74c3c;
+  animation: infinitePulse 1s infinite;
+}
+@keyframes infinitePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.25); }
+}
+.infinite-preview { margin-top: 10px; display: none; flex-direction: column; gap: 6px; }
+.infinite-preview.show { display: flex; }
+.infinite-preview-item {
+  font-size: 12px; color: var(--text-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.infinite-preview-item img,
+.infinite-preview-item video { max-height: 110px; max-width: 100%; border-radius: 8px; }
+.infinite-del { cursor: pointer; color: var(--text-faint); }
+.infinite-del:hover { color: #ff6b5b; }
+.infinite-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.5; }
