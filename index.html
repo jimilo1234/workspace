@@ -260,13 +260,45 @@
             <div class="card-head">
               <h2>🔄 无限刷新</h2>
               <div class="link-actions infinite-actions">
-                <span class="infinite-count" id="infiniteCount" title="今日剩余条数">—</span>
+                <span class="infinite-count" id="infiniteCount" title="今日条数">—</span>
                 <button id="infiniteRefreshBtn" class="text-btn" type="button" title="手动刷新">⟳ 刷新</button>
-                <button id="infiniteAddBtn" class="text-btn" type="button">＋ 发布</button>
+                <button id="infiniteAddBtn" class="text-btn" type="button" aria-expanded="false">＋ 发布</button>
               </div>
             </div>
             <div class="infinite-list" id="infiniteList">
               <div class="infinite-empty">加载中…</div>
+            </div>
+
+            <!-- 模块内发布面板（与首页新闻输入区同款：左输入 + 右侧图标按钮） -->
+            <div class="infinite-panel" id="infinitePanel" hidden>
+              <div class="input-row">
+                <div class="input-col">
+                  <textarea id="infiniteText" placeholder="写点什么..." maxlength="200" rows="2"></textarea>
+                  <button class="send-btn" id="infiniteSubmit" type="button">发布</button>
+                </div>
+                <div class="input-side-btns">
+                  <label class="img-upload-btn" title="上传图片">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <input type="file" id="infiniteImage" accept="image/*" hidden>
+                  </label>
+                  <label class="img-upload-btn" title="上传视频/音频">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>
+                    <input type="file" id="infiniteVideo" accept="video/*,audio/*,.m4a,.mp3,.wav,.aac,.ogg" hidden>
+                  </label>
+                  <button class="voice-btn" id="infiniteVoiceBtn" type="button" title="录制语音">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="recording-bar" id="infiniteVoiceBar">
+                <span class="rec-dot"></span>
+                <span id="infiniteRecTimer">0:00</span>
+                <span class="rec-stop" id="infiniteRecStop">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px"><rect x="4" y="4" width="16" height="16" rx="2"/></svg> 停止
+                </span>
+              </div>
+              <div class="infinite-preview" id="infinitePreview"></div>
+              <p class="infinite-tip">所有登录用户可见 · 最多 10 条 · 每日 00:00 清空</p>
             </div>
           </section>
 
@@ -606,37 +638,6 @@
     </div>
   </div>
 
-  <!-- 无限刷新：发布弹窗（文字 / 图片 / 视频 / 语音，与新闻共用 media 桶） -->
-  <div id="infiniteModal" class="modal-overlay" hidden>
-    <div class="modal-card infinite-modal">
-      <div class="mark-modal-head">
-        <span class="mark-date">发布新内容</span>
-        <button id="infiniteClose" class="modal-x" aria-label="关闭">×</button>
-      </div>
-      <textarea id="infiniteText" class="infinite-textarea" placeholder="写点什么…（最多 200 字）" maxlength="200" rows="3"></textarea>
-      <div class="infinite-media-bar">
-        <label class="infinite-media-btn" title="上传图片">
-          🖼️ 图片<input type="file" id="infiniteImage" accept="image/*" hidden>
-        </label>
-        <label class="infinite-media-btn" title="上传视频">
-          🎬 视频<input type="file" id="infiniteVideo" accept="video/*,audio/*" hidden>
-        </label>
-        <button id="infiniteVoiceBtn" class="infinite-media-btn" type="button" title="录制语音">🎙️ 录音</button>
-      </div>
-      <div id="infiniteVoiceBar" class="infinite-voice-bar" hidden>
-        <span class="infinite-rec-dot"></span>
-        <span id="infiniteRecTimer">0:00</span>
-        <button id="infiniteRecStop" class="btn-ghost" type="button">停止</button>
-      </div>
-      <div id="infinitePreview" class="infinite-preview"></div>
-      <p class="infinite-tip">所有登录用户可见 · 最多保留 10 条 · 每日 00:00 清空</p>
-      <div class="mark-modal-foot">
-        <button id="infiniteCancel" class="btn-ghost">取消</button>
-        <button id="infiniteSubmit" class="btn-primary">发布</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js?v=20260916a"></script>
+  <script src="script.js?v=20260916b"></script>
 </body>
 </html>

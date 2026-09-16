@@ -1115,11 +1115,16 @@ html.pn-fs .topbar { display: none; }
    【无限刷新模块】跨用户共享留言流
    最多 10 条滚动覆盖，每日 00:00 清空，媒体与新闻共用 media 桶
    ===================================================== */
-.infinite-card { height: var(--mini-h); overflow: hidden; }
+.infinite-card {
+  height: var(--mini-h); overflow: hidden;
+  transition: height 0.22s ease, transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+/* 展开模块内发布面板时卡片加高，列表自动让位（栅格 align-items:start，不影响其他卡片） */
+.infinite-card.panel-open { height: calc(var(--mini-h) + 142px); }
 .infinite-actions { display: flex; align-items: center; gap: 8px; }
 .infinite-count { font-size: 11.5px; color: var(--text-faint); font-family: var(--mono); }
 .infinite-list {
-  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
   padding-right: 4px;
 }
 .infinite-empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 28px 0; }
@@ -1141,10 +1146,9 @@ html.pn-fs .topbar { display: none; }
   word-break: break-word; white-space: pre-wrap;
 }
 .infinite-meta {
-  margin-top: 4px; font-size: 11px; color: var(--text-faint);
+  margin-top: 3px; font-size: 11px; color: var(--text-faint);
   display: flex; gap: 6px; flex-wrap: wrap;
 }
-.infinite-meta b { color: var(--text-soft); font-weight: 600; }
 
 .infinite-item-media { margin-top: 7px; display: flex; flex-direction: column; gap: 6px; }
 .infinite-item-media img {
@@ -1154,49 +1158,85 @@ html.pn-fs .topbar { display: none; }
 .infinite-item-media video { max-width: 100%; max-height: 180px; border-radius: 8px; display: block; }
 .infinite-item-media audio { width: 100%; max-width: 260px; height: 32px; }
 
-/* 发布弹窗 */
-.infinite-modal { width: min(440px, calc(100vw - 40px)); }
-.infinite-textarea {
-  width: 100%; box-sizing: border-box; resize: vertical;
-  background: var(--bg-soft); color: var(--text);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px 12px; font-family: var(--sans); font-size: 13.5px; line-height: 1.6;
+/* 模块内发布面板（与首页新闻 comment-panel 输入区同款结构 / 视觉） */
+.infinite-panel {
+  flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+  border-top: 1px solid var(--border); padding-top: 12px;
 }
-.infinite-textarea:focus { outline: none; border-color: var(--accent); }
-.infinite-media-bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.infinite-media-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 6px 11px; border-radius: 999px; cursor: pointer;
-  background: var(--bg-soft); border: 1px solid var(--border);
-  color: var(--text-soft); font-size: 12px; font-family: var(--sans);
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+.infinite-panel[hidden] { display: none; }
+.infinite-panel .input-row { display: flex; gap: 8px; align-items: stretch; max-width: none; margin: 0; }
+.infinite-panel .input-col { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.infinite-panel .input-col textarea {
+  width: 100%; box-sizing: border-box; resize: none;
+  padding: 7px 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg-soft);
+  color: var(--text); font-size: 13px; font-family: var(--sans);
+  outline: none; transition: border 0.2s; line-height: 1.45; min-height: 46px;
 }
-.infinite-media-btn:hover {
+.infinite-panel .input-col textarea::placeholder { color: var(--text-faint); }
+.infinite-panel .input-col textarea:focus { border-color: var(--accent); }
+.infinite-panel .input-col .send-btn {
+  width: 100%; padding: 8px 10px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s, opacity 0.2s;
+  white-space: nowrap; flex-shrink: 0; font-family: var(--sans);
+}
+.infinite-panel .input-col .send-btn:hover { background: var(--accent-dim); }
+.infinite-panel .input-col .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.infinite-panel .input-side-btns {
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 2px 0; flex-shrink: 0;
+}
+.infinite-panel .input-side-btns .img-upload-btn,
+.infinite-panel .input-side-btns .voice-btn {
+  font-size: 0; cursor: pointer; user-select: none; line-height: 1;
+  padding: 6px 7px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-soft); color: var(--text-soft);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+}
+.infinite-panel .input-side-btns .img-upload-btn:hover,
+.infinite-panel .input-side-btns .voice-btn:hover {
   background: var(--accent-soft); color: var(--accent); border-color: var(--accent-dim);
+  transform: scale(1.05);
 }
-.infinite-media-btn.recording {
-  background: rgba(231, 76, 60, 0.15); color: #ff6b5b; border-color: rgba(231, 76, 60, 0.4);
+.infinite-panel .input-side-btns .voice-btn.recording {
+  background: rgba(231, 76, 60, 0.15); border-color: rgba(231, 76, 60, 0.4);
+  color: #ff6b5b; animation: infinitePulse 1s infinite;
 }
-.infinite-voice-bar {
-  display: flex; align-items: center; gap: 9px; margin-top: 10px;
-  font-size: 12.5px; color: var(--text-soft); font-family: var(--mono);
+
+/* 录音条 */
+.infinite-panel .recording-bar {
+  display: none; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-soft); font-family: var(--mono);
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 9px;
 }
-.infinite-rec-dot {
+.infinite-panel .recording-bar.show { display: flex; }
+.infinite-panel .rec-dot {
   width: 8px; height: 8px; border-radius: 50%; background: #e74c3c;
   animation: infinitePulse 1s infinite;
 }
+.infinite-panel .rec-stop {
+  margin-left: auto; cursor: pointer; font-size: 11.5px; color: #ff6b5b;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 6px;
+  border: 1px solid rgba(231, 76, 60, 0.35); background: rgba(231, 76, 60, 0.12);
+}
+.infinite-panel .rec-stop:hover { background: rgba(231, 76, 60, 0.22); }
 @keyframes infinitePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(1.25); }
 }
-.infinite-preview { margin-top: 10px; display: none; flex-direction: column; gap: 6px; }
+.infinite-preview { margin-top: 2px; display: none; flex-direction: column; gap: 6px; }
 .infinite-preview.show { display: flex; }
 .infinite-preview-item {
   font-size: 12px; color: var(--text-soft);
   display: flex; align-items: center; gap: 8px;
 }
 .infinite-preview-item img,
-.infinite-preview-item video { max-height: 110px; max-width: 100%; border-radius: 8px; }
+.infinite-preview-item video { max-height: 74px; max-width: 100%; border-radius: 8px; }
+.infinite-preview-item audio { max-width: 100%; height: 30px; }
 .infinite-del { cursor: pointer; color: var(--text-faint); }
 .infinite-del:hover { color: #ff6b5b; }
-.infinite-tip { margin: 10px 0 0; font-size: 11px; color: var(--text-faint); line-height: 1.5; }
+.infinite-tip { margin: 0; font-size: 10.5px; color: var(--text-faint); line-height: 1.4; }

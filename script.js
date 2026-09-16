@@ -3048,7 +3048,7 @@ function infRender(rows) {
       <div class="infinite-item-main">
         ${r.content ? `<div class="infinite-item-text">${infEsc(r.content)}</div>` : ""}
         ${media.length ? `<div class="infinite-item-media">${media.join("")}</div>` : ""}
-        <div class="infinite-meta"><b>${infEsc(r.display_name || r.username || "匿名")}</b><span>${infTime(r.created_at)}</span></div>
+        <div class="infinite-meta"><span>${infTime(r.created_at)}</span></div>
       </div>
     </div>`;
   }).join("");
@@ -3064,25 +3064,42 @@ async function infRefresh() {
   }
 }
 
-/* ---- 发布弹窗 ---- */
+/* ---- 模块内发布面板（与首页新闻输入区同款，展开在卡片内部而非全屏弹窗） ---- */
 let infPending = { image: null, video: null, audio: null };
 let infRecorder = null, infChunks = [], infTimer = null, infSec = 0;
 
-function infOpenModal() {
+function infOpenPanel() {
   if (!currentUser) { alert("请先登录"); return; }
-  const m = document.getElementById("infiniteModal");
-  if (m) m.hidden = false;
+  const p = document.getElementById("infinitePanel");
+  const card = p && p.closest(".infinite-card");
+  if (p) p.hidden = false;
+  if (card) card.classList.add("panel-open");
+  const addBtn = document.getElementById("infiniteAddBtn");
+  if (addBtn) { addBtn.textContent = "× 收起"; addBtn.setAttribute("aria-expanded", "true"); }
   infPending = { image: null, video: null, audio: null };
   const pv = document.getElementById("infinitePreview");
   if (pv) { pv.innerHTML = ""; pv.classList.remove("show"); }
   const ta = document.getElementById("infiniteText");
   if (ta) { ta.value = ""; setTimeout(() => ta.focus(), 60); }
+  const list = document.getElementById("infiniteList");
+  if (list) list.scrollTop = list.scrollHeight;   // 展开时把列表滚到最新一条
 }
 
-function infCloseModal() {
-  const m = document.getElementById("infiniteModal");
-  if (m) m.hidden = true;
+function infClosePanel() {
+  const p = document.getElementById("infinitePanel");
+  const card = p && p.closest(".infinite-card");
+  if (p) p.hidden = true;
+  if (card) card.classList.remove("panel-open");
+  const addBtn = document.getElementById("infiniteAddBtn");
+  if (addBtn) { addBtn.textContent = "＋ 发布"; addBtn.setAttribute("aria-expanded", "false"); }
   if (infRecorder && infRecorder.state === "recording") infStopRec(true);
+}
+
+/* ＋发布 / ×收起 同键 toggle */
+function infTogglePanel() {
+  const p = document.getElementById("infinitePanel");
+  if (p && !p.hidden) infClosePanel();
+  else infOpenPanel();
 }
 
 function infRenderPreview() {
@@ -3131,7 +3148,7 @@ async function infSubmit() {
     });
     if (!res.ok) throw new Error("发布失败 " + res.status + " " + (await res.text()).slice(0, 160));
     await infTrim();
-    infCloseModal();
+    infClosePanel();
     await infRefresh();
   } catch (e) {
     alert("发布失败：" + (e.message || e));
@@ -3158,8 +3175,8 @@ async function infStartRec() {
     infRecorder.start();
     const bar = document.getElementById("infiniteVoiceBar");
     const vb = document.getElementById("infiniteVoiceBtn");
-    if (bar) bar.hidden = false;
-    if (vb) { vb.classList.add("recording"); vb.textContent = "● 录音中"; }
+    if (bar) bar.classList.add("show");
+    if (vb) vb.classList.add("recording");
     infSec = 0;
     const tm = document.getElementById("infiniteRecTimer");
     if (tm) tm.textContent = "0:00";
@@ -3179,8 +3196,8 @@ function infStopRec(silent) {
   infRecorder = null;
   const bar = document.getElementById("infiniteVoiceBar");
   const vb = document.getElementById("infiniteVoiceBtn");
-  if (bar) bar.hidden = true;
-  if (vb) { vb.classList.remove("recording"); vb.textContent = "🎙️ 录音"; }
+  if (bar) bar.classList.remove("show");
+  if (vb) vb.classList.remove("recording");
   if (silent) infPending.audio = null;
 }
 
@@ -3189,22 +3206,16 @@ function infStopRec(silent) {
   function bind() {
     const addBtn = document.getElementById("infiniteAddBtn");
     const refBtn = document.getElementById("infiniteRefreshBtn");
-    const closeBtn = document.getElementById("infiniteClose");
-    const cancelBtn = document.getElementById("infiniteCancel");
     const subBtn = document.getElementById("infiniteSubmit");
-    const modal = document.getElementById("infiniteModal");
     const imgInput = document.getElementById("infiniteImage");
     const vidInput = document.getElementById("infiniteVideo");
     const voiceBtn = document.getElementById("infiniteVoiceBtn");
     const stopBtn = document.getElementById("infiniteRecStop");
     const pv = document.getElementById("infinitePreview");
 
-    if (addBtn) addBtn.addEventListener("click", infOpenModal);
+    if (addBtn) addBtn.addEventListener("click", infTogglePanel);
     if (refBtn) refBtn.addEventListener("click", infRefresh);
-    if (closeBtn) closeBtn.addEventListener("click", infCloseModal);
-    if (cancelBtn) cancelBtn.addEventListener("click", infCloseModal);
     if (subBtn) subBtn.addEventListener("click", infSubmit);
-    if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) infCloseModal(); });
 
     if (imgInput) imgInput.addEventListener("change", () => {
       const f = imgInput.files && imgInput.files[0];
