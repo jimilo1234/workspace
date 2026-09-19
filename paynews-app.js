@@ -271,10 +271,14 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     let summaryContent = '';
     if (MOCK_NEWS.length > 0) summaryContent = MOCK_NEWS[0].summary;
     if (summaryContent) msgHtml += `<p>${summaryContent}</p>`;
-    // 历史评论：移到正文下方，每条单独一行（不再用分号接在正文后面）
-    const olderLines = olderMsgs.filter(m => m.text).map(m => escapeHtml(m.text)).reverse(); // 旧→新
-    if (olderLines.length > 0) {
-      msgHtml += `<div class="comment-history">` + olderLines.map(t => `<div class="comment-history-item">${t}</div>`).join('') + `</div>`;
+    // 历史评论：移到正文下方，每条单独一行，前面加一个假用户名（看起来是这些用户发的）
+    const FAKE_USERS = ["网友小柔","吃瓜群众","热心市民","匿名游客","楼上那位","深夜党","路过的大哥","柠檬精","搬砖的阿强","隔壁老王"];
+    const olderList = olderMsgs.filter(m => m.text).map((m, i) => ({
+      name: FAKE_USERS[i % FAKE_USERS.length],
+      text: escapeHtml(m.text)
+    })).reverse(); // 旧→新
+    if (olderList.length > 0) {
+      msgHtml += `<div class="comment-history">` + olderList.map(o => `<div class="comment-history-item"><span class="comment-history-name">${o.name}</span>：${o.text}</div>`).join('') + `</div>`;
     }
     if (newestMsg.image_url) msgHtml += `<span class="img-toggle" onclick="toggleImg(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 查看图片</span><div class="img-fold"><img src="${newestMsg.image_url}" alt="配图" onclick="showOverlay(this.src)"></div>`;
     if (newestMsg.video_url) msgHtml += `<span class="img-toggle" onclick="toggleVideo(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg> 查看视频</span><div class="img-fold"><video controls preload="metadata" playsinline style="max-width:100%;border-radius:6px;"><source src="${newestMsg.video_url}" type="video/mp4">您的浏览器不支持视频播放</video></div>`;

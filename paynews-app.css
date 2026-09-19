@@ -671,6 +671,7 @@ html.light .walkie-sub-toggle.on .toggle-knob { background: var(--accent-light);
 .comment-history-item {
   font-size: 13px; color: var(--text-dim); line-height: 1.6;
 }
+.comment-history-name { color: var(--teal); font-weight: 600; }
 /* 图片折叠 */
 .img-toggle {
   display: inline-flex; align-items: center; gap: 4px;
