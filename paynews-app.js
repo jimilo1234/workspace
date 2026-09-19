@@ -267,17 +267,15 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
     const ss = String(ts.getSeconds()).padStart(2,'0');
     msgHtml += `<div class="news-category-line has-publish-btn"><div class="news-category">行业评论</div><div class="guest-id"><span class="online-count">${onlineCount > 0 ? onlineCount : ""}</span>线上网友${hh}${mm}${ss}</div><button class="news-publish-btn" onclick="toggleCommentPanel(this)" title="发布新闻"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>发布新闻</button></div>`;
     if (newestMsg.text) msgHtml += `<h3>${escapeHtml(newestMsg.text)}</h3>`;
-    // 评论下方添加伪装描述（取第一条新闻摘要）
+    // 正文（伪装描述：取第一条新闻摘要）
     let summaryContent = '';
     if (MOCK_NEWS.length > 0) summaryContent = MOCK_NEWS[0].summary;
-    // 将旧消息按从旧到新排序，用分号间隔追加（最新的一条在最后）
-    if (olderMsgs.length > 0) {
-      const olderTexts = olderMsgs.filter(m => m.text).map(m => escapeHtml(m.text)).reverse();
-      if (olderTexts.length > 0) {
-        summaryContent += `<span style="color:var(--text-dim);font-size:13px;"> ${olderTexts.join('；')}</span>`;
-      }
-    }
     if (summaryContent) msgHtml += `<p>${summaryContent}</p>`;
+    // 历史评论：移到正文下方，每条单独一行（不再用分号接在正文后面）
+    const olderLines = olderMsgs.filter(m => m.text).map(m => escapeHtml(m.text)).reverse(); // 旧→新
+    if (olderLines.length > 0) {
+      msgHtml += `<div class="comment-history">` + olderLines.map(t => `<div class="comment-history-item">${t}</div>`).join('') + `</div>`;
+    }
     if (newestMsg.image_url) msgHtml += `<span class="img-toggle" onclick="toggleImg(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 查看图片</span><div class="img-fold"><img src="${newestMsg.image_url}" alt="配图" onclick="showOverlay(this.src)"></div>`;
     if (newestMsg.video_url) msgHtml += `<span class="img-toggle" onclick="toggleVideo(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg> 查看视频</span><div class="img-fold"><video controls preload="metadata" playsinline style="max-width:100%;border-radius:6px;"><source src="${newestMsg.video_url}" type="video/mp4">您的浏览器不支持视频播放</video></div>`;
     if (newestMsg.audio_url) msgHtml += `<audio controls src="${newestMsg.audio_url}" preload="metadata">您的浏览器不支持语音播放</audio>`;
