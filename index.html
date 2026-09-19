@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260916a" />
+  <link rel="stylesheet" href="style.css?v=20260916b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -171,7 +171,17 @@
               <span id="waterCount" class="badge">0/8</span>
             </div>
             <div id="waterCups" class="water-cups"></div>
-            <p class="water-tip">点击杯子记录一杯水 · 每天 0 点自动重置</p>
+
+            <!-- 益生菌：一天 2 次，同样每天 0 点自动重置 -->
+            <div class="probiotic-block">
+              <div class="probiotic-head">
+                <span class="probiotic-title">🦠 益生菌</span>
+                <span id="probioticCount" class="badge">0/2</span>
+              </div>
+              <div id="probioticPills" class="probiotic-pills"></div>
+            </div>
+
+            <p class="water-tip">点击记录 · 每天 0 点自动重置</p>
           </section>
 
           <!-- 日历 -->
@@ -645,6 +655,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260916c"></script>
+  <script src="script.js?v=20260916d"></script>
 </body>
 </html>

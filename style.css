@@ -11,6 +11,7 @@
   --accent: #6c8cff;
   --accent-dim: rgba(108, 140, 255, 0.65);
   --accent-soft: rgba(108, 140, 255, 0.10);
+  --probiotic: #4ecdc4;
   --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   --radius: 16px;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
@@ -31,6 +32,7 @@
   --accent: #4b6cf0;
   --accent-dim: rgba(75, 108, 240, 0.7);
   --accent-soft: rgba(75, 108, 240, 0.08);
+  --probiotic: #17a398;
   --shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
 }
 
@@ -792,6 +794,36 @@ body {
 .cup.filled { border-color: var(--accent); }
 .cup.filled .cup-water { height: 100%; }
 .water-tip { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+/* 益生菌（同卡片内的第二个打卡项，一天 2 次，逻辑与喝水共用） */
+.probiotic-block {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+.probiotic-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px;
+}
+.probiotic-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.probiotic-pills { display: flex; flex-wrap: wrap; gap: 9px; }
+.pill {
+  position: relative; width: 22px; height: 34px; padding: 0; cursor: pointer;
+  border: 2px solid var(--border-strong); border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03); overflow: hidden;
+  transition: border-color 0.2s;
+}
+[data-theme="light"] .pill { background: rgba(15, 23, 42, 0.03); }
+.pill::after {   /* 胶囊中间的分隔线 */
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+  margin-top: -0.5px; background: var(--border-strong); z-index: 2; opacity: 0.55;
+}
+.pill:hover { border-color: var(--probiotic); }
+.pill .pill-fill {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 0;
+  background: var(--probiotic); transition: height 0.2s ease;
+}
+.pill.filled { border-color: var(--probiotic); }
+.pill.filled .pill-fill { height: 100%; }
+.pill.filled::after { opacity: 0.35; }
 
 /* ===== 移动端适配（手机 · 方案A 轻量救急） ===== */
 /* 手机（≤600px）：卡片强制单列、去掉 300px 最小宽，消除横向溢出与错位换行 */

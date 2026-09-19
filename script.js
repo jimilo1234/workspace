@@ -801,42 +801,69 @@ $("#addLink").addEventListener("click", () => {
   renderLinks(); scheduleSave();
 });
 
-/* ---------- 喝水提醒（仅本机存储，不写后端） ---------- */
-const WATER_KEY = "wb_water_v1";
-const WATER_TOTAL = 8;
-const waterCupsEl = $("#waterCups");
-const waterCountEl = $("#waterCount");
+/* ---------- 每日打卡（喝水 / 益生菌：仅本机存储，不写后端，跨天自动重置） ---------- */
 function todayKey() { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
-function loadWater() {
-  try {
-    const raw = localStorage.getItem(WATER_KEY);
-    if (raw) { const o = JSON.parse(raw); if (o && o.date === todayKey() && Array.isArray(o.cups)) return o; }
-  } catch (e) {}
-  return { date: todayKey(), cups: new Array(WATER_TOTAL).fill(false) };
-}
-let waterState = loadWater();
-function saveWater() { try { localStorage.setItem(WATER_KEY, JSON.stringify(waterState)); } catch (e) {} }
-function renderWater() {
-  if (!waterCupsEl) return;
-  waterCupsEl.innerHTML = "";
-  waterState.cups.forEach((filled, i) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "cup" + (filled ? " filled" : "");
-    b.setAttribute("aria-label", "第" + (i + 1) + "杯水");
-    b.innerHTML = '<span class="cup-water"></span>';
-    b.addEventListener("click", () => {
-      waterState.cups[i] = !waterState.cups[i];
-      saveWater(); renderWater();
+
+/* 通用打卡器：喝水与益生菌共用同一份「按天重置」逻辑，保证行为完全一致 */
+function createDailyCheckin(cfg) {
+  const cupsEl = $(cfg.cupsSel);
+  const countEl = $(cfg.countSel);
+  function load() {
+    try {
+      const raw = localStorage.getItem(cfg.key);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && o.date === todayKey() && Array.isArray(o.cups) && o.cups.length === cfg.total) return o;
+      }
+    } catch (e) {}
+    return { date: todayKey(), cups: new Array(cfg.total).fill(false) };
+  }
+  let state = load();
+  function save() { try { localStorage.setItem(cfg.key, JSON.stringify(state)); } catch (e) {} }
+  function render() {
+    if (!cupsEl) return;
+    cupsEl.innerHTML = "";
+    state.cups.forEach((filled, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = cfg.itemClass + (filled ? " filled" : "");
+      b.setAttribute("aria-label", cfg.aria(i));
+      b.innerHTML = '<span class="' + cfg.innerClass + '"></span>';
+      b.addEventListener("click", () => {
+        state.cups[i] = !state.cups[i];
+        save(); render();
+      });
+      cupsEl.appendChild(b);
     });
-    waterCupsEl.appendChild(b);
-  });
-  if (waterCountEl) waterCountEl.textContent = waterState.cups.filter(Boolean).length + "/" + WATER_TOTAL;
+    if (countEl) countEl.textContent = state.cups.filter(Boolean).length + "/" + cfg.total;
+  }
+  function init() {
+    if (state.date !== todayKey()) state = load(); // 打开时已跨天则重置
+    render();
+    onTick(() => { if (state.date !== todayKey()) { state = load(); render(); } }); // 每天0点自动重置
+  }
+  return { init, render };
 }
+
+const waterCheckin = createDailyCheckin({
+  key: "wb_water_v1",
+  total: 8,
+  cupsSel: "#waterCups", countSel: "#waterCount",
+  itemClass: "cup", innerClass: "cup-water",
+  aria: (i) => "第" + (i + 1) + "杯水",
+});
+
+const probioticCheckin = createDailyCheckin({
+  key: "wb_probiotic_v1",
+  total: 2,                 // 一天两次
+  cupsSel: "#probioticPills", countSel: "#probioticCount",
+  itemClass: "pill", innerClass: "pill-fill",
+  aria: (i) => "第" + (i + 1) + "次益生菌",
+});
+
 function initWater() {
-  if (waterState.date !== todayKey()) waterState = loadWater(); // 打开时已跨天则重置
-  renderWater();
-  onTick(() => { if (waterState.date !== todayKey()) { waterState = loadWater(); renderWater(); } }); // 每天0点自动重置
+  waterCheckin.init();
+  probioticCheckin.init();
 }
 
 /* ---------- 每日运势（基于八字，调 DeepSeek） ---------- */
