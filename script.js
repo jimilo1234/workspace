@@ -265,14 +265,20 @@ const MODULE_REGISTRY = [
   { id: "pet",      label: "宠物" },
 ];
 function defaultHomeModules() {
-  return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true }));
+  return MODULE_REGISTRY.map((m) => ({ id: m.id, visible: true, height: null, heightMobile: null }));
 }
 /* 归一化已存配置：保留自定义顺序、丢弃未知模块、补齐新增模块（后续新增可配置） */
 function normalizeHomeModules(arr) {
   const saved = (Array.isArray(arr) ? arr : []).filter((m) => m && m.id && MODULE_REGISTRY.some((r) => r.id === m.id));
   const savedIds = new Set(saved.map((m) => m.id));
   const added = MODULE_REGISTRY.filter((m) => !savedIds.has(m.id)).map((m) => ({ id: m.id, visible: true, enabled: true }));
-  return saved.concat(added).map((m) => ({ id: m.id, visible: m.visible !== false, enabled: m.enabled !== false, height: (typeof m.height === "number" && m.height > 0) ? Math.round(m.height) : null }));
+  return saved.concat(added).map((m) => ({
+    id: m.id,
+    visible: m.visible !== false,
+    enabled: m.enabled !== false,
+    height: (typeof m.height === "number" && m.height > 0) ? Math.round(m.height) : null,
+    heightMobile: (typeof m.heightMobile === "number" && m.heightMobile > 0) ? Math.round(m.heightMobile) : null,
+  }));
 }
 
 /* 后端列名是下划线（sticky_notes / calendar_marks / gh_arrival），前端 state 用驼峰。
@@ -1374,6 +1380,12 @@ function closeMobileDrawer() {
 sidebarOverlay.addEventListener("click", closeMobileDrawer);
 // 跨断点（旋转屏幕 / 缩放窗口）时刷新图标与遮罩
 window.addEventListener("resize", syncSidebarUI);
+// 跨 860px 断点时切换 PC / 手机两套模块高度，无需手动重调
+let _hmMobile = isMobile();
+window.addEventListener("resize", () => {
+  const nowM = isMobile();
+  if (nowM !== _hmMobile) { _hmMobile = nowM; applyHomeLayout(); }
+});
 /* ---------- 侧边栏：一级菜单折叠 + 页面切换 ---------- */
 // 一级菜单（如 AI）点击展开/收起其子项
 document.querySelectorAll(".nav-parent").forEach((btn) => {
@@ -1464,6 +1476,13 @@ document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
   });
 });
 /* ---------- 首页模块显隐 + 顺序（注册表驱动，可配置） ---------- */
+/* 尺寸按设备分别记录：PC 用 height，手机用 heightMobile，互不干扰 */
+function _modeHKey() { return isMobile() ? "heightMobile" : "height"; }
+function _modeH(m) {
+  if (!m || typeof m !== "object") return null;
+  const v = m[_modeHKey()];
+  return (typeof v === "number" && v > 0) ? Math.round(v) : null;
+}
 function applyHomeLayout() {
   const grid = document.querySelector("#pageHome .grid");
   if (!grid) return;
@@ -1477,7 +1496,8 @@ function applyHomeLayout() {
     const el = cards[m.id];
     if (!el) return;
     el.style.display = vis[m.id] ? "" : "none";
-    el.style.height = (m.height && m.height > 0) ? m.height + "px" : "";
+    const mh = _modeH(m);
+    el.style.height = mh ? mh + "px" : "";
     grid.appendChild(el);
   });
   initCardResize();
@@ -1527,7 +1547,7 @@ function saveCardHeight(id, h) {
   if (!Array.isArray(state.homeModules)) state.homeModules = defaultHomeModules();
   const item = state.homeModules.find((m) => m.id === id);
   const hh = Math.round(Math.max(CARD_MIN_H, Math.min(CARD_MAX_H, h)));
-  if (item) item.height = hh;
+  if (item) item[_modeHKey()] = hh;   // 存到当前设备对应字段（PC=height / 手机=heightMobile）
   scheduleSave();
 }
 
@@ -1609,9 +1629,10 @@ function saveHomeManage() {
     const id = li.dataset.id;
     const old = prevH.find((p) => p.id === id);
     const h = (old && typeof old.height === "number" && old.height > 0) ? old.height : null;
+    const hm = (old && typeof old.heightMobile === "number" && old.heightMobile > 0) ? old.heightMobile : null;
     // 保留超管配置的模块权限 enabled（首页管理只管顺序/显隐，不能把被关掉的模块权限覆盖掉）
     const en = (old && old.enabled !== false);
-    next.push({ id: id, visible: li.querySelector(".mi-toggle").checked, height: h, enabled: en });
+    next.push({ id: id, visible: li.querySelector(".mi-toggle").checked, height: h, heightMobile: hm, enabled: en });
   });
   state.homeModules = next;
   applyHomeLayout();
