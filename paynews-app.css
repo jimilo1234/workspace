@@ -666,12 +666,10 @@ html.light .walkie-sub-toggle.on .toggle-knob { background: var(--accent-light);
   transition: opacity 0.2s;
 }
 .news-item img:hover { opacity: 0.85; }
-/* 历史评论：正文下方，每条单独一行 */
-.comment-history { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+/* 历史评论：正文下方，每条单独一行，样式与正文（.news-item p）一致 */
+.comment-history { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
 .comment-history-item {
-  font-size: 12.5px; color: var(--text-dim); line-height: 1.5;
-  padding: 6px 10px; border-left: 2px solid var(--teal);
-  background: var(--bg-card-hover); border-radius: 0 6px 6px 0;
+  font-size: 13px; color: var(--text-dim); line-height: 1.6;
 }
 /* 图片折叠 */
 .img-toggle {
