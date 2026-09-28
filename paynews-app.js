@@ -25,6 +25,9 @@ const ICO = {
 const SUPABASE_URL = 'https://wwxzycfdfyyljkjfcbjt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0WePrzUk-LVH3TK7RFT_fQ_5r3C0dvP';
 
+// ===== Web Push（VAPID 公钥，私钥存于 Supabase 项目密钥 VAPID_PRIVATE_KEY）=====
+const VAPID_PUBLIC_KEY = 'BOYADIliT_fHIzCPdUnPCJJLhnOT0TPpexFJgxa_hxVrWY6UirIf9nrAKKVzwCdwOtOrC4aymfWNGMI-0_b0K98';
+
 let supabaseClient = null;
 function initSupabase(){
   if (supabaseClient) return;  // 已初始化则跳过（module 与 DOMContentLoaded 可能都调用）
@@ -674,6 +677,8 @@ async function doLogin() {
     }
     // 订阅messages表实时变更，新消息立即刷新评论
     subscribeMessageChanges();
+    // 登录后订阅 Web Push（申请权限 + 保存订阅），之后发布即推送系统通知
+    ensurePushSubscribed();
 
     // 0110账号登录满2小时自动退出
     if (account === '0110') {
@@ -812,6 +817,12 @@ async function doSendMessage() {
 
     // 通知其他客户端有新消息（携带摘要，接收端秒出通知）
     notifyNewMessage(currentUser.username, currentUser.displayName, text, !!audioUrl, !!imageUrl);
+
+    // 触发 Web Push：其他已订阅操作员在手机端（含后台/锁屏）收到系统通知
+    triggerWebPush(
+      currentUser.displayName || currentUser.username,
+      text || (audioUrl ? '[语音]' : imageUrl ? '[图片]' : '新消息')
+    );
 
     // 清空输入
     document.getElementById('msg-text').value = '';
@@ -1030,14 +1041,6 @@ function subscribeMessageChanges() {
     if (payload.username && payload.username !== currentUser?.username) {
       const displayName = payload.displayName || payload.username;
       const preview = payload.text || (payload.hasAudio ? '[语音]' : payload.hasImage ? '[图片]' : '新消息');
-      // PWA通知
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'NEW_MESSAGE_NOTIFY',
-          title: displayName,
-          body: preview
-        });
-      }
     }
     try {
       console.log('[发布] 刷新列表 开始');
@@ -2892,26 +2895,59 @@ if(petTabBtn){
 
 /* ---- inline script ---- */
 
-// 注册 Service Worker（PWA离线缓存 + 推送通知）
+// 注册 Service Worker（PWA离线缓存 + Web Push 接收端）
 if ('serviceWorker' in navigator) {
   // SW 新版本接管控制后，强制刷新一次，确保拿到最新页面（破解旧 SW 缓存旧 HTML 的死循环）
   let _swReloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',function(){
     if(!_swReloaded){_swReloaded=true;location.reload();}
   });
-  navigator.serviceWorker.register('/paynews/sw.js?v=17').then(() => {
+  navigator.serviceWorker.register('./sw.js?v=18').then(() => {
     console.log('[PWA] Service Worker 已注册');
-    // 首次安装后请求通知权限
-    if ('Notification' in window && Notification.permission === 'default') {
-      setTimeout(() => {
-        Notification.requestPermission().then(p => {
-          console.log('[PWA] 通知权限:', p);
-        });
-      }, 3000);
-    }
   }).catch(err => {
     console.log('[PWA] SW注册失败:', err);
   });
+}
+
+/* ---------- Web Push：登录后订阅 + 发布时触发推送 ---------- */
+// 登录成功后调用：申请通知权限 → 订阅 Push → 把订阅存进 Supabase（其他端据此推送）
+async function ensurePushSubscribed() {
+  if (!currentUser) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+  try {
+    let perm = Notification.permission;
+    if (perm === 'default') perm = await Notification.requestPermission();
+    if (perm !== 'granted') { console.log('[Push] 通知权限未授予'); return; }
+    const reg = await navigator.serviceWorker.register('./sw.js?v=18'); // 幂等
+    await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: VAPID_PUBLIC_KEY
+    });
+    await savePushSubscription(sub);
+  } catch (e) { console.warn('[Push] 订阅失败', e); }
+}
+async function savePushSubscription(sub) {
+  if (!supabaseClient || !currentUser) return;
+  try {
+    const { error } = await supabaseClient.from('push_subscriptions').insert({
+      username: currentUser.username,
+      subscription: sub.toJSON()
+    });
+    if (error) console.warn('[Push] 保存订阅失败', error.message);
+    else console.log('[Push] 推送订阅已保存');
+  } catch (e) { console.warn('[Push] 保存订阅异常', e); }
+}
+// 发布新闻后调用：让 Edge Function 把系统通知推给所有其他已订阅操作员
+async function triggerWebPush(title, body) {
+  if (!currentUser) return;
+  try {
+    await fetch(SUPABASE_URL + '/functions/v1/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: JSON.stringify({ sender: currentUser.username, title: title, body: body })
+    });
+  } catch (e) { console.warn('[Push] 触发失败', e); }
 }
 
 // 轮询兜底：每3秒查最新消息ID，broadcast丢了也能补通知
@@ -2925,13 +2961,6 @@ setInterval(async () => {
     if (latest.id > _pollLastId && latest.username !== currentUser.username) {
       _pollLastId = latest.id;
       const preview = latest.text || (latest.audio_url ? '[语音]' : latest.image_url ? '[图片]' : '新消息');
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'NEW_MESSAGE_NOTIFY',
-          title: latest.display_name || latest.username,
-          body: preview
-        });
-      }
     }
     if (latest.id > _pollLastId) _pollLastId = latest.id;
   } catch(e) {}
