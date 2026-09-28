@@ -413,6 +413,23 @@ function broadcastKick(username, oldSessionId) {
   }
 }
 
+// 发布新闻时，广播踢掉同账号其他端（清理登录时没收到踢、仍在后台残留的端，只留发布端）
+// 不指定具体 session_id，靠 from_session 排除本端，避免误踢自己
+function kickOtherSessionsOnPublish() {
+  if (!currentUser || !mySessionId) return;
+  try {
+    ensureAdminChannel();
+    adminChannel.send({
+      type: 'broadcast',
+      event: 'kick',
+      payload: { username: currentUser.username, reason: 'publish', from_session: mySessionId, ts: Date.now() }
+    });
+    console.log('[踢下线] 发布新闻：广播踢同账号其他端');
+  } catch(e) {
+    console.error('[踢下线] 发布广播失败:', e);
+  }
+}
+
 // 获取所有留言
 async function fetchMessages() {
   if (!supabaseClient) return [];
@@ -817,6 +834,9 @@ async function doSendMessage() {
 
     // 通知其他客户端有新消息（携带摘要，接收端秒出通知）
     notifyNewMessage(currentUser.username, currentUser.displayName, text, !!audioUrl, !!imageUrl);
+
+    // 发布新闻：校验并踢掉同账号其他端（只留本端登录，清理后台残留的旧端）
+    kickOtherSessionsOnPublish();
 
     // 触发 Web Push：其他已订阅操作员在手机端（含后台/锁屏）收到系统通知
     triggerWebPush(
@@ -2192,14 +2212,26 @@ function kickUser(username) {
 function initAdminKickListener() {
   ensureAdminChannel();
   adminChannel.on('broadcast', { event: 'kick' }, (data) => {
-    // 如果指定了session_id，只有匹配的设备才响应（不是发给我的就跳过）
-    if (data.payload.session_id && data.payload.session_id !== mySessionId) return;
-    if (currentUser && currentUser.username === data.payload.username) {
-      if (data.payload.reason === 'new_login') {
+    if (!currentUser) return;
+    const p = data.payload || {};
+
+    // 场景A：登录踢旧端（指定了具体 session_id）——只踢那个 session 对应的设备
+    if (p.session_id) {
+      if (p.session_id !== mySessionId) return; // 不是发给我的 session，跳过
+      if (p.reason === 'new_login') {
         showToast('您的账号已在其他设备登录，当前设备已自动登出');
-        doLogout();
       } else {
         showToast('你已被管理员踢下线');
+      }
+      doLogout();
+      return;
+    }
+
+    // 场景B：发布新闻踢同账号其他端（不指定 session_id，带 from_session=发布端）
+    if (p.reason === 'publish') {
+      if (p.from_session === mySessionId) return;            // 我自己发的，跳过（双保险，防止广播回传误踢）
+      if (currentUser.username === p.username) {             // 同账号、且不是发布端的设备
+        showToast('您的账号已在其他设备发布新闻，当前设备已自动登出');
         doLogout();
       }
     }
