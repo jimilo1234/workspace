@@ -619,7 +619,9 @@ function updateGreeting() {
   const now = new Date();
   const h = now.getHours();
   const greet = h < 6 ? "凌晨好" : h < 11 ? "早上好" : h < 13 ? "中午好" : h < 18 ? "下午好" : "晚上好";
-  const who = state.name && state.name !== "吉米" ? state.name : (state.name || "朋友");
+  /* 优先读「操作员管理」为该账号配置的称呼（users.name），未配置时回退到本机默认名 / 用户名 */
+  const cfgName = (currentUser && currentUser.name) ? String(currentUser.name).trim() : "";
+  const who = cfgName || (state.name && state.name !== "吉米" ? state.name : (state.name || userId || "朋友"));
   $("#greeting").textContent = `${greet}，${who} 👋`;
 }
 
@@ -2787,7 +2789,7 @@ async function loadOperators() {
       const lastLogin = u.last_login_time ? new Date(u.last_login_time).toLocaleString("zh-CN", { hour12: false }) : "—";
       return `<tr data-user="${esc(u.username)}">` +
         `<td><strong>${esc(u.username)}</strong></td>` +
-        `<td>${esc(u.name || "—")}</td>` +
+        `<td><input class="op-name-input" type="text" maxlength="30" data-user="${esc(u.username)}" data-old="${esc(u.name || "")}" value="${esc(u.name || "")}" placeholder="点击填写称呼" /></td>` +
         `<td><span class="op-status ${online ? "online" : "offline"}"></span>${online ? "在线" : "离线"}</td>` +
         `<td class="op-mono">${lastLogin}</td>` +
         `<td class="op-mono">${esc(u.last_login_ip || "—")}</td>` +
@@ -2973,6 +2975,44 @@ if (opListEl) opListEl.addEventListener("click", (e) => {
   const btn = e.target.closest(".op-edit-btn");
   if (btn && btn.dataset.user) openOpMenuModal(btn.dataset.user);
 });
+
+/* 「姓名 / 首页称呼」直接编辑：失焦或回车即写回该操作员的 users.name，
+   该操作员下次登录后，首页问候语「下午好，XXX」就显示这个称呼 */
+async function saveOperatorName(inp) {
+  if (!inp) return;
+  const username = inp.dataset.user;
+  const val = inp.value.trim();
+  const old = inp.dataset.old || "";
+  if (!username || val === old) return;
+  inp.disabled = true;
+  setStatus("保存称呼中…", "syncing");
+  try {
+    await withTimeout(fetch(`${REST_BASE}/users?username=eq.${encodeURIComponent(username)}`, {
+      method: "PATCH",
+      headers: Object.assign({}, API_HEADERS, { "Prefer": "return=minimal" }),
+      body: JSON.stringify({ name: val }),
+    }), 15000, "保存称呼");
+    inp.dataset.old = val;
+    /* 若改的是当前登录账号本身，立即同步到内存，问候语无需重登即可更新 */
+    if (currentUser && currentUser.username === username) { currentUser.name = val; updateGreeting(); }
+    setStatus("称呼已保存 ✓", "ok");
+  } catch (e) {
+    inp.value = old;
+    setStatus("称呼保存失败 · 请检查网络", "err");
+  } finally {
+    inp.disabled = false;
+  }
+}
+const _opNameEl = document.getElementById("opList");
+if (_opNameEl) {
+  _opNameEl.addEventListener("change", (e) => {
+    const inp = e.target.closest(".op-name-input");
+    if (inp) saveOperatorName(inp);
+  });
+  _opNameEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.closest(".op-name-input")) { e.preventDefault(); e.target.blur(); }
+  });
+}
 const opModalEl = document.getElementById("opMenuModal");
 if (opModalEl) {
   opModalEl.addEventListener("click", (e) => { if (e.target === opModalEl) closeOpMenuModal(); });

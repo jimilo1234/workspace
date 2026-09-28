@@ -1030,6 +1030,17 @@ html.pn-fs .topbar { display: none; }
 .op-refresh { background: transparent; color: var(--text-soft); border: 1px solid var(--border-strong); box-shadow: none; }
 .op-refresh:hover { color: var(--text); filter: none; }
 .op-edit-btn { font-size: 12px; }
+/* 「姓名 / 首页称呼」可编辑输入框：即该操作员登录后首页问候语显示的名字 */
+.op-name-input {
+  width: 100%; min-width: 96px; padding: 5px 9px; font-size: 13px;
+  color: var(--text); background: var(--bg-soft);
+  border: 1px solid var(--border); border-radius: 8px;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+.op-name-input::placeholder { color: var(--text-faint); }
+.op-name-input:hover { border-color: var(--border-strong); }
+.op-name-input:focus { outline: none; border-color: var(--accent); background: var(--card); }
+.op-name-input:disabled { opacity: 0.6; cursor: wait; }
 
 /* 树形勾选弹层 */
 .op-modal {
