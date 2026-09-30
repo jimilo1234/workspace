@@ -3600,23 +3600,25 @@ window.__infiniteRefresh = infRefresh;
     }).join('');
   }
 
-  // 读取新闻列表：走会话校验的 RPC（get_messages），避免匿名直读 messages 表。
-  // 未登录 / 会话无效 → RPC 返回空；SQL 未部署前自动回退到直读，保证不崩。
+  // 读取新闻列表：必须通过会话校验的 RPC（get_messages）。
+  // 设计原则 fail-closed（默认拒绝）：
+  //   - 未登录（无有效会话）→ 不发任何请求，直接返回空，杜绝匿名直读。
+  //   - 已登录 → 仅走 get_messages RPC（服务端用 check_session 校验会话），
+  //     绝不回退到匿名直读 messages 表，避免绕过服务端校验。
+  //   注：SQL（harden_messages.sql）未部署时 RPC 会报错，列表显示“加载失败”属预期；
+  //       部署后已登录有效会话才能读到数据，其余一律空。
   function fetchMessages() {
     let sess = null;
     try { sess = JSON.parse(localStorage.getItem('paynews_session') || 'null'); } catch (e) {}
-    const doFetch = (url, opts) => fetch(url, opts).then((res) => {
+    if (!sess || !sess.username || !sess.session_id) return Promise.resolve([]);
+    return fetch(INF_REST + '/rpc/get_messages', {
+      method: 'POST',
+      headers: Object.assign({}, INF_JSON, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ p_username: sess.username, p_session_id: sess.session_id })
+    }).then((res) => {
       if (!res.ok) throw new Error('load messages ' + res.status);
       return res.json();
     });
-    if (sess && sess.username && sess.session_id) {
-      return doFetch(INF_REST + '/rpc/get_messages', {
-        method: 'POST',
-        headers: Object.assign({}, INF_JSON, { 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ p_username: sess.username, p_session_id: sess.session_id })
-      }).catch(() => doFetch(MSG_URL, { headers: INF_JSON }));  // RPC 未就绪时回退
-    }
-    return doFetch(MSG_URL, { headers: INF_JSON });
   }
 
   // 消息浮层：autoSec 秒后自动关闭；点击浮层任意处可立即关闭
