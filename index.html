@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260930a" />
+  <link rel="stylesheet" href="style.css?v=20260930b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -497,18 +497,28 @@
           </div>
         </div>
       </div>
-
-      <!-- 飞牛电影（内嵌 fnos 影视站 · 懒加载 + 离开自动释放） -->
-      <div id="pageFeiniu" class="page hidden">
-        <div class="page-bar">
-          <div class="page-bar-left">
-            <span class="page-bar-title">🎬 飞牛电影</span>
-            <span class="page-bar-hint">进入才加载 · 离开 3 分钟自动释放内存 · 若显示拒绝/白屏点右侧新窗口打开</span>
-          </div>
-          <a class="open-new" href="https://askacwwkfnos.fnos.net/v" target="_blank" rel="noopener">新窗口打开 ↗</a>
-        </div>
-        <iframe class="page-iframe" data-src="https://askacwwkfnos.fnos.net/v" title="飞牛电影" loading="lazy"></iframe>
       </div>
+
+      <!-- 飞牛电影（外部站点禁止 iframe 嵌入 → 引导新窗口打开）
+           原因：该地址是 FN Connect 远程访问入口，需 NAS 账号登录，且会检测顶层窗口；
+           放进 iframe 会陷入无限重定向（ERR_TOO_MANY_REDIRECTS）导致整页空白，
+           所以这里不再内嵌，改为一张引导卡片。
+           若将来拿到「可直接嵌入」的地址（如局域网直连入口），把下面 href 换掉即可。 -->
+      <div id="pageFeiniu" class="page hidden">
+        <div class="embed-blocked">
+          <div class="embed-card">
+            <div class="embed-ico">🎬</div>
+            <div class="embed-title">飞牛影视</div>
+            <div class="embed-desc">
+              该站点需要用 NAS 账号登录，并且不允许被嵌进其他页面<br />
+              （放在工作台里会陷入无限跳转、整片空白）。<br />
+              点击下方按钮在新窗口打开，即可正常使用。
+            </div>
+            <div class="embed-actions">
+              <a class="embed-btn" href="https://askacwwkfnos.fnos.net/v" target="_blank" rel="noopener">新窗口打开飞牛影视 ↗</a>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 便利贴（可拖动 / 增删改 / 多端同步） -->
