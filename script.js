@@ -3600,11 +3600,23 @@ window.__infiniteRefresh = infRefresh;
     }).join('');
   }
 
+  // 读取新闻列表：走会话校验的 RPC（get_messages），避免匿名直读 messages 表。
+  // 未登录 / 会话无效 → RPC 返回空；SQL 未部署前自动回退到直读，保证不崩。
   function fetchMessages() {
-    return fetch(MSG_URL, { headers: INF_JSON }).then((res) => {
+    let sess = null;
+    try { sess = JSON.parse(localStorage.getItem('paynews_session') || 'null'); } catch (e) {}
+    const doFetch = (url, opts) => fetch(url, opts).then((res) => {
       if (!res.ok) throw new Error('load messages ' + res.status);
       return res.json();
     });
+    if (sess && sess.username && sess.session_id) {
+      return doFetch(INF_REST + '/rpc/get_messages', {
+        method: 'POST',
+        headers: Object.assign({}, INF_JSON, { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ p_username: sess.username, p_session_id: sess.session_id })
+      }).catch(() => doFetch(MSG_URL, { headers: INF_JSON }));  // RPC 未就绪时回退
+    }
+    return doFetch(MSG_URL, { headers: INF_JSON });
   }
 
   // 消息浮层：autoSec 秒后自动关闭；点击浮层任意处可立即关闭
