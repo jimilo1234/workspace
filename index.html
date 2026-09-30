@@ -43,6 +43,9 @@
         <button class="nav-item active" data-page="home" data-menu-id="home">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.8V19a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V9.8"/></svg></span><span class="nav-label">首页</span>
         </button>
+        <button class="nav-item" data-page="feiniu" data-menu-id="feiniu">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v16"/><path d="M16 4v16"/></svg></span><span class="nav-label">飞牛电影</span>
+        </button>
         <button class="nav-item nav-parent open" data-toggle="study" data-menu-id="study">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v15H6a2 2 0 0 0-2 2z"/><path d="M18 3v15"/></svg></span><span class="nav-label">学习</span>
           <span class="nav-caret">▾</span>
@@ -489,11 +492,23 @@
               <span class="mobile-col-title">咖啡机</span>
               <a class="open-new" href="https://mh5.bl.com/bl-front-end/subpack/coffee/home" target="_blank" rel="noopener">新窗口打开 ↗</a>
             </div>
-            <div class="mobile-frame">
-              <iframe data-src="https://mh5.bl.com/bl-front-end/subpack/coffee/home" title="咖啡机" loading="lazy"></iframe>
-            </div>
+          <div class="mobile-frame">
+            <iframe data-src="https://mh5.bl.com/bl-front-end/subpack/coffee/home" title="咖啡机" loading="lazy"></iframe>
           </div>
         </div>
+      </div>
+
+      <!-- 飞牛电影（内嵌 fnos 影视站 · 懒加载 + 离开自动释放） -->
+      <div id="pageFeiniu" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">🎬 飞牛电影</span>
+            <span class="page-bar-hint">进入才加载 · 离开 3 分钟自动释放内存 · 若显示拒绝/白屏点右侧新窗口打开</span>
+          </div>
+          <a class="open-new" href="https://askacwwkfnos.fnos.net/v" target="_blank" rel="noopener">新窗口打开 ↗</a>
+        </div>
+        <iframe class="page-iframe" data-src="https://askacwwkfnos.fnos.net/v" title="飞牛电影" loading="lazy"></iframe>
+      </div>
       </div>
 
       <!-- 便利贴（可拖动 / 增删改 / 多端同步） -->
@@ -660,6 +675,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260930a"></script>
+  <script src="script.js?v=20260930b"></script>
 </body>
 </html>
