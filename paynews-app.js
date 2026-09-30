@@ -2030,7 +2030,7 @@ function gomokuBackLobby() {
 // ===== 悬浮评论窗 =====
 // anchor：传入触发按钮时，浮窗贴着该按钮下方展开（「行业评论」行右上角的「发布新闻」按钮）；
 //         不传时恢复右下角悬浮（传统的圆形按钮）。两种入口共用同一套输入能力。
-function toggleCommentPanel(anchor) {
+function toggleCommentPanel(anchor, modal) {
   const panel = document.getElementById('comment-panel');
   const fab = document.getElementById('comment-fab');
   const iconEdit = document.getElementById('fab-icon-edit');
@@ -2041,6 +2041,7 @@ function toggleCommentPanel(anchor) {
   if (isOpen) {
     panel.classList.remove('open');
     panel.classList.remove('anchored');
+    panel.classList.remove('modal');
     panel.style.top = '';
     fab.classList.remove('open');
     iconEdit.style.display = '';
@@ -2049,12 +2050,14 @@ function toggleCommentPanel(anchor) {
     if (activePageInner) activePageInner.classList.remove('has-comment-panel');
   } else {
     panel.classList.add('open');
-    _anchorCommentPanel(panel, anchor);
+    // 模态模式：悬停式发布面板改为视口居中浮层，不在当前页面内锚定、也不下推内容
+    if (modal) panel.classList.add('modal'); else panel.classList.remove('modal');
+    _anchorCommentPanel(panel, modal ? null : anchor);
     fab.classList.add('open');
     iconEdit.style.display = 'none';
     iconClose.style.display = '';
     fab.title = '收起';
-    if (activePageInner) activePageInner.classList.add('has-comment-panel');
+    if (!modal && activePageInner) activePageInner.classList.add('has-comment-panel');
     // 聚焦到输入框
     setTimeout(() => { const ta = document.getElementById('msg-text'); if(ta) ta.focus(); }, 200);
   }
@@ -3029,6 +3032,16 @@ setInterval(async () => {
   if (typeof removePendingVideo === 'function') window.removePendingVideo = removePendingVideo;
   if (typeof showOverlay === 'function') window.showOverlay = showOverlay;
   if (typeof toggleCommentPanel === 'function') window.toggleCommentPanel = toggleCommentPanel;
+
+  // 模态遮罩：点击空白区域关闭发布面板（仅模态模式下生效）
+  const _backdrop = document.getElementById('comment-backdrop');
+  if (_backdrop && !_backdrop._wired) {
+    _backdrop._wired = true;
+    _backdrop.addEventListener('click', () => {
+      const p = document.getElementById('comment-panel');
+      if (p && p.classList.contains('open') && p.classList.contains('modal')) toggleCommentPanel();
+    });
+  }
   if (typeof toggleImg === 'function') window.toggleImg = toggleImg;
   if (typeof toggleVideo === 'function') window.toggleVideo = toggleVideo;
   if (typeof toggleWalkieSub === 'function') window.toggleWalkieSub = toggleWalkieSub;

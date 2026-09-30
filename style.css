@@ -1316,6 +1316,16 @@ html.pn-fs .topbar { display: none; }
 .infinite-del:hover { color: #ff6b5b; }
 .infinite-tip { margin: 0; font-size: 10.5px; color: var(--text-faint); line-height: 1.4; }
 
+/* 随手笔记卡片标题里的笔记本图标：长按 2 秒看支付新闻全部消息 */
+.note-ico {
+  display: inline-block;
+  cursor: pointer;
+  touch-action: none;            /* 移动端长按不触发滚动/选择 */
+  -webkit-user-select: none; user-select: none;
+  transition: transform 0.15s ease;
+}
+.note-ico:active { transform: scale(0.88); }
+
 /* ===== 随手笔记「记录」按钮（仅支付新闻登录时由 JS 显示） ===== */
 .note-actions { margin-left: auto; }
 #pnRecordBtn { color: var(--accent); border-color: var(--accent-dim); }

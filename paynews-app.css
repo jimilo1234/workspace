@@ -829,6 +829,21 @@ html.light .guest-id.broadcasting { color: #222; }
   transition: opacity 0.2s, transform 0.2s;
 }
 .comment-panel.open { display: flex; }
+/* 模态模式：居中浮层 + 遮罩（遮罩显隐由 .comment-panel.modal.open 兄弟选择器联动） */
+.comment-backdrop {
+  position: fixed; inset: 0; z-index: 9990;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+}
+.comment-panel.modal.open ~ .comment-backdrop { display: block; }
+.comment-panel.modal {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  right: auto; bottom: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  z-index: 9991;
+}
 /* 面板打开时，内容区增加底部留白，让内容上移 */
 .page-inner.has-comment-panel { padding-bottom: 380px !important; }
 /* comment-panel-title removed */
@@ -1288,4 +1303,14 @@ html.light .guest-id.broadcasting { color: #222; }
    浮窗改为贴着按钮所在行的下方展开（top 由 JS 写入），不再钉在右下角。 */
 :host .comment-panel.anchored {
   bottom: auto !important;
+}
+/* 工作台「记录」按钮触发时：复用同一发布面板，改为视口居中的模态浮层 */
+:host .comment-panel.modal {
+  position: fixed !important;
+  top: 50% !important; left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  right: auto !important; bottom: auto !important;
+  width: min(460px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 64px) !important;
+  z-index: 9991 !important;
 }

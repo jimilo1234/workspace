@@ -2250,7 +2250,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260930c";
+const PAYNEWS_VER = "20260930e";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3386,17 +3386,17 @@ function infStopRec(silent) {
 window.__infiniteRefresh = infRefresh;
 
 /* =====================================================================
-   支付新闻 · 工作台集成增强（长按看消息 / 记录按钮）
+   支付新闻 · 工作台集成增强
    - 登录态：localStorage.paynews_session（同域共享）+ paynews 登录/登出 postMessage
-   - 记录按钮：仅登录可见，点击调起 paynews 发布面板（toggleCommentPanel），发布逻辑不变
-   - 长按新闻标题 2 秒：弹出消息墙（所有消息），松手即消失；仅登录时触发
+   - 记录按钮：仅登录可见，点击以「模态弹窗」调起 paynews 发布面板（toggleCommentPanel(modal)），点空白关闭，发布/标记逻辑不变
+   - 长按「随手笔记」笔记本图标 2 秒：弹出消息墙（所有消息），松手即消失；仅登录时触发
    ===================================================================== */
 (function initPaynewsWorkbench() {
   const recordBtn = document.getElementById('pnRecordBtn');
-  const newsTitle = document.getElementById('pnNewsTitle');
+  const noteIco = document.getElementById('noteIco');
   const msgWall = document.getElementById('pnMsgWall');
   const msgList = document.getElementById('pnMsgWallList');
-  if (!recordBtn || !newsTitle || !msgWall || !msgList) return;
+  if (!recordBtn || !noteIco || !msgWall || !msgList) return;
 
   function isPaynewsLoggedIn() { return !!localStorage.getItem('paynews_session'); }
   function showRecordBtn() { recordBtn.style.display = ''; }
@@ -3412,12 +3412,12 @@ window.__infiniteRefresh = infRefresh;
     else if (t === 'paynews-session-invalid') hideRecordBtn();
   });
 
-  // 「记录」按钮 → 调起 paynews 发布面板（标记/发布逻辑不变）
+  // 「记录」按钮 → 以模态弹窗调起 paynews 发布面板（标记/发布逻辑不变）
   recordBtn.addEventListener('click', () => {
-    if (typeof window.toggleCommentPanel === 'function') window.toggleCommentPanel();
+    if (typeof window.toggleCommentPanel === 'function') window.toggleCommentPanel(null, true);
   });
 
-  // ---------- 长按标题看全部消息（press-to-peek） ----------
+  // ---------- 长按「随手笔记」笔记本图标 2 秒看全部消息（press-to-peek） ----------
   let pressTimer = null;
   let wallShown = false;
 
@@ -3463,12 +3463,12 @@ window.__infiniteRefresh = infRefresh;
     if (wallShown || !msgWall.hidden) { msgWall.hidden = true; wallShown = false; }
   }
 
-  newsTitle.addEventListener('pointerdown', (e) => {
+  noteIco.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
     pressTimer = setTimeout(showMsgWall, 2000);  // 按住 2 秒弹出
   });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) =>
-    newsTitle.addEventListener(ev, hideMsgWall)
+    noteIco.addEventListener(ev, hideMsgWall)
   );
 })();
