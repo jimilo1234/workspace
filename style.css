@@ -1316,6 +1316,13 @@ html.pn-fs .topbar { display: none; }
 .infinite-del:hover { color: #ff6b5b; }
 .infinite-tip { margin: 0; font-size: 10.5px; color: var(--text-faint); line-height: 1.4; }
 
+/* 支付新闻发布面板的「顶层传送门」：承载被移出新闻卡的发布弹窗。
+   必须高于主文档遮罩 #pnModalBackdrop(9990)，否则弹窗会被遮罩压住/闪烁。
+   pointer-events:none —— 只有内部面板可点，其余区域让点击落到遮罩上（点空白关闭）。 */
+#pnPortalHost {
+  position: fixed; inset: 0; z-index: 9995; pointer-events: none;
+}
+
 /* 随手笔记卡片标题里的笔记本图标：长按 2 秒看支付新闻全部消息 */
 .note-ico {
   display: inline-block;

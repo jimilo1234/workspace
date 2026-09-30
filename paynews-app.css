@@ -829,13 +829,7 @@ html.light .guest-id.broadcasting { color: #222; }
   transition: opacity 0.2s, transform 0.2s;
 }
 .comment-panel.open { display: flex; }
-/* 模态模式：居中浮层 + 遮罩（遮罩显隐由 .comment-panel.modal.open 兄弟选择器联动） */
-.comment-backdrop {
-  position: fixed; inset: 0; z-index: 9990;
-  background: rgba(0, 0, 0, 0.5);
-  display: none;
-}
-.comment-panel.modal.open ~ .comment-backdrop { display: block; }
+/* 模态模式：居中浮层（遮罩改为主文档级别的 #pnModalBackdrop，见 paynews-app.js） */
 .comment-panel.modal {
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);

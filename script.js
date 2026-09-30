@@ -2250,7 +2250,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260930e";
+const PAYNEWS_VER = "20260930h";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -2263,6 +2263,29 @@ function _pnLoadScript(src) {
   });
 }
 
+// 主文档级「弹窗传送门」
+// 目的：paynews 的发布面板若留在新闻卡里，会被困在 MAIN.grid 的堆叠上下文中
+//       （MAIN.grid 有 z-index:1，任何内部 fixed 元素都无法盖过主文档级的遮罩），
+//       表现为弹窗被半透明遮罩压住、错位、反复闪烁、点不到。
+// 做法：在主文档 body 上挂一个顶层 portal（position:fixed / z-index:9995），
+//       把 #comment-panel 挪进去；portal 内复制一份 paynews 的样式，保证外观一致。
+let _pnPortalSR = null;
+function _pnCreatePortal(css) {
+  try {
+    if (document.getElementById("pnPortalHost")) return;
+    const host = document.createElement("div");
+    host.id = "pnPortalHost";
+    host.setAttribute("data-paynews-theme", state.theme === "light" ? "light" : "dark");
+    document.body.appendChild(host);
+    const psr = host.attachShadow({ mode: "open" });
+    psr.innerHTML = "<style>" + css
+      + "\n:host{background:transparent !important;}"
+      + "\n#comment-panel{pointer-events:auto;}\n</style>";
+    _pnPortalSR = psr;
+    window.__pnPortalSR = psr;
+  } catch (e) { console.warn("[paynews-embed] portal:", e); }
+}
+
 // 把 shadowRoot 包装成 paynews 脚本可用的受限 document（屏蔽 location 跳转 / service worker）
 function _pnShadowDoc(sr) {
   const real = document;
@@ -2270,6 +2293,15 @@ function _pnShadowDoc(sr) {
   const crt = ["createElement","createElementNS","createTextNode","importNode","createComment"];
   return new Proxy(sr, {
     get(t, p) {
+      // 面板被传送到主文档 portal 后仍在 paynews 的「文档视野」内：先查 shadow，再查 portal
+      if (p === "getElementById") {
+        return function (id) {
+          const el = t.getElementById ? t.getElementById(id) : null;
+          if (el) return el;
+          try { return (_pnPortalSR && _pnPortalSR.getElementById) ? _pnPortalSR.getElementById(id) : null; }
+          catch (e) { return null; }
+        };
+      }
       if (fwd.includes(p)) return t[p] ? t[p].bind(t) : undefined;
       if (crt.includes(p)) return real[p].bind(real);
       if (p === "body") return t;
@@ -2323,6 +2355,7 @@ async function mountPaynews(host) {
       window.supabase ? Promise.resolve() : _pnLoadScript("supabase-umd.js?v=" + PAYNEWS_VER),
     ]);
     sr.innerHTML = "<style>" + css + "</style>" + html;
+    _pnCreatePortal(css);   // 顶层传送门：承接被挪出卡片的发布面板
     const runner = new Function("document", "navigator", "location", js);
     runner(_pnShadowDoc(sr), _pnNavShim(), _pnLocShim());
     try { sr.dispatchEvent(new Event("DOMContentLoaded")); } catch (e) { console.warn("[paynews-embed] DCL:", e); }
@@ -2334,9 +2367,11 @@ async function mountPaynews(host) {
 
 // 同步嵌入的 paynews 主题到工作台当前主题
 function _pnSyncTheme() {
+  const theme = state.theme === "light" ? "light" : "dark";
   const host = document.getElementById("paynewsHost");
-  if (!host) return;
-  host.setAttribute("data-paynews-theme", state.theme === "light" ? "light" : "dark");
+  if (host) host.setAttribute("data-paynews-theme", theme);
+  const portal = document.getElementById("pnPortalHost");
+  if (portal) portal.setAttribute("data-paynews-theme", theme);
 }
 
 function ensurePaynewsMounted() {
