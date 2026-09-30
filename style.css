@@ -1424,11 +1424,14 @@ html.pn-fs .topbar { display: none; }
 }
 .pn-record-send:disabled { opacity: 0.6; cursor: default; }
 
-/* 「随手笔记」标题：长按 2 秒查看已发布的新闻记录（松手即关） */
+/* 「随手笔记」标题栏 = 长按 2 秒查看已发布新闻记录的热区（松手即关）
+   整条标题栏都可按（右侧「记录」按钮除外），不必精确点到文字上。 */
+#noteHead { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#noteHead:hover .note-title { color: var(--accent); }
 .note-title {
-  cursor: pointer;
-  touch-action: none;                       /* 移动端长按不触发滚动 */
+  touch-action: none;                       /* 移动端长按标题不触发页面滚动 */
   user-select: none; -webkit-user-select: none;
+  transition: color 0.15s ease;
 }
 @media (max-width: 640px) {
   .pn-record-mask { padding: 12px; align-items: flex-end; }

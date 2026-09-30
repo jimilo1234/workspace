@@ -3661,11 +3661,15 @@ window.__infiniteRefresh = infRefresh;
     }, { passive: false });
   }
 
-  /* 长按「📝 随手笔记」标题 2 秒 → 显示已发布的新闻记录，松手即消失 */
+  /* 长按「📝 随手笔记」标题栏 2 秒 → 显示已发布的新闻记录，松手即消失
+     热区是整个标题栏（含标题右侧空白），不必精确点到文字；右侧「记录」按钮除外。 */
+  const noteHead = document.getElementById('noteHead');
   const noteTitle = document.getElementById('noteTitle');
-  if (noteTitle) {
+  const holdZone = noteHead || noteTitle;
+  if (holdZone) {
     let holdTimer = null;
     function startHold(e) {
+      if (e && e.target && e.target.closest && e.target.closest('#pnRecordBtn')) return;  // 按「记录」按钮不触发长按
       if (!isPaynewsLoggedIn()) return;          // 仅登录态可看
       if (e) e.preventDefault();
       peekHeld = true;
@@ -3679,13 +3683,13 @@ window.__infiniteRefresh = infRefresh;
       holdTimer = null;
       hideMsgWall();                              // 松手 / 失焦即收起
     }
-    noteTitle.addEventListener('pointerdown', startHold);
+    holdZone.addEventListener('pointerdown', startHold);
     // 收尾统一挂在 document 上：手指/鼠标可能移到浮层上方再松开，
     // 只监听标题自身的 pointerleave 会被浮层抢走命中导致误关。
     ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, endHold));
     ['touchend', 'touchcancel'].forEach((ev) => document.addEventListener(ev, endHold, { passive: true }));
     window.addEventListener('blur', endHold);    // 切走窗口也收起
-    noteTitle.addEventListener('contextmenu', (e) => e.preventDefault());   // 屏蔽长按弹出的系统菜单
+    holdZone.addEventListener('contextmenu', (e) => e.preventDefault());   // 屏蔽长按弹出的系统菜单
   }
 
   // 点浮层任意处立即关闭
