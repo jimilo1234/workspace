@@ -696,6 +696,8 @@ async function doLogin() {
     subscribeMessageChanges();
     // 登录后订阅 Web Push（申请权限 + 保存订阅），之后发布即推送系统通知
     ensurePushSubscribed();
+    // 通知外层工作台：支付新闻已登录（用于显示「记录」按钮、启用长按看消息）
+    try { window.parent.postMessage({ type: 'paynews-login' }, '*'); } catch (e) {}
 
     // 0110账号登录满2小时自动退出
     if (account === '0110') {

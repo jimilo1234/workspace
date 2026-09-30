@@ -2250,7 +2250,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260928b";
+const PAYNEWS_VER = "20260930c";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3384,3 +3384,91 @@ function infStopRec(silent) {
 
 /* 供 enterWorkbench 在登录后触发一次刷新 */
 window.__infiniteRefresh = infRefresh;
+
+/* =====================================================================
+   支付新闻 · 工作台集成增强（长按看消息 / 记录按钮）
+   - 登录态：localStorage.paynews_session（同域共享）+ paynews 登录/登出 postMessage
+   - 记录按钮：仅登录可见，点击调起 paynews 发布面板（toggleCommentPanel），发布逻辑不变
+   - 长按新闻标题 2 秒：弹出消息墙（所有消息），松手即消失；仅登录时触发
+   ===================================================================== */
+(function initPaynewsWorkbench() {
+  const recordBtn = document.getElementById('pnRecordBtn');
+  const newsTitle = document.getElementById('pnNewsTitle');
+  const msgWall = document.getElementById('pnMsgWall');
+  const msgList = document.getElementById('pnMsgWallList');
+  if (!recordBtn || !newsTitle || !msgWall || !msgList) return;
+
+  function isPaynewsLoggedIn() { return !!localStorage.getItem('paynews_session'); }
+  function showRecordBtn() { recordBtn.style.display = ''; }
+  function hideRecordBtn() { recordBtn.style.display = 'none'; }
+
+  // 初始按当前 session 决定记录按钮显隐
+  if (isPaynewsLoggedIn()) showRecordBtn(); else hideRecordBtn();
+
+  // 监听 paynews 登录/登出对外通知
+  window.addEventListener('message', (e) => {
+    const t = e.data && e.data.type;
+    if (t === 'paynews-login') showRecordBtn();
+    else if (t === 'paynews-session-invalid') hideRecordBtn();
+  });
+
+  // 「记录」按钮 → 调起 paynews 发布面板（标记/发布逻辑不变）
+  recordBtn.addEventListener('click', () => {
+    if (typeof window.toggleCommentPanel === 'function') window.toggleCommentPanel();
+  });
+
+  // ---------- 长按标题看全部消息（press-to-peek） ----------
+  let pressTimer = null;
+  let wallShown = false;
+
+  function renderMsgWall(list) {
+    if (!list || list.length === 0) {
+      msgList.innerHTML = '<div class="pn-msg-empty">暂无消息</div>';
+      return;
+    }
+    msgList.innerHTML = list.map((m) => {
+      const author = infEsc(m.display_name || m.username || '匿名');
+      const time = infTime(m.created_at);
+      let media = '';
+      if (m.image_url) media += '<div class="pn-msg-media"><img src="' + infEsc(m.image_url) + '" alt="图片" loading="lazy"></div>';
+      if (m.video_url) media += '<div class="pn-msg-tag">🎬 视频消息</div>';
+      if (m.audio_url) media += '<div class="pn-msg-tag">🎙 语音消息</div>';
+      const text = infEsc(m.text || '');
+      return '<div class="pn-msg-item">'
+        + '<div class="pn-msg-meta"><span class="pn-msg-author">' + author + '</span><span>' + time + '</span></div>'
+        + (text ? '<div class="pn-msg-text">' + text + '</div>' : '')
+        + media + '</div>';
+    }).join('');
+  }
+
+  function showMsgWall() {
+    const url = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
+    fetch(url, { headers: INF_JSON }).then((res) => {
+      if (!res.ok) throw new Error('load messages ' + res.status);
+      return res.json();
+    }).then((list) => {
+      renderMsgWall(list);
+      msgWall.hidden = false;
+      wallShown = true;
+    }).catch((err) => {
+      console.warn('[消息墙] 加载失败:', err);
+      msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>';
+      msgWall.hidden = false;
+      wallShown = true;
+    });
+  }
+
+  function hideMsgWall() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (wallShown || !msgWall.hidden) { msgWall.hidden = true; wallShown = false; }
+  }
+
+  newsTitle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
+    pressTimer = setTimeout(showMsgWall, 2000);  // 按住 2 秒弹出
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) =>
+    newsTitle.addEventListener(ev, hideMsgWall)
+  );
+})();
