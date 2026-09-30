@@ -2250,7 +2250,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20260930h";
+const PAYNEWS_VER = "20260930i";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -2263,29 +2263,6 @@ function _pnLoadScript(src) {
   });
 }
 
-// 主文档级「弹窗传送门」
-// 目的：paynews 的发布面板若留在新闻卡里，会被困在 MAIN.grid 的堆叠上下文中
-//       （MAIN.grid 有 z-index:1，任何内部 fixed 元素都无法盖过主文档级的遮罩），
-//       表现为弹窗被半透明遮罩压住、错位、反复闪烁、点不到。
-// 做法：在主文档 body 上挂一个顶层 portal（position:fixed / z-index:9995），
-//       把 #comment-panel 挪进去；portal 内复制一份 paynews 的样式，保证外观一致。
-let _pnPortalSR = null;
-function _pnCreatePortal(css) {
-  try {
-    if (document.getElementById("pnPortalHost")) return;
-    const host = document.createElement("div");
-    host.id = "pnPortalHost";
-    host.setAttribute("data-paynews-theme", state.theme === "light" ? "light" : "dark");
-    document.body.appendChild(host);
-    const psr = host.attachShadow({ mode: "open" });
-    psr.innerHTML = "<style>" + css
-      + "\n:host{background:transparent !important;}"
-      + "\n#comment-panel{pointer-events:auto;}\n</style>";
-    _pnPortalSR = psr;
-    window.__pnPortalSR = psr;
-  } catch (e) { console.warn("[paynews-embed] portal:", e); }
-}
-
 // 把 shadowRoot 包装成 paynews 脚本可用的受限 document（屏蔽 location 跳转 / service worker）
 function _pnShadowDoc(sr) {
   const real = document;
@@ -2293,15 +2270,6 @@ function _pnShadowDoc(sr) {
   const crt = ["createElement","createElementNS","createTextNode","importNode","createComment"];
   return new Proxy(sr, {
     get(t, p) {
-      // 面板被传送到主文档 portal 后仍在 paynews 的「文档视野」内：先查 shadow，再查 portal
-      if (p === "getElementById") {
-        return function (id) {
-          const el = t.getElementById ? t.getElementById(id) : null;
-          if (el) return el;
-          try { return (_pnPortalSR && _pnPortalSR.getElementById) ? _pnPortalSR.getElementById(id) : null; }
-          catch (e) { return null; }
-        };
-      }
       if (fwd.includes(p)) return t[p] ? t[p].bind(t) : undefined;
       if (crt.includes(p)) return real[p].bind(real);
       if (p === "body") return t;
@@ -2355,7 +2323,6 @@ async function mountPaynews(host) {
       window.supabase ? Promise.resolve() : _pnLoadScript("supabase-umd.js?v=" + PAYNEWS_VER),
     ]);
     sr.innerHTML = "<style>" + css + "</style>" + html;
-    _pnCreatePortal(css);   // 顶层传送门：承接被挪出卡片的发布面板
     const runner = new Function("document", "navigator", "location", js);
     runner(_pnShadowDoc(sr), _pnNavShim(), _pnLocShim());
     try { sr.dispatchEvent(new Event("DOMContentLoaded")); } catch (e) { console.warn("[paynews-embed] DCL:", e); }
@@ -2370,8 +2337,6 @@ function _pnSyncTheme() {
   const theme = state.theme === "light" ? "light" : "dark";
   const host = document.getElementById("paynewsHost");
   if (host) host.setAttribute("data-paynews-theme", theme);
-  const portal = document.getElementById("pnPortalHost");
-  if (portal) portal.setAttribute("data-paynews-theme", theme);
 }
 
 function ensurePaynewsMounted() {
@@ -3423,19 +3388,23 @@ window.__infiniteRefresh = infRefresh;
 /* =====================================================================
    支付新闻 · 工作台集成增强
    - 登录态：localStorage.paynews_session（同域共享）+ paynews 登录/登出 postMessage
-   - 记录按钮：仅登录可见，点击以「模态弹窗」调起 paynews 发布面板（toggleCommentPanel(modal)），点空白关闭，发布/标记逻辑不变
-   - 长按「随手笔记」笔记本图标 2 秒：弹出消息墙（所有消息），松手即消失；仅登录时触发
+   - 记录按钮：仅登录可见；点击打开「工作台自己的独立发布弹窗」——
+     DOM / 样式 / 事件全在主文档层，与新闻模块（Shadow DOM）彻底解耦，
+     不再复用 #comment-panel，因此不受新闻模块重绘 / 堆叠上下文影响。
+     发布调用 paynews 暴露的 window.paynewsPublish()：上传、入库、广播通知、
+     踢同账号其他端、Web Push 全部走 paynews 原生逻辑，结果完全一致。
+   - 双击「支付行业新闻」标题：弹出消息墙（所有消息），5 秒后自动消失
    ===================================================================== */
 (function initPaynewsWorkbench() {
   const recordBtn = document.getElementById('pnRecordBtn');
-  const noteIco = document.getElementById('noteIco');
+  const newsTitle = document.getElementById('pnNewsTitle');
   const msgWall = document.getElementById('pnMsgWall');
   const msgList = document.getElementById('pnMsgWallList');
-  if (!recordBtn || !noteIco || !msgWall || !msgList) return;
+  if (!msgWall || !msgList) return;
 
   function isPaynewsLoggedIn() { return !!localStorage.getItem('paynews_session'); }
-  function showRecordBtn() { recordBtn.style.display = ''; }
-  function hideRecordBtn() { recordBtn.style.display = 'none'; }
+  function showRecordBtn() { if (recordBtn) recordBtn.style.display = ''; }
+  function hideRecordBtn() { if (recordBtn) recordBtn.style.display = 'none'; }
 
   // 初始按当前 session 决定记录按钮显隐
   if (isPaynewsLoggedIn()) showRecordBtn(); else hideRecordBtn();
@@ -3444,17 +3413,157 @@ window.__infiniteRefresh = infRefresh;
   window.addEventListener('message', (e) => {
     const t = e.data && e.data.type;
     if (t === 'paynews-login') showRecordBtn();
-    else if (t === 'paynews-session-invalid') hideRecordBtn();
+    else if (t === 'paynews-session-invalid') { hideRecordBtn(); closeRecord(); }
   });
 
-  // 「记录」按钮 → 以模态弹窗调起 paynews 发布面板（标记/发布逻辑不变）
-  recordBtn.addEventListener('click', () => {
-    if (typeof window.toggleCommentPanel === 'function') window.toggleCommentPanel(null, true);
+  /* ---------- 独立的「记录」发布弹窗 ---------- */
+  const modal = document.getElementById('pnRecordModal');
+  const rText = document.getElementById('pnRecordText');
+  const rImg = document.getElementById('pnRecordImg');
+  const rVid = document.getElementById('pnRecordVid');
+  const rVoice = document.getElementById('pnRecordVoice');
+  const rPreview = document.getElementById('pnRecordPreview');
+  const rSend = document.getElementById('pnRecordSend');
+  const rTip = document.getElementById('pnRecordTip');
+  const rWho = document.getElementById('pnRecordWho');
+  const rClose = document.getElementById('pnRecordClose');
+
+  let pendingImage = null;   // { file, url }
+  let pendingVideo = null;   // { file }
+  let voiceBlob = null;
+  let rec = null;            // MediaRecorder
+  let recChunks = [];
+
+  function clearAttach() {
+    if (pendingImage && pendingImage.url) URL.revokeObjectURL(pendingImage.url);
+    pendingImage = null; pendingVideo = null; voiceBlob = null;
+    if (rImg) rImg.value = '';
+    if (rVid) rVid.value = '';
+    renderPreview();
+  }
+
+  function renderPreview() {
+    if (!rPreview) return;
+    let html = '';
+    if (pendingImage) {
+      html += '<span class="pn-record-chip"><img src="' + pendingImage.url + '" alt="">图片'
+        + '<span class="pn-chip-x" data-del="img">✕</span></span>';
+    }
+    if (pendingVideo) {
+      const isAudio = pendingVideo.file.type && pendingVideo.file.type.indexOf('audio/') === 0;
+      html += '<span class="pn-record-chip">' + (isAudio ? '🎵 ' : '🎬 ') + infEsc(pendingVideo.file.name)
+        + '<span class="pn-chip-x" data-del="vid">✕</span></span>';
+    }
+    if (voiceBlob) {
+      html += '<span class="pn-record-chip">🎙 录音' + (voiceBlob.size ? '（' + Math.round(voiceBlob.size / 1024) + 'KB）' : '')
+        + '<span class="pn-chip-x" data-del="voice">✕</span></span>';
+    }
+    rPreview.innerHTML = html;
+  }
+
+  function openRecord() {
+    if (!modal) return;
+    modal.hidden = false;
+    let who = null;
+    try { who = (typeof window.paynewsWhoami === 'function') ? window.paynewsWhoami() : null; } catch (e) {}
+    if (rWho) rWho.textContent = who ? ('以 ' + (who.displayName || who.username) + ' 身份发布') : '';
+    if (rTip) rTip.textContent = '';
+    setTimeout(() => { try { rText && rText.focus(); } catch (e) {} }, 80);
+  }
+  function closeRecord() {
+    if (!modal) return;
+    modal.hidden = true;
+    if (rTip) rTip.textContent = '';
+  }
+
+  if (recordBtn) recordBtn.addEventListener('click', openRecord);
+  if (rClose) rClose.addEventListener('click', closeRecord);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeRecord(); });  // 点空白关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && !modal.hidden) closeRecord();
   });
 
-  // ---------- 长按「随手笔记」笔记本图标 2 秒看全部消息（press-to-peek） ----------
-  let pressTimer = null;
-  let wallShown = false;
+  if (rImg) rImg.addEventListener('change', () => {
+    const f = rImg.files && rImg.files[0];
+    if (!f) return;
+    if (pendingImage && pendingImage.url) URL.revokeObjectURL(pendingImage.url);
+    pendingImage = { file: f, url: URL.createObjectURL(f) };
+    renderPreview();
+  });
+  if (rVid) rVid.addEventListener('change', () => {
+    const f = rVid.files && rVid.files[0];
+    if (!f) return;
+    pendingVideo = { file: f };
+    renderPreview();
+  });
+  if (rPreview) rPreview.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('[data-del]');
+    if (!t) return;
+    const k = t.getAttribute('data-del');
+    if (k === 'img') { if (pendingImage && pendingImage.url) URL.revokeObjectURL(pendingImage.url); pendingImage = null; if (rImg) rImg.value = ''; }
+    if (k === 'vid') { pendingVideo = null; if (rVid) rVid.value = ''; }
+    if (k === 'voice') { voiceBlob = null; }
+    renderPreview();
+  });
+
+  // 录音：点一次开始，再点一次结束
+  if (rVoice) rVoice.addEventListener('click', async () => {
+    if (rec && rec.state === 'recording') { try { rec.stop(); } catch (e) {} return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recChunks = [];
+      rec = new MediaRecorder(stream);
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+      rec.onstop = () => {
+        voiceBlob = new Blob(recChunks, { type: recChunks[0] ? recChunks[0].type : 'audio/webm' });
+        rec = null;
+        try { stream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+        rVoice.classList.remove('recording');
+        rVoice.textContent = '🎙 录音';
+        if (rTip) rTip.textContent = '录音已就绪';
+        renderPreview();
+      };
+      rec.start();
+      rVoice.classList.add('recording');
+      rVoice.textContent = '⏹ 停止';
+      if (rTip) rTip.textContent = '录音中…';
+    } catch (e) {
+      if (rTip) rTip.textContent = '无法录音：' + (e && e.message ? e.message : '权限被拒绝');
+    }
+  });
+
+  if (rSend) rSend.addEventListener('click', async () => {
+    const text = rText ? rText.value.trim() : '';
+    if (!text && !pendingImage && !pendingVideo && !voiceBlob) {
+      if (rTip) rTip.textContent = '请先输入内容或选择附件';
+      return;
+    }
+    if (typeof window.paynewsPublish !== 'function') {
+      if (rTip) rTip.textContent = '新闻模块尚未就绪，请稍后再试';
+      return;
+    }
+    rSend.disabled = true; rSend.textContent = '发布中…';
+    if (rTip) rTip.textContent = '';
+    try {
+      await window.paynewsPublish({
+        text: text,
+        imageFile: pendingImage ? pendingImage.file : null,
+        videoFile: pendingVideo ? pendingVideo.file : null,
+        voiceBlob: voiceBlob,
+      });
+      if (rTip) rTip.textContent = '已发布 ✓';
+      if (rText) rText.value = '';
+      clearAttach();
+      setTimeout(closeRecord, 700);
+    } catch (e) {
+      if (rTip) rTip.textContent = '发布失败：' + (e && e.message ? e.message : e);
+    } finally {
+      rSend.disabled = false; rSend.textContent = '发布新闻';
+    }
+  });
+
+  // ---------- 双击「支付行业新闻」标题看全部消息（5 秒自动关闭） ----------
+  let wallTimer = null;
 
   function renderMsgWall(list) {
     if (!list || list.length === 0) {
@@ -3484,26 +3593,44 @@ window.__infiniteRefresh = infRefresh;
     }).then((list) => {
       renderMsgWall(list);
       msgWall.hidden = false;
-      wallShown = true;
+      scheduleWallClose();          // 弹出后 5 秒自动消失
     }).catch((err) => {
       console.warn('[消息墙] 加载失败:', err);
       msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>';
       msgWall.hidden = false;
-      wallShown = true;
+      scheduleWallClose();
     });
   }
 
-  function hideMsgWall() {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    if (wallShown || !msgWall.hidden) { msgWall.hidden = true; wallShown = false; }
+  function scheduleWallClose() {
+    clearTimeout(wallTimer);
+    wallTimer = setTimeout(hideMsgWall, 5000);   // 展示 5 秒
   }
 
-  noteIco.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
+  function hideMsgWall() {
+    clearTimeout(wallTimer);
+    wallTimer = null;
+    msgWall.hidden = true;
+  }
+
+  function peekMsgWall() {
     if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
-    pressTimer = setTimeout(showMsgWall, 2000);  // 按住 2 秒弹出
-  });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) =>
-    noteIco.addEventListener(ev, hideMsgWall)
-  );
+    showMsgWall();
+  }
+
+  // 双击标题（PC）
+  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => { e.preventDefault(); peekMsgWall(); });
+
+  // 移动端双击：dbclick 在触屏上不可靠，手动识别两次快速轻点
+  if (newsTitle) {
+    let lastTap = 0;
+    newsTitle.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTap < 400) { lastTap = 0; e.preventDefault(); peekMsgWall(); }
+      else lastTap = now;
+    }, { passive: false });
+  }
+
+  // 点消息墙任意处立即关闭
+  msgWall.addEventListener('click', hideMsgWall);
 })();

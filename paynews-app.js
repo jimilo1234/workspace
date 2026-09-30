@@ -2030,24 +2030,8 @@ function gomokuBackLobby() {
 // ===== 悬浮评论窗 =====
 // anchor：传入触发按钮时，浮窗贴着该按钮下方展开（「行业评论」行右上角的「发布新闻」按钮）；
 //         不传时恢复右下角悬浮（传统的圆形按钮）。两种入口共用同一套输入能力。
-// 工作台级「模态遮罩」：放在真实 document.body 上（不是 shadow 内）。
-// 原因：发布面板在 shadow 树里，配合 shadow 内的遮罩时，固定定位无法可靠铺满视口，
-//       点空白也无法命中遮罩。放到主文档后，遮罩能稳定盖住整屏并可靠接收点击。
-function _pnModalBackdrop() {
-  const doc = window.document;                 // 真实主文档（shadow 内 document 被代理，必须用 window.document）
-  let bd = doc.getElementById('pnModalBackdrop');
-  if (!bd) {
-    bd = doc.createElement('div');
-    bd.id = 'pnModalBackdrop';
-    bd.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:9990;background:rgba(0,0,0,0.5);display:none;';
-    bd.addEventListener('click', function () { toggleCommentPanel(); });   // 点空白 → 关闭
-    (doc.body || doc.documentElement).appendChild(bd);
-  }
-  return bd;
-}
-
-function toggleCommentPanel(anchor, modal) {
-  const panel = _pnPortalPanel() || document.getElementById('comment-panel');
+function toggleCommentPanel(anchor) {
+  const panel = document.getElementById('comment-panel');
   const fab = document.getElementById('comment-fab');
   const iconEdit = document.getElementById('fab-icon-edit');
   const iconClose = document.getElementById('fab-icon-close');
@@ -2057,50 +2041,48 @@ function toggleCommentPanel(anchor, modal) {
   if (isOpen) {
     panel.classList.remove('open');
     panel.classList.remove('anchored');
-    panel.classList.remove('modal');
     panel.style.top = '';
     fab.classList.remove('open');
     iconEdit.style.display = '';
     iconClose.style.display = 'none';
     fab.title = '我要评论';
     if (activePageInner) activePageInner.classList.remove('has-comment-panel');
-    try { _pnModalBackdrop().style.display = 'none'; } catch (e) {}
   } else {
     panel.classList.add('open');
-    // 模态模式：悬停式发布面板改为视口居中浮层，不在当前页面内锚定、也不下推内容
-    if (modal) panel.classList.add('modal'); else panel.classList.remove('modal');
-    _anchorCommentPanel(panel, modal ? null : anchor);
+    _anchorCommentPanel(panel, anchor);
     fab.classList.add('open');
     iconEdit.style.display = 'none';
     iconClose.style.display = '';
     fab.title = '收起';
-    if (!modal && activePageInner) activePageInner.classList.add('has-comment-panel');
-    // 模态模式 → 显示主文档级遮罩；非模态（FAB）不显示
-    try { _pnModalBackdrop().style.display = modal ? 'block' : 'none'; } catch (e) {}
+    if (activePageInner) activePageInner.classList.add('has-comment-panel');
     // 聚焦到输入框
     setTimeout(() => { const ta = document.getElementById('msg-text'); if(ta) ta.focus(); }, 200);
   }
 }
 
-// 把浮窗锚定到触发按钮的正下方；空间不足时上移，避免溢出视口。
-// 面板现已位于主文档顶层 portal，是相对视口定位的 fixed 元素，故直接用视口坐标。
+// 把浮窗锚定到触发按钮的正下方；空间不足时上移，避免溢出可滚动容器。
+// 定位容器是 #paynewsHost（position:relative + overflow-y:auto），内容坐标系需叠加 scrollTop。
 function _anchorCommentPanel(panel, btn) {
   if (!btn) {                      // 无锚点 → 回到右下角悬浮，交给 CSS 默认位置
     panel.classList.remove('anchored');
     panel.style.top = '';
     return;
   }
+  const parent = panel.offsetParent || panel.parentElement;
+  if (!parent) return;
+  const pr = parent.getBoundingClientRect();
   const br = btn.getBoundingClientRect();
-  let top = br.bottom + 8;
+  const scrollTop = parent.scrollTop || 0;
+  let top = br.bottom - pr.top + scrollTop + 8;
   panel.classList.add('anchored');
   panel.style.top = top + 'px';
   // 打开后再测真实高度，必要时整体上移
   requestAnimationFrame(() => {
     if (!panel.classList.contains('open')) return;
     const h = panel.offsetHeight;
-    const limit = window.innerHeight - 8;
+    const limit = scrollTop + pr.height - 8;
     if (top + h > limit) {
-      panel.style.top = Math.max(8, limit - h) + 'px';
+      panel.style.top = Math.max(scrollTop + 8, limit - h) + 'px';
     }
   });
 }
@@ -3056,43 +3038,43 @@ setInterval(async () => {
 } catch(e){ console.warn("[paynews-embed] expose handlers:", e); }
 
 /* =====================================================================
-   把「发布面板」传送到主文档顶层的 portal（#pnPortalHost）
-   两层原因，缺一不可：
-   1) #comment-panel 原本嵌在 #member-page > .page-inner 内，而 #member-page 非激活时是
-      display:none —— 祖先 display:none 会让任何后代（即使 position:fixed 的模态）都不渲染。
-   2) 即便提到 shadow 根，它仍被关在新闻卡所在的 MAIN.grid（z-index:1，创建堆叠上下文）里，
-      主文档级遮罩永远盖在它上面 → 弹窗被压住、错位、闪烁、点不到。
-   处理：把面板移入主文档 body 上的 #pnPortalHost（position:fixed / z-index:9995），
-        portal 内已复制一份本文件样式，外观与原来完全一致，发布逻辑零改动。
-        (#comment-fab 保持在会员页内，避免在其它页面/新闻卡上多出一个按钮；
-         遮罩为主文档级的 #pnModalBackdrop，z-index 9990，位于 portal 之下)
+   对外发布 API：供工作台「记录」弹窗调用（纯逻辑，不碰 #comment-panel 任何 DOM）
+   工作台的独立弹窗负责收集内容（文本 / 图片 / 视频 / 语音），
+   发布、广播通知、踢同账号其他端、Web Push 全部复用本文件的同一套函数，
+   所以「记录」发布出的内容与新闻模块内发布完全一致。
    ===================================================================== */
-function _pnPortalPanel() {
-  try {
-    var panel = document.getElementById('comment-panel');
-    if (!panel) return null;
-    var psr = window.__pnPortalSR;                     // 由工作台 mountPaynews 创建
-    if (!psr) {
-      var root = panel.getRootNode();                  // 降级：至少提到 shadow 根
-      if (root && root.host && panel.parentNode !== root) root.appendChild(panel);
-      return panel;
-    }
-    if (panel.parentNode !== psr && panel.getRootNode() !== psr) psr.appendChild(panel);
-    return panel;
-  } catch (e) { console.warn('[paynews] portal comment panel:', e); return null; }
-}
-(function hoistCommentPanel(){ _pnPortalPanel(); })();
+window.paynewsPublish = async function (payload) {
+  const p = payload || {};
+  if (!currentUser) throw new Error('支付新闻未登录');
+  const text = (p.text || '').trim();
+  if (!text && !p.imageFile && !p.videoFile && !p.voiceBlob) throw new Error('请先输入内容');
 
-/* 面板在任何途径关闭后（发送/关闭按钮/遮罩），同步隐藏主文档遮罩 */
-(function syncModalBackdrop(){
+  let imageUrl = null, audioUrl = null, videoUrl = null;
+  if (p.imageFile) imageUrl = await uploadImage(p.imageFile, currentUser.username);
+  if (p.videoFile) {
+    if (p.videoFile.type && p.videoFile.type.indexOf('audio/') === 0) {
+      audioUrl = await uploadAudio(p.videoFile, currentUser.username);
+    } else {
+      videoUrl = await uploadVideo(p.videoFile, currentUser.username);
+    }
+  }
+  if (p.voiceBlob) audioUrl = await uploadAudio(p.voiceBlob, currentUser.username);
+
+  await sendMessage(currentUser.username, currentUser.displayName, text, imageUrl, audioUrl, videoUrl);
+
+  try { notifyNewMessage(currentUser.username, currentUser.displayName, text, !!audioUrl, !!imageUrl); } catch (e) {}
+  try { kickOtherSessionsOnPublish(); } catch (e) {}
   try {
-    var panel = document.getElementById('comment-panel');
-    if (!panel || typeof MutationObserver !== 'function') return;
-    new MutationObserver(function(){
-      if (!(panel.classList.contains('open') && panel.classList.contains('modal'))) {
-        var bd = window.document.getElementById('pnModalBackdrop');
-        if (bd) bd.style.display = 'none';
-      }
-    }).observe(panel, { attributes: true, attributeFilter: ['class'] });
+    triggerWebPush(
+      currentUser.displayName || currentUser.username,
+      text || (audioUrl ? '[语音]' : (imageUrl ? '[图片]' : '新消息'))
+    );
   } catch (e) {}
-})();
+
+  return true;
+};
+
+/* 当前登录者（供工作台显示「以 xxx 身份发布」） */
+window.paynewsWhoami = function () {
+  return currentUser ? { username: currentUser.username, displayName: currentUser.displayName } : null;
+};

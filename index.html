@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260930h" />
+  <link rel="stylesheet" href="style.css?v=20260930i" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -246,7 +246,7 @@
           <!-- 笔记 / 新闻 合并切换卡片 -->
           <section class="card note-card" data-module="notes">
             <div class="card-head">
-              <h2><span id="noteIco" class="note-ico" title="长按 2 秒查看支付新闻全部消息">📝</span> 随手笔记</h2>
+              <h2><span class="note-ico">📝</span> 随手笔记</h2>
               <div class="link-actions note-actions">
                 <button id="pnRecordBtn" class="text-btn" type="button" style="display:none">📝 记录</button>
               </div>
@@ -263,7 +263,7 @@
           <!-- 新闻（原生嵌入 paynews 应用，非 iframe） -->
           <section class="card news-card" data-module="news">
             <div class="card-head">
-              <h2 id="pnNewsTitle">📰 支付行业新闻</h2>
+              <h2 id="pnNewsTitle" title="登录支付新闻后，双击此处查看全部消息">📰 支付行业新闻</h2>
               <div class="link-actions news-actions">
                 <button id="pnFsEnter" class="text-btn" type="button">⛶ 全屏</button>
                 <button id="pnFsExit" class="text-btn" type="button" style="display:none">✕ 退出全屏</button>
@@ -662,14 +662,41 @@
     </div>
   </div>
 
-  <!-- 支付新闻 · 长按标题弹出的消息墙覆盖层（松手即消失） -->
+  <!-- 支付新闻 · 双击新闻标题弹出的消息墙（5 秒后自动消失，点击可立即关闭） -->
   <div id="pnMsgWall" class="pn-msg-wall" hidden>
     <div class="pn-msg-wall-inner">
-      <div class="pn-msg-wall-head"><span>所有消息</span><span class="pn-msg-wall-hint">松手关闭</span></div>
+      <div class="pn-msg-wall-head"><span>所有消息</span><span class="pn-msg-wall-hint">5 秒后自动关闭 · 点击立即关闭</span></div>
       <div id="pnMsgWallList" class="pn-msg-wall-list"></div>
     </div>
   </div>
 
-  <script src="script.js?v=20260930h"></script>
+  <!-- 支付新闻 · 独立的「记录」发布弹窗
+       与新闻模块彻底解耦：DOM / 样式 / 事件都在工作台主文档里，
+       发布时调用 paynews 的 paynewsPublish()（同一套上传/入库/通知/推送逻辑）。 -->
+  <div id="pnRecordModal" class="pn-record-mask" hidden>
+    <div class="pn-record-card" role="dialog" aria-modal="true">
+      <div class="pn-record-head">
+        <span class="pn-record-title">📝 发布新闻</span>
+        <span id="pnRecordWho" class="pn-record-who"></span>
+        <button id="pnRecordClose" class="pn-record-x" type="button" title="关闭">✕</button>
+      </div>
+      <textarea id="pnRecordText" class="pn-record-text" placeholder="写点什么…（发布后所有操作员可见）"></textarea>
+      <div id="pnRecordPreview" class="pn-record-preview"></div>
+      <div class="pn-record-actions">
+        <label class="pn-record-btn" title="选择图片">🖼 图片
+          <input id="pnRecordImg" type="file" accept="image/*" hidden />
+        </label>
+        <label class="pn-record-btn" title="选择视频或音频">🎬 视频
+          <input id="pnRecordVid" type="file" accept="video/*,audio/*" hidden />
+        </label>
+        <button id="pnRecordVoice" class="pn-record-btn" type="button">🎙 录音</button>
+        <span id="pnRecordTip" class="pn-record-tip"></span>
+        <span class="pn-record-spacer"></span>
+        <button id="pnRecordSend" class="pn-record-send" type="button">发布新闻</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js?v=20260930i"></script>
 </body>
 </html>
