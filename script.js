@@ -3638,19 +3638,20 @@ window.__infiniteRefresh = infRefresh;
   }
 
   /* 连点「📝 随手笔记」标题栏 3 下 → 弹出已发布的新闻记录，3 秒后自动消失
-     热区是整个标题栏（含标题右侧空白），不必精确点到文字；右侧「记录」按钮除外。 */
+     热区是整个标题栏（含标题右侧空白），不必精确点到文字；右侧「记录」按钮除外。
+     判定：2 秒时间窗内累计点满 3 下即触发（不要求相邻间隔，容忍手速差异）。 */
   const noteHead = document.getElementById('noteHead');
   const holdZone = noteHead || noteTitle;
   if (holdZone) {
-    let taps = 0, tapTimer = null;
+    let tapTimes = [];
     holdZone.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('#pnRecordBtn')) return;   // 按「记录」按钮不算
       if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
-      taps++;
-      clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => { taps = 0; }, 1000);   // 1 秒内未凑齐 3 下则清零
-      if (taps >= 3) {
-        taps = 0; clearTimeout(tapTimer);
+      const now = Date.now();
+      tapTimes.push(now);
+      tapTimes = tapTimes.filter((t) => now - t <= 3000);  // 只保留 3 秒内的点击
+      if (tapTimes.length >= 3) {
+        tapTimes = [];
         showMsgWall(3);                            // 弹出后 3 秒自动关闭
       }
     });
