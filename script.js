@@ -3406,6 +3406,18 @@ window.__infiniteRefresh = infRefresh;
   function showRecordBtn() { if (recordBtn) recordBtn.style.display = ''; }
   function hideRecordBtn() { if (recordBtn) recordBtn.style.display = 'none'; }
 
+  // 轻量提示（未登录等场景），2 秒后自动消失
+  function pnToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:99999;'
+      + 'background:rgba(20,20,30,.92);color:#fff;padding:10px 16px;border-radius:10px;'
+      + 'font-size:14px;line-height:1.4;max-width:80vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.3);pointer-events:none;';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 1600);
+    setTimeout(() => { try { t.remove(); } catch (e) {} }, 2000);
+  }
+
   // 初始显隐由下方 setPnButtons() 统一处理（记录 + 历史）
 
   // 监听 paynews 登录/登出对外通知
@@ -3624,15 +3636,23 @@ window.__infiniteRefresh = infRefresh;
   function setPnButtons(on) { if (on) showRecordBtn(); else hideRecordBtn(); }
   setPnButtons(isPaynewsLoggedIn());
 
-  // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭
-  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => { e.preventDefault(); showMsgWall(5); });
+  // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭；仅登录态可看
+  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => {
+    e.preventDefault();
+    if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+    showMsgWall(5);
+  });
 
-  // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点
+  // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点；仅登录态可看
   if (newsTitle) {
     let lastTap = 0;
     newsTitle.addEventListener('touchend', (e) => {
       const now = Date.now();
-      if (now - lastTap < 400) { lastTap = 0; e.preventDefault(); showMsgWall(5); }
+      if (now - lastTap < 400) {
+        lastTap = 0; e.preventDefault();
+        if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+        showMsgWall(5);
+      }
       else lastTap = now;
     }, { passive: false });
   }
@@ -3646,7 +3666,7 @@ window.__infiniteRefresh = infRefresh;
     let tapTimes = [];
     holdZone.addEventListener('click', (e) => {
       if (e.target.closest && e.target.closest('#pnRecordBtn')) return;   // 按「记录」按钮不算
-      if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
+      if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }  // 仅登录态可看
       const now = Date.now();
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t <= 3000);  // 只保留 3 秒内的点击
