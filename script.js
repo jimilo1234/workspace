@@ -3554,7 +3554,6 @@ window.__infiniteRefresh = infRefresh;
       if (rText) rText.value = '';
       clearAttach();
       setTimeout(closeRecord, 700);
-      if (histModal && !histModal.hidden) loadHistory();   // 历史列表开着则同步刷新
     } catch (e) {
       if (rTip) rTip.textContent = '发布失败：' + (e && e.message ? e.message : e);
     } finally {
@@ -3562,10 +3561,11 @@ window.__infiniteRefresh = infRefresh;
     }
   });
 
-  // ---------- 双击「支付行业新闻」标题看全部消息（5 秒自动关闭） ----------
-  let wallTimer = null;
-
   const MSG_URL = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
+
+  let wallTimer = null;                                          // 自动关闭定时器（双击模式）
+  let peekHeld = false;                                          // 长按模式：手指/鼠标是否仍按住
+  const wallHint = document.getElementById('pnMsgWallHint');
 
   // 渲染消息列表（消息墙与「历史」记录列表共用）
   function renderMsgs(el, list) {
@@ -3596,61 +3596,36 @@ window.__infiniteRefresh = infRefresh;
     });
   }
 
-  function showMsgWall() {
+  // 消息浮层两种用法：
+  //   mode='hold'  —— 长按「随手笔记」标题：按住 2 秒弹出，松手立即消失
+  //   mode='timer' —— 双击「支付行业新闻」标题：弹出后 5 秒自动关闭
+  function showMsgWall(mode) {
+    const hold = (mode === 'hold');
+    if (wallHint) wallHint.textContent = hold ? '松手关闭' : '5 秒后自动关闭 · 点击立即关闭';
+    // 长按模式下浮层不吃鼠标事件：否则它盖住标题会让浏览器判定指针「离开标题」，
+    // 触发 pointerleave 把刚弹出的浮层立刻收起（表现为几乎看不见）。
+    msgWall.classList.toggle('peek', hold);
+    const reveal = () => {
+      msgWall.hidden = false;
+      if (!hold) {
+        clearTimeout(wallTimer);
+        wallTimer = setTimeout(hideMsgWall, 5000);   // 展示 5 秒
+      }
+    };
+    const settle = () => {
+      // 长按模式：数据回来时手指已松开（peekHeld=false）就不要再弹出来，避免「松手后自己冒出」
+      if (hold) { if (peekHeld) msgWall.hidden = false; }
+      else reveal();
+    };
     fetchMessages().then((list) => {
       renderMsgs(msgList, list);
-      msgWall.hidden = false;
-      scheduleWallClose();          // 弹出后 5 秒自动消失
+      settle();
     }).catch((err) => {
-      console.warn('[消息墙] 加载失败:', err);
+      console.warn('[消息浮层] 加载失败:', err);
       msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>';
-      msgWall.hidden = false;
-      scheduleWallClose();
+      settle();
     });
   }
-
-  // ---------- 随手笔记「📜 历史」：已发布新闻的完整记录列表 ----------
-  const histBtn = document.getElementById('pnHistoryBtn');
-  const histModal = document.getElementById('pnHistoryModal');
-  const histList = document.getElementById('pnHistoryList');
-  const histCount = document.getElementById('pnHistoryCount');
-  const histClose = document.getElementById('pnHistoryClose');
-  const histRefresh = document.getElementById('pnHistoryRefresh');
-
-  function loadHistory() {
-    if (!histList) return Promise.resolve();
-    histList.innerHTML = '<div class="pn-msg-empty">加载中…</div>';
-    return fetchMessages().then((list) => {
-      renderMsgs(histList, list);
-      if (histCount) histCount.textContent = (list && list.length) ? ('共 ' + list.length + ' 条') : '';
-    }).catch((err) => {
-      console.warn('[新闻记录] 加载失败:', err);
-      histList.innerHTML = '<div class="pn-msg-empty">加载失败，请点击 ⟳ 重试</div>';
-    });
-  }
-
-  function openHistory() {
-    if (!histModal) return;
-    histModal.hidden = false;
-    loadHistory();
-  }
-  function closeHistory() { if (histModal) histModal.hidden = true; }
-
-  if (histBtn) histBtn.addEventListener('click', openHistory);
-  if (histClose) histClose.addEventListener('click', closeHistory);
-  if (histRefresh) histRefresh.addEventListener('click', loadHistory);
-  if (histModal) histModal.addEventListener('click', (e) => { if (e.target === histModal) closeHistory(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && histModal && !histModal.hidden) closeHistory();
-  });
-
-  // 「历史」按钮与「记录」按钮同进退：仅支付新闻登录时显示
-  function setPnButtons(on) {
-    if (on) showRecordBtn(); else hideRecordBtn();
-    if (histBtn) histBtn.style.display = on ? '' : 'none';
-    if (!on) closeHistory();
-  }
-  setPnButtons(isPaynewsLoggedIn());
 
   function scheduleWallClose() {
     clearTimeout(wallTimer);
@@ -3660,18 +3635,23 @@ window.__infiniteRefresh = infRefresh;
   function hideMsgWall() {
     clearTimeout(wallTimer);
     wallTimer = null;
+    msgWall.classList.remove('peek');
     msgWall.hidden = true;
   }
 
+  /* 「记录」按钮：仅支付新闻登录时显示 */
+  function setPnButtons(on) { if (on) showRecordBtn(); else hideRecordBtn(); }
+  setPnButtons(isPaynewsLoggedIn());
+
   function peekMsgWall() {
     if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
-    showMsgWall();
+    showMsgWall('timer');
   }
 
-  // 双击标题（PC）
+  // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭
   if (newsTitle) newsTitle.addEventListener('dblclick', (e) => { e.preventDefault(); peekMsgWall(); });
 
-  // 移动端双击：dbclick 在触屏上不可靠，手动识别两次快速轻点
+  // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点
   if (newsTitle) {
     let lastTap = 0;
     newsTitle.addEventListener('touchend', (e) => {
@@ -3681,6 +3661,33 @@ window.__infiniteRefresh = infRefresh;
     }, { passive: false });
   }
 
-  // 点消息墙任意处立即关闭
+  /* 长按「📝 随手笔记」标题 2 秒 → 显示已发布的新闻记录，松手即消失 */
+  const noteTitle = document.getElementById('noteTitle');
+  if (noteTitle) {
+    let holdTimer = null;
+    function startHold(e) {
+      if (!isPaynewsLoggedIn()) return;          // 仅登录态可看
+      if (e) e.preventDefault();
+      peekHeld = true;
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => { if (peekHeld) showMsgWall('hold'); }, 2000);  // 按住 2 秒
+    }
+    function endHold() {
+      if (!peekHeld) return;                     // 只处理「确实按住过」的情形，避免误关双击模式的浮层
+      peekHeld = false;
+      clearTimeout(holdTimer);
+      holdTimer = null;
+      hideMsgWall();                              // 松手 / 失焦即收起
+    }
+    noteTitle.addEventListener('pointerdown', startHold);
+    // 收尾统一挂在 document 上：手指/鼠标可能移到浮层上方再松开，
+    // 只监听标题自身的 pointerleave 会被浮层抢走命中导致误关。
+    ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, endHold));
+    ['touchend', 'touchcancel'].forEach((ev) => document.addEventListener(ev, endHold, { passive: true }));
+    window.addEventListener('blur', endHold);    // 切走窗口也收起
+    noteTitle.addEventListener('contextmenu', (e) => e.preventDefault());   // 屏蔽长按弹出的系统菜单
+  }
+
+  // 点浮层任意处立即关闭
   msgWall.addEventListener('click', hideMsgWall);
 })();

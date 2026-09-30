@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260930j" />
+  <link rel="stylesheet" href="style.css?v=20260930k" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -246,10 +246,9 @@
           <!-- 笔记 / 新闻 合并切换卡片 -->
           <section class="card note-card" data-module="notes">
             <div class="card-head">
-              <h2><span class="note-ico">📝</span> 随手笔记</h2>
+              <h2 id="noteTitle" class="note-title" title="登录支付新闻后，长按此处查看已发布的新闻记录">📝 随手笔记</h2>
               <div class="link-actions note-actions">
                 <button id="pnRecordBtn" class="text-btn" type="button" style="display:none">📝 记录</button>
-                <button id="pnHistoryBtn" class="text-btn" type="button" style="display:none">📜 历史</button>
               </div>
             </div>
             <div id="notePanel" class="panel">
@@ -663,10 +662,12 @@
     </div>
   </div>
 
-  <!-- 支付新闻 · 双击新闻标题弹出的消息墙（5 秒后自动消失，点击可立即关闭） -->
+  <!-- 支付新闻 · 已发布新闻浮层
+       双击「支付行业新闻」标题 → 弹出后 5 秒自动关闭；
+       长按「随手笔记」标题 2 秒 → 弹出，松手即关。 -->
   <div id="pnMsgWall" class="pn-msg-wall" hidden>
     <div class="pn-msg-wall-inner">
-      <div class="pn-msg-wall-head"><span>所有消息</span><span class="pn-msg-wall-hint">5 秒后自动关闭 · 点击立即关闭</span></div>
+      <div class="pn-msg-wall-head"><span>已发布的新闻</span><span id="pnMsgWallHint" class="pn-msg-wall-hint"></span></div>
       <div id="pnMsgWallList" class="pn-msg-wall-list"></div>
     </div>
   </div>
@@ -698,19 +699,6 @@
     </div>
   </div>
 
-  <!-- 支付新闻 · 已发布新闻的记录列表（随手笔记「历史」按钮调起 · 全部操作员的发布记录） -->
-  <div id="pnHistoryModal" class="pn-record-mask" hidden>
-    <div class="pn-history-card" role="dialog" aria-modal="true">
-      <div class="pn-record-head">
-        <span class="pn-record-title">📜 新闻记录</span>
-        <span id="pnHistoryCount" class="pn-record-who"></span>
-        <button id="pnHistoryRefresh" class="pn-record-x" type="button" title="刷新">⟳</button>
-        <button id="pnHistoryClose" class="pn-record-x" type="button" title="关闭">✕</button>
-      </div>
-      <div id="pnHistoryList" class="pn-msg-wall-list pn-history-list"></div>
-    </div>
-  </div>
-
-  <script src="script.js?v=20260930j"></script>
+  <script src="script.js?v=20260930k"></script>
 </body>
 </html>
