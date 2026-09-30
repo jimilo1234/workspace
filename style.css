@@ -625,45 +625,6 @@ body {
 .open-new:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .page-iframe { flex: 1; width: 100%; min-height: 0; border: none; background: var(--card); }
 
-/* ===== 外部站点禁止内嵌时的引导卡片（如飞牛影视） ===== */
-.embed-blocked {
-  flex: 1; min-height: 0;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-}
-.embed-card {
-  width: 100%; max-width: 460px;
-  text-align: center;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 34px 28px 30px;
-  box-shadow: var(--shadow);
-}
-.embed-ico { font-size: 42px; line-height: 1; margin-bottom: 14px; }
-.embed-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
-.embed-desc {
-  margin-top: 12px;
-  font-size: 12.5px; line-height: 1.8; color: var(--text-soft);
-}
-.embed-actions { margin-top: 22px; display: flex; justify-content: center; }
-.embed-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 12px 26px; border-radius: 12px;
-  background: var(--accent); color: #fff; text-decoration: none;
-  font-size: 14px; font-weight: 600; border: 1px solid transparent;
-  box-shadow: 0 4px 14px rgba(108, 140, 255, 0.30);
-  transition: filter 0.18s ease, transform 0.18s ease;
-}
-.embed-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-@media (max-width: 640px) {
-  .embed-blocked { padding: 16px; }
-  .embed-card { padding: 26px 20px 24px; }
-  .embed-ico { font-size: 34px; margin-bottom: 10px; }
-  .embed-title { font-size: 16px; }
-  .embed-btn { width: 100%; justify-content: center; padding: 13px 18px; }
-}
-
 /* 移动端尺寸内嵌（智付圈租户端等 H5 页面） */
 .mobile-stage {
   flex: 1; min-height: 0;

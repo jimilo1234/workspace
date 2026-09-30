@@ -240,7 +240,6 @@ const MENUS = [
   { id: "system", label: "系统管理", children: [
     { id: "system-homemanage", label: "首页管理", page: "homeManage" },
   ]},
-  { id: "feiniu", label: "飞牛电影", page: "feiniu" },
 ];
 /* 「操作员管理」入口：仅超管可见，不参与普通用户勾选树 */
 const SUPER_MENU_ID = "system-operators";
