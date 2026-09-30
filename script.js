@@ -3406,14 +3406,13 @@ window.__infiniteRefresh = infRefresh;
   function showRecordBtn() { if (recordBtn) recordBtn.style.display = ''; }
   function hideRecordBtn() { if (recordBtn) recordBtn.style.display = 'none'; }
 
-  // 初始按当前 session 决定记录按钮显隐
-  if (isPaynewsLoggedIn()) showRecordBtn(); else hideRecordBtn();
+  // 初始显隐由下方 setPnButtons() 统一处理（记录 + 历史）
 
   // 监听 paynews 登录/登出对外通知
   window.addEventListener('message', (e) => {
     const t = e.data && e.data.type;
-    if (t === 'paynews-login') showRecordBtn();
-    else if (t === 'paynews-session-invalid') { hideRecordBtn(); closeRecord(); }
+    if (t === 'paynews-login') setPnButtons(true);
+    else if (t === 'paynews-session-invalid') setPnButtons(false);
   });
 
   /* ---------- 独立的「记录」发布弹窗 ---------- */
@@ -3555,6 +3554,7 @@ window.__infiniteRefresh = infRefresh;
       if (rText) rText.value = '';
       clearAttach();
       setTimeout(closeRecord, 700);
+      if (histModal && !histModal.hidden) loadHistory();   // 历史列表开着则同步刷新
     } catch (e) {
       if (rTip) rTip.textContent = '发布失败：' + (e && e.message ? e.message : e);
     } finally {
@@ -3565,12 +3565,16 @@ window.__infiniteRefresh = infRefresh;
   // ---------- 双击「支付行业新闻」标题看全部消息（5 秒自动关闭） ----------
   let wallTimer = null;
 
-  function renderMsgWall(list) {
+  const MSG_URL = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
+
+  // 渲染消息列表（消息墙与「历史」记录列表共用）
+  function renderMsgs(el, list) {
+    if (!el) return;
     if (!list || list.length === 0) {
-      msgList.innerHTML = '<div class="pn-msg-empty">暂无消息</div>';
+      el.innerHTML = '<div class="pn-msg-empty">暂无消息</div>';
       return;
     }
-    msgList.innerHTML = list.map((m) => {
+    el.innerHTML = list.map((m) => {
       const author = infEsc(m.display_name || m.username || '匿名');
       const time = infTime(m.created_at);
       let media = '';
@@ -3585,13 +3589,16 @@ window.__infiniteRefresh = infRefresh;
     }).join('');
   }
 
-  function showMsgWall() {
-    const url = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
-    fetch(url, { headers: INF_JSON }).then((res) => {
+  function fetchMessages() {
+    return fetch(MSG_URL, { headers: INF_JSON }).then((res) => {
       if (!res.ok) throw new Error('load messages ' + res.status);
       return res.json();
-    }).then((list) => {
-      renderMsgWall(list);
+    });
+  }
+
+  function showMsgWall() {
+    fetchMessages().then((list) => {
+      renderMsgs(msgList, list);
       msgWall.hidden = false;
       scheduleWallClose();          // 弹出后 5 秒自动消失
     }).catch((err) => {
@@ -3601,6 +3608,49 @@ window.__infiniteRefresh = infRefresh;
       scheduleWallClose();
     });
   }
+
+  // ---------- 随手笔记「📜 历史」：已发布新闻的完整记录列表 ----------
+  const histBtn = document.getElementById('pnHistoryBtn');
+  const histModal = document.getElementById('pnHistoryModal');
+  const histList = document.getElementById('pnHistoryList');
+  const histCount = document.getElementById('pnHistoryCount');
+  const histClose = document.getElementById('pnHistoryClose');
+  const histRefresh = document.getElementById('pnHistoryRefresh');
+
+  function loadHistory() {
+    if (!histList) return Promise.resolve();
+    histList.innerHTML = '<div class="pn-msg-empty">加载中…</div>';
+    return fetchMessages().then((list) => {
+      renderMsgs(histList, list);
+      if (histCount) histCount.textContent = (list && list.length) ? ('共 ' + list.length + ' 条') : '';
+    }).catch((err) => {
+      console.warn('[新闻记录] 加载失败:', err);
+      histList.innerHTML = '<div class="pn-msg-empty">加载失败，请点击 ⟳ 重试</div>';
+    });
+  }
+
+  function openHistory() {
+    if (!histModal) return;
+    histModal.hidden = false;
+    loadHistory();
+  }
+  function closeHistory() { if (histModal) histModal.hidden = true; }
+
+  if (histBtn) histBtn.addEventListener('click', openHistory);
+  if (histClose) histClose.addEventListener('click', closeHistory);
+  if (histRefresh) histRefresh.addEventListener('click', loadHistory);
+  if (histModal) histModal.addEventListener('click', (e) => { if (e.target === histModal) closeHistory(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && histModal && !histModal.hidden) closeHistory();
+  });
+
+  // 「历史」按钮与「记录」按钮同进退：仅支付新闻登录时显示
+  function setPnButtons(on) {
+    if (on) showRecordBtn(); else hideRecordBtn();
+    if (histBtn) histBtn.style.display = on ? '' : 'none';
+    if (!on) closeHistory();
+  }
+  setPnButtons(isPaynewsLoggedIn());
 
   function scheduleWallClose() {
     clearTimeout(wallTimer);

@@ -1420,6 +1420,18 @@ html.pn-fs .topbar { display: none; }
   box-shadow: 0 4px 14px rgba(108, 140, 255, 0.28);
 }
 .pn-record-send:disabled { opacity: 0.6; cursor: default; }
+
+/* ===== 支付新闻 · 「📜 历史」已发布新闻记录列表 ===== */
+.pn-history-card {
+  width: min(720px, 100%); max-height: 86vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.pn-history-card .pn-record-head { padding: 14px 16px; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.pn-history-card .pn-record-x { margin-left: 0; }
+.pn-history-card #pnHistoryRefresh { margin-left: auto; }
+.pn-history-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 18px; }
 @media (max-width: 640px) {
   .pn-record-mask { padding: 12px; align-items: flex-end; }
   .pn-record-card { width: 100%; max-height: 92vh; padding: 14px 14px 12px; }

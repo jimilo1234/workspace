@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260930i" />
+  <link rel="stylesheet" href="style.css?v=20260930j" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -249,6 +249,7 @@
               <h2><span class="note-ico">📝</span> 随手笔记</h2>
               <div class="link-actions note-actions">
                 <button id="pnRecordBtn" class="text-btn" type="button" style="display:none">📝 记录</button>
+                <button id="pnHistoryBtn" class="text-btn" type="button" style="display:none">📜 历史</button>
               </div>
             </div>
             <div id="notePanel" class="panel">
@@ -697,6 +698,19 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260930i"></script>
+  <!-- 支付新闻 · 已发布新闻的记录列表（随手笔记「历史」按钮调起 · 全部操作员的发布记录） -->
+  <div id="pnHistoryModal" class="pn-record-mask" hidden>
+    <div class="pn-history-card" role="dialog" aria-modal="true">
+      <div class="pn-record-head">
+        <span class="pn-record-title">📜 新闻记录</span>
+        <span id="pnHistoryCount" class="pn-record-who"></span>
+        <button id="pnHistoryRefresh" class="pn-record-x" type="button" title="刷新">⟳</button>
+        <button id="pnHistoryClose" class="pn-record-x" type="button" title="关闭">✕</button>
+      </div>
+      <div id="pnHistoryList" class="pn-msg-wall-list pn-history-list"></div>
+    </div>
+  </div>
+
+  <script src="script.js?v=20260930j"></script>
 </body>
 </html>
