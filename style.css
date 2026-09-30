@@ -1329,9 +1329,6 @@ html.pn-fs .topbar { display: none; }
   background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
 }
 .pn-msg-wall[hidden] { display: none; }
-/* 长按查看模式：浮层不参与命中测试
-   （盖住标题会让浏览器判定指针离开标题 → 触发 pointerleave 把浮层立刻收起） */
-.pn-msg-wall.peek { pointer-events: none; }
 .pn-msg-wall-inner {
   width: min(720px, 92vw); max-height: 82vh;
   display: flex; flex-direction: column;
@@ -1424,12 +1421,11 @@ html.pn-fs .topbar { display: none; }
 }
 .pn-record-send:disabled { opacity: 0.6; cursor: default; }
 
-/* 「随手笔记」标题栏 = 长按 2 秒查看已发布新闻记录的热区（松手即关）
-   整条标题栏都可按（右侧「记录」按钮除外），不必精确点到文字上。 */
-#noteHead { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* 「随手笔记」标题栏 = 连点 3 下查看已发布新闻记录的热区（3 秒后自动关）
+   整条标题栏都可点（右侧「记录」按钮除外），不必精确点到文字上。 */
+#noteHead { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 #noteHead:hover .note-title { color: var(--accent); }
 .note-title {
-  touch-action: none;                       /* 移动端长按标题不触发页面滚动 */
   user-select: none; -webkit-user-select: none;
   transition: color 0.15s ease;
 }

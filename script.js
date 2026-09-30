@@ -3563,8 +3563,7 @@ window.__infiniteRefresh = infRefresh;
 
   const MSG_URL = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
 
-  let wallTimer = null;                                          // 自动关闭定时器（双击模式）
-  let peekHeld = false;                                          // 长按模式：手指/鼠标是否仍按住
+  let wallTimer = null;                                          // 自动关闭定时器
   const wallHint = document.getElementById('pnMsgWallHint');
 
   // 渲染消息列表（消息墙与「历史」记录列表共用）
@@ -3596,46 +3595,28 @@ window.__infiniteRefresh = infRefresh;
     });
   }
 
-  // 消息浮层两种用法：
-  //   mode='hold'  —— 长按「随手笔记」标题：按住 2 秒弹出，松手立即消失
-  //   mode='timer' —— 双击「支付行业新闻」标题：弹出后 5 秒自动关闭
-  function showMsgWall(mode) {
-    const hold = (mode === 'hold');
-    if (wallHint) wallHint.textContent = hold ? '松手关闭' : '5 秒后自动关闭 · 点击立即关闭';
-    // 长按模式下浮层不吃鼠标事件：否则它盖住标题会让浏览器判定指针「离开标题」，
-    // 触发 pointerleave 把刚弹出的浮层立刻收起（表现为几乎看不见）。
-    msgWall.classList.toggle('peek', hold);
+  // 消息浮层：autoSec 秒后自动关闭；点击浮层任意处可立即关闭
+  function showMsgWall(autoSec) {
+    autoSec = autoSec || 5;
+    if (wallHint) wallHint.textContent = autoSec + ' 秒后自动关闭 · 点击立即关闭';
     const reveal = () => {
       msgWall.hidden = false;
-      if (!hold) {
-        clearTimeout(wallTimer);
-        wallTimer = setTimeout(hideMsgWall, 5000);   // 展示 5 秒
-      }
-    };
-    const settle = () => {
-      // 长按模式：数据回来时手指已松开（peekHeld=false）就不要再弹出来，避免「松手后自己冒出」
-      if (hold) { if (peekHeld) msgWall.hidden = false; }
-      else reveal();
+      clearTimeout(wallTimer);
+      wallTimer = setTimeout(hideMsgWall, autoSec * 1000);
     };
     fetchMessages().then((list) => {
       renderMsgs(msgList, list);
-      settle();
+      reveal();
     }).catch((err) => {
       console.warn('[消息浮层] 加载失败:', err);
       msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>';
-      settle();
+      reveal();
     });
-  }
-
-  function scheduleWallClose() {
-    clearTimeout(wallTimer);
-    wallTimer = setTimeout(hideMsgWall, 5000);   // 展示 5 秒
   }
 
   function hideMsgWall() {
     clearTimeout(wallTimer);
     wallTimer = null;
-    msgWall.classList.remove('peek');
     msgWall.hidden = true;
   }
 
@@ -3643,53 +3624,36 @@ window.__infiniteRefresh = infRefresh;
   function setPnButtons(on) { if (on) showRecordBtn(); else hideRecordBtn(); }
   setPnButtons(isPaynewsLoggedIn());
 
-  function peekMsgWall() {
-    if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
-    showMsgWall('timer');
-  }
-
   // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭
-  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => { e.preventDefault(); peekMsgWall(); });
+  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => { e.preventDefault(); showMsgWall(5); });
 
   // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点
   if (newsTitle) {
     let lastTap = 0;
     newsTitle.addEventListener('touchend', (e) => {
       const now = Date.now();
-      if (now - lastTap < 400) { lastTap = 0; e.preventDefault(); peekMsgWall(); }
+      if (now - lastTap < 400) { lastTap = 0; e.preventDefault(); showMsgWall(5); }
       else lastTap = now;
     }, { passive: false });
   }
 
-  /* 长按「📝 随手笔记」标题栏 2 秒 → 显示已发布的新闻记录，松手即消失
+  /* 连点「📝 随手笔记」标题栏 3 下 → 弹出已发布的新闻记录，3 秒后自动消失
      热区是整个标题栏（含标题右侧空白），不必精确点到文字；右侧「记录」按钮除外。 */
   const noteHead = document.getElementById('noteHead');
-  const noteTitle = document.getElementById('noteTitle');
   const holdZone = noteHead || noteTitle;
   if (holdZone) {
-    let holdTimer = null;
-    function startHold(e) {
-      if (e && e.target && e.target.closest && e.target.closest('#pnRecordBtn')) return;  // 按「记录」按钮不触发长按
-      if (!isPaynewsLoggedIn()) return;          // 仅登录态可看
-      if (e) e.preventDefault();
-      peekHeld = true;
-      clearTimeout(holdTimer);
-      holdTimer = setTimeout(() => { if (peekHeld) showMsgWall('hold'); }, 2000);  // 按住 2 秒
-    }
-    function endHold() {
-      if (!peekHeld) return;                     // 只处理「确实按住过」的情形，避免误关双击模式的浮层
-      peekHeld = false;
-      clearTimeout(holdTimer);
-      holdTimer = null;
-      hideMsgWall();                              // 松手 / 失焦即收起
-    }
-    holdZone.addEventListener('pointerdown', startHold);
-    // 收尾统一挂在 document 上：手指/鼠标可能移到浮层上方再松开，
-    // 只监听标题自身的 pointerleave 会被浮层抢走命中导致误关。
-    ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, endHold));
-    ['touchend', 'touchcancel'].forEach((ev) => document.addEventListener(ev, endHold, { passive: true }));
-    window.addEventListener('blur', endHold);    // 切走窗口也收起
-    holdZone.addEventListener('contextmenu', (e) => e.preventDefault());   // 屏蔽长按弹出的系统菜单
+    let taps = 0, tapTimer = null;
+    holdZone.addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('#pnRecordBtn')) return;   // 按「记录」按钮不算
+      if (!isPaynewsLoggedIn()) return;            // 仅登录态可看
+      taps++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => { taps = 0; }, 1000);   // 1 秒内未凑齐 3 下则清零
+      if (taps >= 3) {
+        taps = 0; clearTimeout(tapTimer);
+        showMsgWall(3);                            // 弹出后 3 秒自动关闭
+      }
+    });
   }
 
   // 点浮层任意处立即关闭
