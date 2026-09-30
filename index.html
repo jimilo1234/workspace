@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260928a" />
+  <link rel="stylesheet" href="style.css?v=20260930a" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -127,8 +127,13 @@
           <!-- 问候 + 时钟 -->
           <section class="card hero" data-module="hero" style="grid-column: 1 / -1;">
             <div class="hero-left">
-              <h1 id="greeting">你好 👋</h1>
-              <p id="heroDate" class="hero-date">加载中…</p>
+              <div class="hero-greet-row">
+                <div class="hero-pet empty" id="heroPetBox" title="宠物当前状态"><img id="heroPetImg" alt="宠物状态" /></div>
+                <div class="hero-greet-text">
+                  <h1 id="greeting">你好 👋</h1>
+                  <p id="heroDate" class="hero-date">加载中…</p>
+                </div>
+              </div>
             </div>
             <div class="hero-right">
               <div id="clock" class="clock">--:--:--</div>
@@ -655,6 +660,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260928a"></script>
+  <script src="script.js?v=20260930a"></script>
 </body>
 </html>

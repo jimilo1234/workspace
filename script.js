@@ -2602,6 +2602,14 @@ function renderPet() {
     mood.src = sn ? petPublicUrl("mood", sn) : "";
   }
 
+  /* 问候语旁的只读宠物状态小图：镜像当前状态图（无状态图时显示占位 🐾） */
+  const hp = $("#heroPetImg"), hpb = $("#heroPetBox");
+  if (hp) {
+    const sn = petFileNameOf(petStatusImgs, petState.current_status);
+    if (sn) { hp.src = petPublicUrl("status", sn); if (hpb) hpb.classList.remove("empty"); }
+    else { hp.removeAttribute("src"); if (hpb) hpb.classList.add("empty"); }
+  }
+
   const sm = $("#petStatusMeta"), mm = $("#petMoodMeta");
   if (sm) sm.textContent = "状态：" + (petState.current_status ? petState.current_status : "—") +
     (petState.current_status_time ? " · " + fmtPetTime(petState.current_status_time) : "");
