@@ -499,22 +499,11 @@ async function sendMessage(username, displayName, text, imageUrl, audioUrl, vide
     console.error('[发布新闻] 插入失败:', insertErr);
     throw new Error('发布失败: ' + insertErr.message);
   }
-  // 插入成功后，查询所有消息（按id排序），只保留最新4条
-  const { data: allMsgs, error: selectErr } = await supabaseClient
-    .from('messages')
-    .select('id')
-    .order('id', { ascending: true });
-  if (selectErr) {
-    console.warn('[发布新闻] 查询旧消息失败:', selectErr);
-    return; // 发布已成功，只是清理失败，不阻塞
-  }
-  if (allMsgs && allMsgs.length > 4) {
-    const idsToDelete = allMsgs.slice(0, allMsgs.length - 4).map(m => m.id);
-    const { error: delErr } = await supabaseClient
-      .from('messages')
-      .delete()
-      .in('id', idsToDelete);
-    if (delErr) console.warn('[发布新闻] 清理旧消息失败（不影响发布）:', delErr);
+  // 插入成功后，保留最新 4 条（走 DEFINER RPC，RLS 下也能执行，避免消息堆积）
+  try {
+    await supabaseClient.rpc('prune_messages', { p_keep: 4 });
+  } catch (e) {
+    console.warn('[发布新闻] 清理旧消息失败（不影响发布）:', e);
   }
 }
 
@@ -1756,10 +1745,12 @@ async function cleanupStorage() {
       else console.log(`[清理] 已删除 ${filePaths.length} 个media文件`);
     }
 
-    // 2. 置空messages中的所有媒体链接
-    await supabaseClient.from('messages').update({ image_url: null }).not('image_url', 'is', null);
-    await supabaseClient.from('messages').update({ video_url: null }).not('video_url', 'is', null);
-    await supabaseClient.from('messages').update({ audio_url: null }).not('audio_url', 'is', null);
+    // 2. 置空messages中的所有媒体链接（走 DEFINER RPC，RLS 下也能执行）
+    try {
+      await supabaseClient.rpc('clear_message_media');
+    } catch (e) {
+      console.warn('清理媒体链接失败:', e);
+    }
 
     console.log('[清理] 媒体链接清理完成');
   } catch (e) {
