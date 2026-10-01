@@ -609,6 +609,7 @@ body {
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .page.hidden { display: none; }
 #pageHome { overflow-y: auto; padding: 6px clamp(14px, 4vw, 48px) 40px; }
+#pageHomeManage { overflow-y: auto; }
 #pageEnglish { overflow: hidden; }
 .page-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; gap: 14px; }
 .page-bar-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
