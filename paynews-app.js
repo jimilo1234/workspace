@@ -125,8 +125,15 @@ let pendingImage = null;  // base64 preview
 let pendingImageFile = null;  // File object for upload
 let pendingVideoFile = null;  // Video file object for upload
 let lastMessageSnapshot = '';  // 用于检测新消息
-let hasNewMessages = false;  // 标记是否有新消息（监管动态变紫）
+let hasNewMessages = false;  // 标记是否有新消息（监管动态变紫；同时驱动工作台首页时钟秒针变绿）
 const originalTitle = document.title;  // 保存原始标题，用于重置
+// 同步「未读发布消息」状态给工作台（跨 Shadow DOM）：写 window 标志 + postMessage
+function _syncUnreadFlag() {
+  try { window.__paynewsHasUnread = !!hasNewMessages; } catch (e) {}
+  try { window.parent && window.parent.postMessage({ type: 'paynews-unread', unread: !!hasNewMessages }, '*'); } catch (e) {}
+}
+function setHasNew(v) { hasNewMessages = !!v; _syncUnreadFlag(); }
+_syncUnreadFlag();  // 初始置 false
 // 在线状态追踪：记录哪些账号在线且订阅了广播
 let onlineSubscribers = {};  // { username: true } — 在线且订阅广播的账号
 
@@ -250,7 +257,7 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
       if (addedOtherMsgs.length > 0) {
         dateEl.classList.add('has-update');
         document.title = '支付行业新闻1.0';
-        hasNewMessages = true;
+        setHasNew(true);
       }
     }
     lastMessageSnapshot = newSnapshot;
@@ -765,7 +772,7 @@ function showToast(msg, duration = 3000) {
 function doLogout() {
   // 清除0110限时退出定时器
   if (loginTimeoutId) { clearTimeout(loginTimeoutId); loginTimeoutId = null; }
-  
+  setHasNew(false);  // 登出后清除未读标记
   // 清除服务端session
   if (currentUser && mySessionId) {
     logoutSession(currentUser.username, mySessionId).catch(e => console.error('[登出] session清理失败:', e));
@@ -887,7 +894,7 @@ async function doSendMessage() {
     const vidInput = document.getElementById('msg-video'); if (vidInput) vidInput.value = '';
 
     // 刷新留言
-    hasNewMessages = false;  // 发送消息后恢复颜色
+    setHasNew(false);  // 发送消息后恢复颜色
     document.title = originalTitle;  // 重置标题，清除1.0提示
     const dateEl = document.getElementById('member-news-date');
     if (dateEl) dateEl.classList.remove('has-update');  // 清除红色标记
@@ -1105,7 +1112,7 @@ function subscribeMessageChanges() {
         renderNews('member-news-grid', 'member-news-date', messages, false);
         // 无其他用户新消息时，重置标题和视觉提示
         document.title = originalTitle;
-        hasNewMessages = false;
+        setHasNew(false);
         const dateEl2 = document.getElementById('member-news-date');
         if (dateEl2) dateEl2.classList.remove('has-update');
       }
@@ -3024,6 +3031,7 @@ setInterval(async () => {
     if (latest.id > _pollLastId && latest.username !== currentUser.username) {
       _pollLastId = latest.id;
       const preview = latest.text || (latest.audio_url ? '[语音]' : latest.image_url ? '[图片]' : '新消息');
+      setHasNew(true);  // 有他人新发布消息→标记未读，通知工作台首页时钟秒针变绿
     }
     if (latest.id > _pollLastId) _pollLastId = latest.id;
   } catch(e) {}
@@ -3135,4 +3143,12 @@ window.paynewsLogin = async function (username, password) {
    登出后工作台会自动回到「未登录→显示导出(登录)按钮」状态。 */
 window.paynewsLogout = function () {
   try { doLogout(); } catch (e) { console.error('[登出] 调用失败:', e); }
+};
+
+/* 工作台查看消息（双击新闻标题消息墙 / 「记录」发布弹窗）时调用，清除未读标记，
+   时钟秒针随即由绿转回正常色。 */
+window.paynewsMarkRead = function () {
+  setHasNew(false);
+  try { document.title = originalTitle; } catch (e) {}
+  try { const d = document.getElementById('member-news-date'); if (d) d.classList.remove('has-update'); } catch (e) {}
 };

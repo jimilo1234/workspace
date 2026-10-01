@@ -649,6 +649,9 @@ function tick() {
   $("#clock").innerHTML =
     `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:<span class="sec">${String(now.getSeconds()).padStart(2, "0")}</span>`;
   $("#heroDate").textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${WEEK[now.getDay()]}`;
+  // 有未读发布消息 → 时钟秒针变绿（支付新闻模块跨 Shadow DOM 写入 window.__paynewsHasUnread）
+  const secEl = document.querySelector("#clock .sec");
+  if (secEl) secEl.classList.toggle("unread", !!window.__paynewsHasUnread);
   if (state.name) updateGreeting();
 }
 tick();
@@ -2242,7 +2245,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20261001j";
+const PAYNEWS_VER = "20261001k";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3523,6 +3526,7 @@ window.__infiniteRefresh = infRefresh;
   function openRecord() {
     if (!modal) return;
     modal.hidden = false;
+    if (typeof window.paynewsMarkRead === 'function') window.paynewsMarkRead();  // 打开即标记已读
     let who = null;
     try { who = (typeof window.paynewsWhoami === 'function') ? window.paynewsWhoami() : null; } catch (e) {}
     if (rWho) rWho.textContent = who ? ('以 ' + (who.displayName || who.username) + ' 身份发布') : '';
@@ -3676,6 +3680,7 @@ window.__infiniteRefresh = infRefresh;
       msgWall.hidden = false;
       clearTimeout(wallTimer);
       wallTimer = setTimeout(hideMsgWall, autoSec * 1000);
+      if (typeof window.paynewsMarkRead === 'function') window.paynewsMarkRead();  // 查看即标记已读
     };
     fetchMessages().then((list) => {
       renderMsgs(msgList, list);

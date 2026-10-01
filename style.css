@@ -183,6 +183,7 @@ body {
   color: var(--text); letter-spacing: 1px; font-variant-numeric: tabular-nums;
 }
 .clock .sec { color: var(--accent); }
+.clock .sec.unread { color: #2ecc71; }  /* 有未读发布消息 → 秒针变绿 */
 .weather { color: var(--text-soft); font-size: 13px; margin-top: 7px; font-family: var(--mono); cursor: pointer; display: inline-block; }
 .weather-hint { font-size: 10px; opacity: 0.55; margin-left: 2px; }
 .weather-pop {
