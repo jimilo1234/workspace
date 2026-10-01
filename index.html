@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261001c" />
+  <link rel="stylesheet" href="style.css?v=20261001d" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -115,6 +115,7 @@
           <span id="syncStatus" class="sync-pill">未连接</span>
           <button id="syncNow" class="icon-btn" title="刷新后端数据">🔄</button>
           <button id="exportData" class="icon-btn" title="导出数据">📤</button>
+          <button id="pnLogoutBtn" class="icon-btn pn-logout-btn" type="button" style="display:none" title="退出支付新闻（退出后顶部 📤 导出按钮会回来，点它可重新登录）">🔓</button>
           <button id="importData" class="icon-btn" title="导入数据（从 JSON 恢复）">📥</button>
           <button id="themeToggle" class="icon-btn" title="切换主题">🌗</button>
           <button id="exitSpace" class="icon-btn" title="退出登录">🚪</button>
@@ -249,7 +250,6 @@
               <h2 id="noteTitle" class="note-title">📝 随手笔记</h2>
               <div class="link-actions note-actions">
                 <button id="pnRecordBtn" class="text-btn" type="button" style="display:none">📝 记录</button>
-                <button id="pnLogoutBtn" class="text-btn pn-logout-btn" type="button" style="display:none">退出</button>
               </div>
             </div>
             <div id="notePanel" class="panel">
@@ -721,6 +721,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261001i"></script>
+  <script src="script.js?v=20261001j"></script>
 </body>
 </html>
