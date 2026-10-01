@@ -444,9 +444,25 @@ function kickOtherSessionsOnPublish() {
   }
 }
 
-// 获取所有留言
+// 获取所有留言（会员页）
+// 登录态：优先走会话校验 RPC get_messages（服务端用 check_session 校验会话后才返回），
+//   取回为 id desc（最新在前），会员页渲染期望最新在后，故反转；
+//   RPC 未部署（SQL 还没跑）时回退匿名直读，避免先上前端导致会员页空白；
+// 未登录：不再匿名直读（SQL 部署后会被 RLS 拦截返回空），直接返回空。
 async function fetchMessages() {
   if (!supabaseClient) return [];
+  let sess = null;
+  try { sess = JSON.parse(localStorage.getItem('paynews_session') || 'null'); } catch (e) {}
+  if (sess && sess.username && sess.session_id) {
+    try {
+      const { data, error } = await supabaseClient.rpc('get_messages', {
+        p_username: sess.username,
+        p_session_id: sess.session_id
+      });
+      if (!error && data) return data.slice().reverse();   // desc → asc（最新在末尾）
+    } catch (e) { /* RPC 未就绪（SQL 未部署），走下方匿名回退 */ }
+  }
+  // 回退：匿名直读（SQL 部署后会被 RLS 拦截，返回空属预期）
   const { data, error } = await supabaseClient
     .from('messages')
     .select('*')
@@ -663,8 +679,10 @@ async function enterMember(username, displayName, sessionId) {
     initAdminKickListener();
     initForumToggleListener();
     if (localStorage.getItem(FORUM_KEY) === '1') { forumEnabled = true; applyForumState(true); }
-    subscribeMessageChanges();
-    ensurePushSubscribed();
+    // 实时订阅 / Web Push 非关键，单独容错：开启 RLS 后匿名订阅会失败，
+    // 但不能因此阻断登录态通知（postMessage）与新闻渲染
+    try { subscribeMessageChanges(); } catch (e) { console.warn('[enterMember] 订阅失败:', e); }
+    try { ensurePushSubscribed(); } catch (e) { console.warn('[enterMember] Push订阅失败:', e); }
     try { window.parent.postMessage({ type: 'paynews-login' }, '*'); } catch (e) {}
     console.log('[Session] 已进入会员页（用户名 ' + username + '）');
   } catch (e) {
