@@ -3586,7 +3586,6 @@ window.__infiniteRefresh = infRefresh;
       return;
     }
     el.innerHTML = list.map((m) => {
-      const author = infEsc(m.display_name || m.username || '匿名');
       const time = infTime(m.created_at);
       let media = '';
       if (m.image_url) media += '<div class="pn-msg-media"><img src="' + infEsc(m.image_url) + '" alt="图片" loading="lazy"></div>';
@@ -3594,7 +3593,7 @@ window.__infiniteRefresh = infRefresh;
       if (m.audio_url) media += '<div class="pn-msg-tag">🎙 语音消息</div>';
       const text = infEsc(m.text || '');
       return '<div class="pn-msg-item">'
-        + '<div class="pn-msg-meta"><span class="pn-msg-author">' + author + '</span><span>' + time + '</span></div>'
+        + '<div class="pn-msg-meta"><span>' + time + '</span></div>'
         + (text ? '<div class="pn-msg-text">' + text + '</div>' : '')
         + media + '</div>';
     }).join('');

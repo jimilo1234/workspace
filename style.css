@@ -1326,11 +1326,10 @@ html.pn-fs .topbar { display: none; }
 .pn-msg-wall {
   position: fixed; inset: 0; z-index: 70;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
 }
 .pn-msg-wall[hidden] { display: none; }
 .pn-msg-wall-inner {
-  width: min(720px, 92vw); max-height: 82vh;
+  width: min(360px, 86vw); max-height: 82vh;
   display: flex; flex-direction: column;
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
