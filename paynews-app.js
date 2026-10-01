@@ -3130,3 +3130,9 @@ window.paynewsLogin = async function (username, password) {
     return { ok: false, error: (err && err.message) ? err.message : '登录失败' };
   }
 };
+
+/* 工作台顶栏「退出」按钮调用：完整登出（清服务端会话 + 清 localStorage + 通知父窗口），
+   登出后工作台会自动回到「未登录→显示导出(登录)按钮」状态。 */
+window.paynewsLogout = function () {
+  try { doLogout(); } catch (e) { console.error('[登出] 调用失败:', e); }
+};

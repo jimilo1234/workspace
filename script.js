@@ -2242,7 +2242,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20261001h";
+const PAYNEWS_VER = "20261001i";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3389,6 +3389,7 @@ window.__infiniteRefresh = infRefresh;
    ===================================================================== */
 (function initPaynewsWorkbench() {
   const recordBtn = document.getElementById('pnRecordBtn');
+  const logoutBtn = document.getElementById('pnLogoutBtn');
   const newsTitle = document.getElementById('pnNewsTitle');
   const msgWall = document.getElementById('pnMsgWall');
   const msgList = document.getElementById('pnMsgWallList');
@@ -3397,6 +3398,15 @@ window.__infiniteRefresh = infRefresh;
   function isPaynewsLoggedIn() { return !!localStorage.getItem('paynews_session'); }
   function showRecordBtn() { if (recordBtn) recordBtn.style.display = ''; }
   function hideRecordBtn() { if (recordBtn) recordBtn.style.display = 'none'; }
+  function showLogoutBtn() { if (logoutBtn) logoutBtn.style.display = ''; }
+  function hideLogoutBtn() { if (logoutBtn) logoutBtn.style.display = 'none'; }
+  function doPnLogout() {
+    if (typeof window.paynewsLogout === 'function') { window.paynewsLogout(); return; }
+    // 兜底：paynews 未就绪时，本地清会话并回退到未登录态
+    try { localStorage.removeItem('paynews_session'); } catch (e) {}
+    setPnButtons(false);
+    pnToast('已退出支付新闻');
+  }
 
   // 轻量提示（未登录等场景），2 秒后自动消失
   function pnToast(msg) {
@@ -3441,6 +3451,7 @@ window.__infiniteRefresh = infRefresh;
   }
   const exBtn = document.getElementById('exportData');
   if (exBtn) exBtn.addEventListener('click', openLogin);
+  if (logoutBtn) logoutBtn.addEventListener('click', doPnLogout);
   if (lClose) lClose.addEventListener('click', closeLogin);
   if (loginModal) loginModal.addEventListener('click', (e) => { if (e.target === loginModal) closeLogin(); });  // 点空白关闭
   document.addEventListener('keydown', (e) => {
@@ -3686,8 +3697,8 @@ window.__infiniteRefresh = infRefresh;
   function showExportBtn() { const b = document.getElementById('exportData'); if (b) b.style.display = ''; }
   function hideExportBtn() { const b = document.getElementById('exportData'); if (b) b.style.display = 'none'; }
   function setPnButtons(on) {
-    if (on) { showRecordBtn(); hideExportBtn(); }
-    else { hideRecordBtn(); showExportBtn(); }
+    if (on) { showRecordBtn(); showLogoutBtn(); hideExportBtn(); }
+    else { hideRecordBtn(); hideLogoutBtn(); showExportBtn(); }
   }
   setPnButtons(isPaynewsLoggedIn());
 

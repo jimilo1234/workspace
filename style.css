@@ -1321,6 +1321,8 @@ html.pn-fs .topbar { display: none; }
 /* ===== 随手笔记「记录」按钮（仅支付新闻登录时由 JS 显示） ===== */
 .note-actions { margin-left: auto; }
 #pnRecordBtn { color: var(--accent); border-color: var(--accent-dim); }
+#pnLogoutBtn { color: var(--text-soft); border-color: var(--border, #2a2a33); }
+#pnLogoutBtn:hover { color: #ff6b5b; border-color: #ff6b5b; }
 
 /* ===== 支付新闻 · 双击新闻标题弹出的消息墙（5 秒后自动消失） ===== */
 .pn-msg-wall {
