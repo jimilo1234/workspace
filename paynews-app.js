@@ -47,7 +47,7 @@ async function restoreSession() {
     if (!saved) return;
     const { username, session_id } = JSON.parse(saved);
     if (!username || !session_id) return;
-    
+
     const { data, error } = await supabaseClient.rpc('check_session', {
       p_username: username,
       p_session_id: session_id
@@ -59,7 +59,21 @@ async function restoreSession() {
       try { window.parent.postMessage({type: 'paynews-session-invalid'}, '*'); } catch(e) {}
       // 用户打开页面时会看到登录界面，无需额外操作
       console.log('[Session] 已失效，已清除本地session');
+      return;
     }
+    // session 有效 → 真正恢复登录态（之前只校验、不重建 currentUser，
+    // 导致刷新后工作台「记录」按钮可见、但 paynewsPublish 因 currentUser 为 null 而抛「支付新闻未登录」）
+    let displayName = username;
+    try {
+      const dn = await supabaseClient
+        .from('messages').select('display_name').eq('username', username)
+        .order('id', { ascending: false }).limit(1);
+      if (!dn.error && dn.data && dn.data.length > 0 && dn.data[0].display_name) {
+        displayName = dn.data[0].display_name;
+      }
+    } catch (e) { /* 拿不到昵称就用用户名，不影响发布 */ }
+    await enterMember(username, displayName, session_id);
+    console.log('[Session] 已从本地 session 恢复登录态');
   } catch(e) {
     console.error('[Session] 恢复检查失败:', e);
   }
@@ -626,6 +640,38 @@ function cancelVoice() {
   document.getElementById('voice-dur').textContent = '';
 }
 
+// 进入会员页（登录成功 / 刷新后恢复会话共用）：
+// 真正重建 currentUser，切换会员页、渲染新闻、订阅实时变更、通知外层工作台。
+// 抽出来是因为早期 restoreSession 只校验、不恢复 currentUser，
+// 导致刷新后工作台「记录」按钮可见、但 paynewsPublish 因 currentUser 为 null 而失败。
+async function enterMember(username, displayName, sessionId) {
+  currentUser = { username: username, displayName: displayName };
+  mySessionId = sessionId || mySessionId;
+  try {
+    const messages = await fetchMessages();
+    if (messages.length > 0) {
+      lastPlayedAudioMsgId = Math.max.apply(null, messages.map(function (m) { return m.id; }));
+      _pollLastId = lastPlayedAudioMsgId;
+    }
+    const pub = document.getElementById('public-page');
+    const mem = document.getElementById('member-page');
+    if (pub) pub.classList.remove('active');
+    if (mem) mem.classList.add('active');
+    renderNews('member-news-grid', 'member-news-date', messages);
+    initWalkieTalkie();
+    ensureAdminChannel();
+    initAdminKickListener();
+    initForumToggleListener();
+    if (localStorage.getItem(FORUM_KEY) === '1') { forumEnabled = true; applyForumState(true); }
+    subscribeMessageChanges();
+    ensurePushSubscribed();
+    try { window.parent.postMessage({ type: 'paynews-login' }, '*'); } catch (e) {}
+    console.log('[Session] 已进入会员页（用户名 ' + username + '）');
+  } catch (e) {
+    console.error('[enterMember] 进入会员页失败:', e);
+  }
+}
+
 async function doLogin() {
   const account = document.getElementById('login-account').value.trim();
   const password = document.getElementById('login-password').value.trim();
@@ -652,11 +698,6 @@ async function doLogin() {
       return;
     }
 
-    currentUser = {
-      username: account,
-      displayName: sessionResult[0].display_name
-    };
-
     // 如果有旧会话，通知老设备下线
     if (sessionResult[0].old_session_id) {
       broadcastKick(account, sessionResult[0].old_session_id);
@@ -668,36 +709,8 @@ async function doLogin() {
       session_id: mySessionId
     }));
 
-
-    // 加载留言并进入会员页
-    console.log('[发布] 刷新列表 开始');
-    const messages = await fetchMessages();
-    console.log('[发布] 刷新列表 完成');
-    // 初始化lastPlayedAudioMsgId：登录后只自动播放新到达的语音消息，不播放历史
-    if (messages.length > 0) {
-      lastPlayedAudioMsgId = Math.max(...messages.map(m => m.id));
-      _pollLastId = lastPlayedAudioMsgId;
-    }
-    document.getElementById('public-page').classList.remove('active');
-    document.getElementById('member-page').classList.add('active');
-    renderNews('member-news-grid', 'member-news-date', messages);
-    // 登录后重新初始化对讲机（用正确的用户名作为Presence key）
-    initWalkieTalkie();
-    // 创建共享的admin-commands channel（所有设备统一使用，防多端登录核心）
-    ensureAdminChannel();
-    initAdminKickListener();  // listen for admin kick commands
-    initForumToggleListener(); // listen for forum toggle
-    // 登录后检查论坛开关状态
-    if (localStorage.getItem(FORUM_KEY) === '1') {
-      forumEnabled = true;
-      applyForumState(true);
-    }
-    // 订阅messages表实时变更，新消息立即刷新评论
-    subscribeMessageChanges();
-    // 登录后订阅 Web Push（申请权限 + 保存订阅），之后发布即推送系统通知
-    ensurePushSubscribed();
-    // 通知外层工作台：支付新闻已登录（用于显示「记录」按钮、启用长按看消息）
-    try { window.parent.postMessage({ type: 'paynews-login' }, '*'); } catch (e) {}
+    // 加载留言并进入会员页（与刷新恢复共用 enterMember）
+    await enterMember(account, sessionResult[0].display_name, mySessionId);
 
     // 0110账号登录满2小时自动退出
     if (account === '0110') {
