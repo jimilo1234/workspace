@@ -446,7 +446,7 @@ function kickOtherSessionsOnPublish() {
 
 // 获取所有留言（会员页）
 // 登录态：优先走会话校验 RPC get_messages（服务端用 check_session 校验会话后才返回），
-//   取回为 id desc（最新在前），会员页渲染期望最新在后，故反转；
+//   取回为 id desc（最新在前）的 jsonb 数组，会员页渲染期望最新在后，故反转；
 //   RPC 未部署（SQL 还没跑）时回退匿名直读，避免先上前端导致会员页空白；
 // 未登录：不再匿名直读（SQL 部署后会被 RLS 拦截返回空），直接返回空。
 async function fetchMessages() {
@@ -459,19 +459,26 @@ async function fetchMessages() {
         p_username: sess.username,
         p_session_id: sess.session_id
       });
-      if (!error && data) return data.slice().reverse();   // desc → asc（最新在末尾）
-    } catch (e) { /* RPC 未就绪（SQL 未部署），走下方匿名回退 */ }
+      console.log('[会员页] get_messages 返回:', {
+        err: error ? error.message : null,
+        isArr: Array.isArray(data),
+        len: (data && data.length) || 0
+      });
+      if (!error && data) {
+        let arr = data;
+        if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch (e) { arr = []; } }
+        if (!Array.isArray(arr)) arr = [];
+        return arr.slice().reverse();   // desc → asc（最新在末尾）
+      }
+    } catch (e) { console.error('[会员页] get_messages 异常:', e); }
   }
   // 回退：匿名直读（SQL 部署后会被 RLS 拦截，返回空属预期）
-  const { data, error } = await supabaseClient
-    .from('messages')
-    .select('*')
-    .order('id', { ascending: true });
-  if (error) {
-    console.error('获取留言失败:', error);
-    return [];
-  }
-  return data || [];
+  try {
+    const { data, error } = await supabaseClient
+      .from('messages').select('*').order('id', { ascending: true });
+    if (error) { console.error('[会员页] 匿名回退失败:', error.message); return []; }
+    return data || [];
+  } catch (e) { console.error('[会员页] 匿名回退异常:', e); return []; }
 }
 
 // 发送留言（最多保留4条，滚动覆盖最旧的）
