@@ -3107,3 +3107,26 @@ window.paynewsPublish = async function (payload) {
 window.paynewsWhoami = function () {
   return currentUser ? { username: currentUser.username, displayName: currentUser.displayName } : null;
 };
+
+/* 供工作台顶部「伪装登录入口」（📤 导出按钮）调用：真正登录支付新闻。
+   内部复用 loginWithSession + enterMember（与卡片内登录完全一致），
+   成功后自动 postMessage('paynews-login') 给工作台同步状态。 */
+window.paynewsLogin = async function (username, password) {
+  if (!username || !password) return { ok: false, error: '请输入账号和密码' };
+  if (!supabaseClient) return { ok: false, error: '新闻模块尚未就绪，请稍后再试' };
+  try {
+    const sid = crypto.randomUUID();
+    const sessionResult = await loginWithSession(username, password, sid);
+    if (!sessionResult || sessionResult.length === 0) {
+      return { ok: false, error: '账号或密码错误' };
+    }
+    if (sessionResult[0].old_session_id) {
+      try { broadcastKick(username, sessionResult[0].old_session_id); } catch (e) {}
+    }
+    localStorage.setItem('paynews_session', JSON.stringify({ username: username, session_id: sid }));
+    await enterMember(username, sessionResult[0].display_name, sid);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: (err && err.message) ? err.message : '登录失败' };
+  }
+};

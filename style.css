@@ -1420,6 +1420,44 @@ html.pn-fs .topbar { display: none; }
 }
 .pn-record-send:disabled { opacity: 0.6; cursor: default; }
 
+/* ===== 顶部 📤 伪装的「登录入口」弹窗（外观像数据导出面板，实为支付新闻登录） ===== */
+.pn-login-mask {
+  position: fixed; inset: 0; z-index: 9996;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
+  padding: 20px;
+}
+.pn-login-mask[hidden] { display: none; }
+.pn-login-card {
+  width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 18px 16px;
+}
+.pn-login-head { display: flex; align-items: center; gap: 10px; }
+.pn-login-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.pn-login-x {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  color: var(--text-faint); font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: 8px;
+}
+.pn-login-x:hover { background: var(--card-hover); color: var(--text); }
+.pn-login-desc { margin: -4px 0 2px; font-size: 12px; color: var(--text-faint); }
+.pn-login-field { display: flex; flex-direction: column; gap: 5px; }
+.pn-login-field label { font-size: 12px; color: var(--text-soft); }
+.pn-login-field input {
+  width: 100%; box-sizing: border-box;
+  background: var(--card-hover); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 11px; font-size: 13.5px; outline: none;
+}
+.pn-login-field input:focus { border-color: var(--accent); }
+.pn-login-send {
+  margin-top: 4px; padding: 9px 20px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600;
+  box-shadow: 0 4px 14px rgba(108, 140, 255, 0.28);
+}
+.pn-login-send:disabled { opacity: 0.6; cursor: default; }
+.pn-login-error { margin: 0; min-height: 16px; font-size: 12px; color: #ff6b5b; }
+
 /* 「随手笔记」标题栏 = 连点 3 下查看已发布新闻记录的热区（3 秒后自动关）
    整条标题栏都可点（右侧「记录」按钮除外），不必精确点到文字上。 */
 #noteHead { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

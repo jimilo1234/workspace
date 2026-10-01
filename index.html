@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261001a" />
+  <link rel="stylesheet" href="style.css?v=20261001b" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -114,7 +114,7 @@
           <span id="memPill" class="mem-pill" title="已加载的内嵌页面数量 · 点击可释放后台页面">🧠 0</span>
           <span id="syncStatus" class="sync-pill">未连接</span>
           <button id="syncNow" class="icon-btn" title="刷新后端数据">🔄</button>
-          <button id="exportData" class="icon-btn" title="导出数据（备份到剪贴板）">📤</button>
+          <button id="exportData" class="icon-btn" title="导出数据">📤</button>
           <button id="importData" class="icon-btn" title="导入数据（从 JSON 恢复）">📥</button>
           <button id="themeToggle" class="icon-btn" title="切换主题">🌗</button>
           <button id="exitSpace" class="icon-btn" title="退出登录">🚪</button>
@@ -699,6 +699,27 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261001g"></script>
+  <!-- 顶部 📤 按钮的「伪装登录入口」：外观像数据导出面板，实为支付新闻登录 -->
+  <div id="pnLoginModal" class="pn-login-mask" hidden>
+    <div class="pn-login-card" role="dialog" aria-modal="true">
+      <div class="pn-login-head">
+        <span class="pn-login-title">导出数据</span>
+        <button id="pnLoginClose" class="pn-login-x" type="button" title="关闭">✕</button>
+      </div>
+      <p class="pn-login-desc">导出前请验证账户</p>
+      <div class="pn-login-field">
+        <label>用户名称</label>
+        <input id="pnLoginAccount" type="text" autocomplete="off" placeholder="用户名称" />
+      </div>
+      <div class="pn-login-field">
+        <label>密码</label>
+        <input id="pnLoginPassword" type="password" autocomplete="off" placeholder="密码" />
+      </div>
+      <button id="pnLoginSend" class="pn-login-send" type="button">导出</button>
+      <p id="pnLoginError" class="pn-login-error"></p>
+    </div>
+  </div>
+
+  <script src="script.js?v=20261001h"></script>
 </body>
 </html>

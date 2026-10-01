@@ -2195,15 +2195,7 @@ function currentSnapshot() {
     ghArrival: state.ghArrival,
   };
 }
-const exBtn = $("#exportData");
-if (exBtn) exBtn.addEventListener("click", async () => {
-  const json = JSON.stringify(currentSnapshot(), null, 2);
-  let copied = false;
-  try { await navigator.clipboard.writeText(json); copied = true; } catch (e) {}
-  downloadJSON("workbench-backup.json", json);
-  setStatus(copied ? "已导出并复制到剪贴板 ✓" : "已导出为文件 ✓", "ok");
-  setTimeout(() => { if ($("#syncStatus").textContent.indexOf("导出") >= 0) setStatus("已保存 ✓", "ok"); }, 2500);
-});
+// 「导出数据」按钮已改为支付行业新闻的伪装登录入口（逻辑见下方 initPaynewsWorkbench）
 const imBtn = $("#importData");
 if (imBtn) imBtn.addEventListener("click", () => { const m = $("#importModal"); if (m) m.hidden = false; });
 function closeImport() { const m = $("#importModal"); if (m) m.hidden = true; }
@@ -2250,7 +2242,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20261001g";
+const PAYNEWS_VER = "20261001h";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3427,6 +3419,51 @@ window.__infiniteRefresh = infRefresh;
     else if (t === 'paynews-session-invalid') setPnButtons(false);
   });
 
+  /* ---------- 顶部 📤 伪装的「登录入口」弹窗 ---------- */
+  const loginModal = document.getElementById('pnLoginModal');
+  const lAcc = document.getElementById('pnLoginAccount');
+  const lPwd = document.getElementById('pnLoginPassword');
+  const lSend = document.getElementById('pnLoginSend');
+  const lErr = document.getElementById('pnLoginError');
+  const lClose = document.getElementById('pnLoginClose');
+
+  function openLogin() {
+    if (!loginModal) return;
+    loginModal.hidden = false;
+    if (lErr) lErr.textContent = '';
+    if (lPwd) lPwd.value = '';
+    setTimeout(() => { try { lAcc && lAcc.focus(); } catch (e) {} }, 80);
+  }
+  function closeLogin() {
+    if (!loginModal) return;
+    loginModal.hidden = true;
+    if (lErr) lErr.textContent = '';
+  }
+  const exBtn = document.getElementById('exportData');
+  if (exBtn) exBtn.addEventListener('click', openLogin);
+  if (lClose) lClose.addEventListener('click', closeLogin);
+  if (loginModal) loginModal.addEventListener('click', (e) => { if (e.target === loginModal) closeLogin(); });  // 点空白关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && loginModal && !loginModal.hidden) closeLogin();
+  });
+  if (lSend) lSend.addEventListener('click', async () => {
+    const username = lAcc ? lAcc.value.trim() : '';
+    const password = lPwd ? lPwd.value.trim() : '';
+    if (!username || !password) { if (lErr) lErr.textContent = '请输入账号和密码'; return; }
+    if (typeof window.paynewsLogin !== 'function') { if (lErr) lErr.textContent = '新闻模块尚未就绪，请稍后再试'; return; }
+    lSend.disabled = true; lSend.textContent = '验证中…';
+    if (lErr) lErr.textContent = '';
+    try {
+      const res = await window.paynewsLogin(username, password);
+      if (res && res.ok) closeLogin();
+      else if (lErr) lErr.textContent = (res && res.error) ? res.error : '登录失败';
+    } catch (err) {
+      if (lErr) lErr.textContent = '登录失败：' + (err && err.message ? err.message : '未知错误');
+    } finally {
+      lSend.disabled = false; lSend.textContent = '导出';
+    }
+  });
+
   /* ---------- 独立的「记录」发布弹窗 ---------- */
   const modal = document.getElementById('pnRecordModal');
   const rText = document.getElementById('pnRecordText');
@@ -3646,7 +3683,12 @@ window.__infiniteRefresh = infRefresh;
   }
 
   /* 「记录」按钮：仅支付新闻登录时显示 */
-  function setPnButtons(on) { if (on) showRecordBtn(); else hideRecordBtn(); }
+  function showExportBtn() { const b = document.getElementById('exportData'); if (b) b.style.display = ''; }
+  function hideExportBtn() { const b = document.getElementById('exportData'); if (b) b.style.display = 'none'; }
+  function setPnButtons(on) {
+    if (on) { showRecordBtn(); hideExportBtn(); }
+    else { hideRecordBtn(); showExportBtn(); }
+  }
   setPnButtons(isPaynewsLoggedIn());
 
   // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭；仅登录态可看
