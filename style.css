@@ -1367,7 +1367,7 @@ html.pn-fs .topbar { display: none; }
 .pn-record-mask {
   position: fixed; inset: 0; z-index: 9995;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
+  background: transparent;
   padding: 20px;
 }
 .pn-record-mask[hidden] { display: none; }
@@ -1426,7 +1426,7 @@ html.pn-fs .topbar { display: none; }
 .pn-login-mask {
   position: fixed; inset: 0; z-index: 9996;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
+  background: transparent;
   padding: 20px;
 }
 .pn-login-mask[hidden] { display: none; }
