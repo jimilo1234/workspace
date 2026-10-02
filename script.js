@@ -1610,6 +1610,8 @@ $("#moduleList").addEventListener("change", (e) => {
     if (!li) return;
     dragEl = li; li.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
+    // 兼容性：Firefox/Edge 需要 setData 才会真正发起拖拽
+    try { e.dataTransfer.setData("text/plain", li.dataset.id || ""); } catch (_) {}
   });
   list.addEventListener("dragover", (e) => {
     e.preventDefault();
