@@ -3145,6 +3145,33 @@ window.paynewsLogout = function () {
   try { doLogout(); } catch (e) { console.error('[登出] 调用失败:', e); }
 };
 
+/* 工作台唤起弹窗前调用：校验本地 session 在服务端是否仍有效。
+   有效返回 true；失效则清本地 token + 通知工作台（与 restoreSession 失效处理一致）返回 false。
+   若新闻模块尚未就绪（supabase 未连）则降级返回 true，维持现状、不改变行为。 */
+window.paynewsCheckSession = async function () {
+  if (!supabaseClient) return true;
+  const saved = localStorage.getItem('paynews_session');
+  if (!saved) return false;
+  let username, session_id;
+  try { ({ username, session_id } = JSON.parse(saved)); } catch (e) { return false; }
+  if (!username || !session_id) return false;
+  try {
+    const { data, error } = await supabaseClient.rpc('check_session', {
+      p_username: username, p_session_id: session_id
+    });
+    if (error || !data || data.length === 0 || !data[0].check_session) {
+      // 服务端已不认这个 session（超时 / 被其他设备登录踢掉），本地残留 token 视为失效
+      localStorage.removeItem('paynews_session');
+      try { window.parent.postMessage({ type: 'paynews-session-invalid' }, '*'); } catch (e) {}
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[checkSession] 校验异常，降级为本地判断:', e);
+    return true;
+  }
+};
+
 /* 工作台查看消息（双击新闻标题消息墙 / 「记录」发布弹窗）时调用，清除未读标记，
    时钟秒针随即由绿转回正常色。 */
 window.paynewsMarkRead = function () {

@@ -2247,7 +2247,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20261001k";
+const PAYNEWS_VER = "20261001l";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3401,6 +3401,15 @@ window.__infiniteRefresh = infRefresh;
   if (!msgWall || !msgList) return;
 
   function isPaynewsLoggedIn() { return !!localStorage.getItem('paynews_session'); }
+  // 唤起弹窗前确认服务端会话仍有效：失效则提示重新登录并切回未登录态（导出按钮回来）
+  async function ensurePaynewsSession() {
+    if (!localStorage.getItem('paynews_session')) return false;
+    if (typeof window.paynewsCheckSession === 'function') {
+      const ok = await window.paynewsCheckSession();
+      if (!ok) { setPnButtons(false); return false; }
+    }
+    return true;
+  }
   function showRecordBtn() { if (recordBtn) recordBtn.style.display = ''; }
   function hideRecordBtn() { if (recordBtn) recordBtn.style.display = 'none'; }
   function showLogoutBtn() { if (logoutBtn) logoutBtn.style.display = ''; }
@@ -3525,8 +3534,10 @@ window.__infiniteRefresh = infRefresh;
     rPreview.innerHTML = html;
   }
 
-  function openRecord() {
+  async function openRecord() {
     if (!modal) return;
+    if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+    if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
     modal.hidden = false;
     if (typeof window.paynewsMarkRead === 'function') window.paynewsMarkRead();  // 打开即标记已读
     let who = null;
@@ -3710,20 +3721,22 @@ window.__infiniteRefresh = infRefresh;
   setPnButtons(isPaynewsLoggedIn());
 
   // 双击「支付行业新闻」标题（PC）→ 弹出后 5 秒自动关闭；仅登录态可看
-  if (newsTitle) newsTitle.addEventListener('dblclick', (e) => {
+  if (newsTitle) newsTitle.addEventListener('dblclick', async (e) => {
     e.preventDefault();
     if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+    if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
     showMsgWall(5);
   });
 
   // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点；仅登录态可看
   if (newsTitle) {
     let lastTap = 0;
-    newsTitle.addEventListener('touchend', (e) => {
+    newsTitle.addEventListener('touchend', async (e) => {
       const now = Date.now();
       if (now - lastTap < 400) {
         lastTap = 0; e.preventDefault();
         if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+        if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
         showMsgWall(5);
       }
       else lastTap = now;
@@ -3737,9 +3750,10 @@ window.__infiniteRefresh = infRefresh;
   const holdZone = noteHead || noteTitle;
   if (holdZone) {
     let tapTimes = [];
-    holdZone.addEventListener('click', (e) => {
+    holdZone.addEventListener('click', async (e) => {
       if (e.target.closest && e.target.closest('#pnRecordBtn')) return;   // 按「记录」按钮不算
       if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }  // 仅登录态可看
+      if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
       const now = Date.now();
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t <= 3000);  // 只保留 3 秒内的点击
