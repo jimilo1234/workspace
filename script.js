@@ -3764,6 +3764,49 @@ window.__infiniteRefresh = infRefresh;
     });
   }
 
+  /* 长按「📝 随手笔记」标题文字 2 秒 → 弹出已发布新闻记录；松手(指针抬起/移出/取消)即关。
+     与上面的「连点 3 下」并存；热区仅限标题文字本身；满 2 秒直接弹出、无进度提示。 */
+  const noteTitleEl = document.getElementById('noteTitle');
+  if (noteTitleEl) {
+    let holdTimer = null;        // 2 秒长按定时器
+    let holdShown = false;       // 长按是否已使消息墙显示（松手即关依据）
+    let holdTriggered = false;   // 本轮按下是否真的长按满 2 秒触发
+    let justHeld = false;        // 长按产生的 click 不计入「连点 3 下」
+    const beginHold = (e) => {
+      if (e.button !== undefined && e.button > 0) return;  // 仅左键 / 触摸 / 笔
+      try { noteTitleEl.setPointerCapture(e.pointerId); } catch (err) {}  // 即使被浮层盖住，松手也必收到
+      holdTriggered = false;
+      if (holdTimer) clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => {
+        holdTriggered = true;
+        if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+        ensurePaynewsSession().then((ok) => {
+          if (!ok) { pnToast('登录状态已失效，请重新登录'); return; }
+          holdShown = true;
+          msgWall.hidden = false;
+          if (wallHint) wallHint.textContent = '松开手指/鼠标即关闭';
+          if (typeof window.paynewsMarkRead === 'function') window.paynewsMarkRead();
+          fetchMessages().then((list) => { if (holdShown) renderMsgs(msgList, list); })
+            .catch((err) => { if (holdShown) { msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>'; } });
+        });
+      }, 2000);
+    };
+    const endHold = () => {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      if (holdTriggered) justHeld = true;  // 拦截本次长按产生的 click，不计入连点 3 下
+      if (holdShown) { holdShown = false; hideMsgWall(); }  // 松手即关
+    };
+    noteTitleEl.style.userSelect = 'none';
+    noteTitleEl.style.webkitUserSelect = 'none';
+    noteTitleEl.style.touchAction = 'none';
+    noteTitleEl.addEventListener('pointerdown', (e) => { e.preventDefault(); beginHold(e); });
+    noteTitleEl.addEventListener('pointerup', endHold);
+    noteTitleEl.addEventListener('pointercancel', endHold);
+    noteTitleEl.addEventListener('pointerleave', endHold);
+    noteTitleEl.addEventListener('contextmenu', (e) => e.preventDefault());  // 屏蔽长按右键菜单 / 文字 callout
+    noteTitleEl.addEventListener('click', (e) => { if (justHeld) { e.stopPropagation(); justHeld = false; } });
+  }
+
   // 点浮层任意处立即关闭
   msgWall.addEventListener('click', hideMsgWall);
 })();
