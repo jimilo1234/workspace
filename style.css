@@ -453,6 +453,9 @@ body {
 .notes-history .fh-head:active { opacity: .82; }
 .notes-history .nh-caret { display: inline-block; width: 1em; color: var(--accent); }
 .notes-history .fh-list { max-height: 168px; }
+/* 关键：.fh-list 自身是 display:flex，会压过浏览器默认的 [hidden]{display:none}，
+   必须显式给一条 [hidden] 覆盖，否则折叠（默认带 hidden）不生效 */
+.notes-history .fh-list[hidden] { display: none; }
 .notes-history .fh-text { white-space: pre-wrap; word-break: break-word; }
 
 /* NEWS */
