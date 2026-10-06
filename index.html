@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261001j" />
+  <link rel="stylesheet" href="style.css?v=20261001k" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -255,8 +255,11 @@
             <div id="notePanel" class="panel">
               <textarea id="notes" class="notes" placeholder="想到什么写什么…（自动保存到后端）"></textarea>
               <div class="notes-history">
-                <div class="fh-head"><span>历史存档 · 每次修改自动留痕</span><button id="notesHistoryClear" class="text-btn">清空</button></div>
-                <div id="notesHistoryList" class="fh-list"></div>
+                <div class="fh-head" id="notesHistoryToggle" role="button" tabindex="0" title="展开 / 收起历史存档">
+                  <span class="nh-title"><span class="nh-caret">▸</span>历史存档 · 每次修改自动留痕</span>
+                  <button id="notesHistoryClear" class="text-btn" type="button">清空</button>
+                </div>
+                <div id="notesHistoryList" class="fh-list" hidden></div>
               </div>
             </div>
           </section>
@@ -721,6 +724,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261001p"></script>
+  <script src="script.js?v=20261001q"></script>
 </body>
 </html>

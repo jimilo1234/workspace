@@ -1286,6 +1286,22 @@ if (notesHistoryClear) notesHistoryClear.addEventListener("click", () => {
   renderNotesHistory();
   scheduleSave();
 });
+// 历史存档折叠：默认收起，点标题栏展开/收起；「清空」按钮不触发折叠
+const nhToggle = document.getElementById('notesHistoryToggle');
+const nhList = document.getElementById('notesHistoryList');
+if (nhToggle && nhList) {
+  const nhCaret = nhToggle.querySelector('.nh-caret');
+  const toggleNh = (e) => {
+    if (e.target.closest && e.target.closest('#notesHistoryClear')) return;  // 清空按钮不触发折叠
+    const willShow = nhList.hidden;
+    nhList.hidden = !willShow;
+    if (nhCaret) nhCaret.textContent = willShow ? '▾' : '▸';
+  };
+  nhToggle.addEventListener('click', toggleNh);
+  nhToggle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNh(e); }
+  });
+}
 
 /* ---------- 主题 ---------- */
 $("#themeToggle").addEventListener("click", () => {
@@ -3754,7 +3770,7 @@ window.__infiniteRefresh = infRefresh;
     holdZone.addEventListener('click', async (e) => {
       if (justHeld) { justHeld = false; return; }                         // 长按松手那次 click 不计入连点
       if (e.target.closest && e.target.closest('#pnRecordBtn')) return;   // 按「记录」按钮不算
-      if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }  // 仅登录态可看
+      if (!isPaynewsLoggedIn()) { return; }  // 未登录：静默，不提示不报错（去点顶部📤导出登录）
       if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
       const now = Date.now();
       tapTimes.push(now);
@@ -3782,7 +3798,7 @@ window.__infiniteRefresh = infRefresh;
       if (holdTimer) clearTimeout(holdTimer);
       holdTimer = setTimeout(() => {
         holdTriggered = true;
-        if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
+        if (!isPaynewsLoggedIn()) { return; }  // 未登录：静默，不弹消息墙不报错
         ensurePaynewsSession().then((ok) => {
           if (!ok) { pnToast('登录状态已失效，请重新登录'); return; }
           holdShown = true;

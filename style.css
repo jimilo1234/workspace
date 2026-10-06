@@ -449,7 +449,9 @@ body {
 /* 随手笔记 · 历史存档 */
 .note-card .notes { flex: 1 1 auto; min-height: 90px; height: auto; }
 .notes-history { flex: 0 0 auto; display: flex; flex-direction: column; min-height: 0; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128,128,128,.18); }
-.notes-history .fh-head { font-size: 12px; color: var(--text-soft); margin-bottom: 6px; }
+.notes-history .fh-head { font-size: 12px; color: var(--text-soft); margin-bottom: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.notes-history .fh-head:active { opacity: .82; }
+.notes-history .nh-caret { display: inline-block; width: 1em; color: var(--accent); }
 .notes-history .fh-list { max-height: 168px; }
 .notes-history .fh-text { white-space: pre-wrap; word-break: break-word; }
 
