@@ -1459,6 +1459,8 @@ html.pn-fs .topbar { display: none; }
   padding: 9px 11px; font-size: 13.5px; outline: none;
 }
 .pn-login-field input:focus { border-color: var(--accent); }
+/* 密码框用 text + 圆点掩盖，避免浏览器把它识别为密码字段而弹出「保存密码」 */
+#pnLoginPassword { -webkit-text-security: disc; -moz-text-security: disc; }
 .pn-login-send {
   margin-top: 4px; padding: 9px 20px; border-radius: 10px; border: none; cursor: pointer;
   background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600;
