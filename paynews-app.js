@@ -132,7 +132,12 @@ function _syncUnreadFlag() {
   try { window.__paynewsHasUnread = !!hasNewMessages; } catch (e) {}
   try { window.parent && window.parent.postMessage({ type: 'paynews-unread', unread: !!hasNewMessages }, '*'); } catch (e) {}
 }
-function setHasNew(v) { hasNewMessages = !!v; _syncUnreadFlag(); }
+function setHasNew(v) {
+  hasNewMessages = !!v;
+  // 未读时标签页标题前加 * 提示（保持原标题内容不变；看过即移除），同时同步工作台标志
+  document.title = hasNewMessages ? ('* ' + originalTitle) : originalTitle;
+  _syncUnreadFlag();
+}
 _syncUnreadFlag();  // 初始置 false
 // 在线状态追踪：记录哪些账号在线且订阅了广播
 let onlineSubscribers = {};  // { username: true } — 在线且订阅广播的账号
@@ -256,8 +261,7 @@ function renderNews(containerId, dateId, userMessages, isAutoRefresh) {
       );
       if (addedOtherMsgs.length > 0) {
         dateEl.classList.add('has-update');
-        document.title = '支付行业新闻1.0';
-        setHasNew(true);
+        setHasNew(true);  // 标题加 * 由 setHasNew 统一处理
       }
     }
     lastMessageSnapshot = newSnapshot;
