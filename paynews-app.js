@@ -947,9 +947,7 @@ async function doSendMessage() {
   }
 }
 
-function handleImageSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+function setPendingImage(file) {
   pendingImageFile = file;
   const reader = new FileReader();
   reader.onload = function(ev) {
@@ -957,6 +955,42 @@ function handleImageSelect(e) {
     renderPendingPreview();
   };
   reader.readAsDataURL(file);
+}
+
+// PC 端 Ctrl+V 粘贴：把剪贴板里的图片/视频/音频直接作为待发布内容
+// 绑定在 comment-panel（文本框聚焦粘贴时事件会冒泡到这里，单点绑定避免重复触发）
+function handlePaste(e) {
+  const cd = e.clipboardData || window.clipboardData;
+  if (!cd || !cd.items) return;
+  let imageFile = null;
+  let mediaFile = null;
+  for (let i = 0; i < cd.items.length; i++) {
+    const it = cd.items[i];
+    if (it.kind !== 'file') continue;
+    const f = it.getAsFile();
+    if (!f) continue;
+    if (it.type.startsWith('image/')) {
+      if (!imageFile) imageFile = f;
+    } else if (it.type.startsWith('video/') || it.type.startsWith('audio/')) {
+      if (!mediaFile) mediaFile = f;
+    }
+  }
+  if (imageFile) {
+    e.preventDefault();
+    setPendingImage(imageFile);
+    showToast('已粘贴图片，点击预览图可移除');
+  } else if (mediaFile) {
+    e.preventDefault();
+    pendingVideoFile = mediaFile;
+    renderPendingPreview();
+    showToast('已粘贴视频/音频：' + (mediaFile.name || mediaFile.type));
+  }
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  setPendingImage(file);
 }
 
 function handleVideoSelect(e) {
@@ -1584,6 +1618,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('msg-image').addEventListener('change', handleImageSelect);
   document.getElementById('msg-video').addEventListener('change', handleVideoSelect);
+  // PC 端粘贴上传：在发布弹窗内 Ctrl+V 直接把剪贴板图片设为待发布图片
+  const _pnPanel = document.getElementById('comment-panel');
+  if (_pnPanel) _pnPanel.addEventListener('paste', handlePaste);
   document.getElementById('voice-btn').addEventListener('click', startRecording);
   document.getElementById('rec-stop').addEventListener('click', stopRecording);
   document.getElementById('voice-del').addEventListener('click', cancelVoice);
