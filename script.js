@@ -3517,6 +3517,17 @@ window.__infiniteRefresh = infRefresh;
   const rWho = document.getElementById('pnRecordWho');
   const rClose = document.getElementById('pnRecordClose');
 
+  // 「随手笔记」标题栏长按弹出新闻记录的时长（可配置：3/5/10 秒，默认 3 秒，写入 localStorage 持久化）
+  let noteHoldSec = parseInt(localStorage.getItem('wb_notehold_sec') || '3', 10) || 3;
+  const holdSecSel = document.getElementById('pnHoldSec');
+  if (holdSecSel) {
+    holdSecSel.value = String(noteHoldSec);
+    holdSecSel.addEventListener('change', () => {
+      noteHoldSec = parseInt(holdSecSel.value, 10) || 3;
+      try { localStorage.setItem('wb_notehold_sec', String(noteHoldSec)); } catch (e) {}
+    });
+  }
+
   let pendingImage = null;   // { file, url }
   let pendingVideo = null;   // { file }
   let voiceBlob = null;
@@ -3782,12 +3793,13 @@ window.__infiniteRefresh = infRefresh;
     });
   }
 
-  /* 长按「📝 随手笔记」整个标题行 2 秒 → 弹出已发布新闻记录；松手(指针抬起/移出/取消)即关。
+  /* 长按「📝 随手笔记」整个标题行 → 弹出已发布新闻记录；松手(指针抬起/移出/取消)即关。
      与「连点 3 下」并存；热区为整行标题栏(和三连点一致)，不必精确点到文字；
-     满 2 秒直接弹出、无进度提示；按「记录」按钮区域不触发长按(走各自 click)。 */
+     长按阈值由 noteHoldSec 控制（默认 3 秒，可在记录弹窗「🎙 录音」旁下拉切换 3/5/10 秒）；
+     按「记录」按钮区域不触发长按(走各自 click)。 */
   const noteHeadEl = document.getElementById('noteHead');
   if (noteHeadEl) {
-    let holdTimer = null;        // 2 秒长按定时器
+    let holdTimer = null;        // 可配置长按定时器（时长 = noteHoldSec 秒）
     let holdShown = false;       // 长按是否已使消息墙显示（松手即关依据）
     let holdTriggered = false;   // 本轮按下是否真的长按满 2 秒触发
     const beginHold = (e) => {
@@ -3808,7 +3820,7 @@ window.__infiniteRefresh = infRefresh;
           fetchMessages().then((list) => { if (holdShown) renderMsgs(msgList, list); })
             .catch((err) => { if (holdShown) { msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>'; } });
         });
-      }, 2000);
+      }, noteHoldSec * 1000);
     };
     const endHold = () => {
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
