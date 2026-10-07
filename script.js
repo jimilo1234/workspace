@@ -3517,14 +3517,14 @@ window.__infiniteRefresh = infRefresh;
   const rWho = document.getElementById('pnRecordWho');
   const rClose = document.getElementById('pnRecordClose');
 
-  // 「随手笔记」标题栏长按弹出新闻记录的时长（可配置：3/5/10 秒，默认 3 秒，写入 localStorage 持久化）
-  let noteHoldSec = parseInt(localStorage.getItem('wb_notehold_sec') || '3', 10) || 3;
-  const holdSecSel = document.getElementById('pnHoldSec');
-  if (holdSecSel) {
-    holdSecSel.value = String(noteHoldSec);
-    holdSecSel.addEventListener('change', () => {
-      noteHoldSec = parseInt(holdSecSel.value, 10) || 3;
-      try { localStorage.setItem('wb_notehold_sec', String(noteHoldSec)); } catch (e) {}
+  // 「随手笔记」记录弹窗弹出后的停留（显示）时长：可配置 3/5/10 秒，默认 3 秒，写入 localStorage 持久化
+  let noteShowSec = parseInt(localStorage.getItem('wb_noteshow_sec') || '3', 10) || 3;
+  const showSecSel = document.getElementById('pnShowSec');
+  if (showSecSel) {
+    showSecSel.value = String(noteShowSec);
+    showSecSel.addEventListener('change', () => {
+      noteShowSec = parseInt(showSecSel.value, 10) || 3;
+      try { localStorage.setItem('wb_noteshow_sec', String(noteShowSec)); } catch (e) {}
     });
   }
 
@@ -3752,7 +3752,7 @@ window.__infiniteRefresh = infRefresh;
     e.preventDefault();
     if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
     if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
-    showMsgWall(5);
+    showMsgWall(noteShowSec);
   });
 
   // 移动端双击：dblclick 在触屏上不可靠，手动识别两次快速轻点；仅登录态可看
@@ -3764,7 +3764,7 @@ window.__infiniteRefresh = infRefresh;
         lastTap = 0; e.preventDefault();
         if (!isPaynewsLoggedIn()) { pnToast('请先登录支付新闻后再查看'); return; }
         if (!await ensurePaynewsSession()) { pnToast('登录状态已失效，请重新登录'); return; }
-        showMsgWall(5);
+        showMsgWall(noteShowSec);
       }
       else lastTap = now;
     }, { passive: false });
@@ -3788,18 +3788,18 @@ window.__infiniteRefresh = infRefresh;
       tapTimes = tapTimes.filter((t) => now - t <= 3000);  // 只保留 3 秒内的点击
       if (tapTimes.length >= 3) {
         tapTimes = [];
-        showMsgWall(3);                            // 弹出后 3 秒自动关闭
+        showMsgWall(noteShowSec);                  // 弹出后按配置秒数自动关闭
       }
     });
   }
 
   /* 长按「📝 随手笔记」整个标题行 → 弹出已发布新闻记录；松手(指针抬起/移出/取消)即关。
      与「连点 3 下」并存；热区为整行标题栏(和三连点一致)，不必精确点到文字；
-     长按阈值由 noteHoldSec 控制（默认 3 秒，可在记录弹窗「🎙 录音」旁下拉切换 3/5/10 秒）；
-     按「记录」按钮区域不触发长按(走各自 click)。 */
+     长按阈值固定 2 秒；弹出后的停留时长由 noteShowSec 控制（3/5/10 秒，默认 3 秒，
+     可在记录弹窗「🎙 录音」旁下拉切换）；按「记录」按钮区域不触发长按(走各自 click)。 */
   const noteHeadEl = document.getElementById('noteHead');
   if (noteHeadEl) {
-    let holdTimer = null;        // 可配置长按定时器（时长 = noteHoldSec 秒）
+    let holdTimer = null;        // 长按定时器（固定 2 秒阈值）
     let holdShown = false;       // 长按是否已使消息墙显示（松手即关依据）
     let holdTriggered = false;   // 本轮按下是否真的长按满 2 秒触发
     const beginHold = (e) => {
@@ -3820,7 +3820,7 @@ window.__infiniteRefresh = infRefresh;
           fetchMessages().then((list) => { if (holdShown) renderMsgs(msgList, list); })
             .catch((err) => { if (holdShown) { msgList.innerHTML = '<div class="pn-msg-empty">加载失败，请稍后重试</div>'; } });
         });
-      }, noteHoldSec * 1000);
+      }, 2000);
     };
     const endHold = () => {
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
