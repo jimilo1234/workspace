@@ -3635,7 +3635,8 @@ window.__infiniteRefresh = infRefresh;
     }
   });
 
-  if (rSend) rSend.addEventListener('click', async () => {
+  // 发送：点击「发布新闻」按钮，或 PC 模式下在文本框按 Enter（Shift+Enter 换行、输入法组合中不发）
+  async function sendRecord() {
     const text = rText ? rText.value.trim() : '';
     if (!text && !pendingImage && !pendingVideo && !voiceBlob) {
       if (rTip) rTip.textContent = '请先输入内容或选择附件';
@@ -3663,7 +3664,18 @@ window.__infiniteRefresh = infRefresh;
     } finally {
       rSend.disabled = false; rSend.textContent = '发布新闻';
     }
-  });
+  }
+  if (rSend) rSend.addEventListener('click', sendRecord);
+  // PC 模式（精确指针）下：文本框内按 Enter 发送；Shift+Enter 仍换行；输入法组合态(isComposing)回车选词不发送；触摸设备不启用
+  if (rText) {
+    rText.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+      if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;  // 仅 PC（精确指针）
+      if (modal.hidden || (rSend && rSend.disabled)) return;
+      e.preventDefault();
+      sendRecord();
+    });
+  }
 
   const MSG_URL = INF_REST + '/messages?select=id,username,display_name,text,image_url,video_url,audio_url,created_at&order=id.desc';
 
