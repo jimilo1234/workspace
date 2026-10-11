@@ -1556,6 +1556,16 @@ html.pn-fs .topbar { display: none; }
 .collab-input { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
 .collab-input .pn-record-text { flex: 1; min-height: 42px; max-height: 120px; resize: none; }
 .collab-input .pn-record-send { width: auto; flex: 0 0 auto; padding: 8px 18px; }
+/* DP 智能体消息高亮 */
+.collab-msg-bot .collab-avatar { background: linear-gradient(135deg, #6d83f2, #b06df2); }
+.collab-msg-bot .collab-msg-author { color: #8b9bff; }
+.collab-msg-bot .collab-msg-body { background: rgba(109,131,242,0.10); border: 1px solid rgba(109,131,242,0.28); border-radius: 10px; padding: 8px 10px; }
+/* DP 调用状态（思考中 / 出错） */
+.collab-dp-status { margin-top: 8px; font-size: 12.5px; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.collab-dp-status:not([style*="none"])::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: dpPulse 1s ease-in-out infinite; }
+@keyframes dpPulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+.collab-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
+.collab-hint b { color: var(--accent); font-weight: 600; }
 
 @media (max-width: 860px) {
   .collab-wrap { flex-direction: column; min-height: auto; padding: 12px; }

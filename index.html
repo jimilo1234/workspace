@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261011e" />
+  <link rel="stylesheet" href="style.css?v=20261011f" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -551,9 +551,11 @@
           <section class="collab-chat">
             <div class="collab-msgs" id="collabMsgs"></div>
             <div class="collab-input">
-              <textarea id="collabInput" class="pn-record-text" placeholder="说点什么…（Enter 发送 / Shift+Enter 换行）"></textarea>
+              <textarea id="collabInput" class="pn-record-text" placeholder="说点什么…（Enter 发送 / Shift+Enter 换行；输入 @DP智能体 可呼叫 AI 助手）"></textarea>
               <button id="collabSend" class="pn-record-send" type="button">发送</button>
             </div>
+            <div id="collabDpStatus" class="collab-dp-status" style="display:none"></div>
+            <p class="collab-hint">💡 在消息里 <b>@DP智能体</b>（或 <b>@DP</b>）提问，DP 会调用 DeepSeek 在同频道回复，并参考最近聊天上下文。</p>
           </section>
         </div>
       </div>
@@ -771,6 +773,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261011e"></script>
+  <script src="script.js?v=20261011f"></script>
 </body>
 </html>

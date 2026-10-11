@@ -3866,6 +3866,9 @@ let collabChatChan = null;
 const COLLAB_TEAM = "wb-team";
 let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} + 新选 {saved:false, file,...}
 let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
+let collabChatRows = [];     // 最近一次拉取的聊天记录（供 @DP智能体 取上下文）
+const DP_AGENT_NAME = "DP智能体";
+const DP_CONTEXT_N = 10;     // @DP 时带入的最近对话条数
 
 function ensureCollabSb() {
   if (collabSb) return Promise.resolve(collabSb);
@@ -4121,13 +4124,17 @@ function loadCollabChat() {
 }
 function renderCollabChat(rows) {
   const box = document.getElementById("collabMsgs"); if (!box) return;
+  collabChatRows = rows || [];
   box.innerHTML = "";
   (rows || []).forEach((m) => box.appendChild(collabMsgEl(m)));
   box.scrollTop = box.scrollHeight;
 }
 function collabMsgEl(m) {
   const el = document.createElement("div"); el.className = "collab-msg";
-  const av = document.createElement("div"); av.className = "collab-avatar"; av.textContent = (m.user || "?").slice(0, 1); el.appendChild(av);
+  if (m.user === DP_AGENT_NAME) el.classList.add("collab-msg-bot");
+  const av = document.createElement("div"); av.className = "collab-avatar";
+  av.textContent = m.user === DP_AGENT_NAME ? "🤖" : (m.user || "?").slice(0, 1);
+  el.appendChild(av);
   const body = document.createElement("div"); body.className = "collab-msg-body";
   const meta = document.createElement("div"); meta.className = "collab-msg-meta";
   const au = document.createElement("span"); au.className = "collab-msg-author"; au.textContent = m.user || "匿名"; meta.appendChild(au);
@@ -4139,10 +4146,53 @@ function collabMsgEl(m) {
 }
 function sendCollabMsg() {
   const input = document.getElementById("collabInput"); if (!input) return;
-  const text = input.value.trim(); if (!text) return;
-  ensureCollabSb().then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: text, user: curCollabId() }))
-    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); else input.value = ""; })
+  const raw = input.value.trim(); if (!raw) return;
+  input.value = "";
+  // 1. 照常发出用户消息（保留 @DP智能体 原文，便于他人看清被呼叫的是谁）
+  ensureCollabSb().then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: raw, user: curCollabId() }))
+    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); })
     .catch((e) => console.error("[collab] 发消息:", e));
+  // 2. 若 @ 了 DP 智能体，则呼叫 DeepSeek 并把回复写回同一条聊天
+  const mention = raw.match(/@DP智能体|@DP/i);
+  if (mention) {
+    const q = raw.replace(/@DP智能体|@DP/gi, "").trim();
+    if (q) askDpAgent(q);
+  }
+}
+/* 以指定身份写一条聊天消息（DP 回复复用） */
+function postCollabMsg(user, text) {
+  return ensureCollabSb()
+    .then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: text, user: user }))
+    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); })
+    .catch((e) => console.error("[collab] 发消息:", e));
+}
+/* DP 智能体：复用既有的 Supabase Edge Function 代理（密钥不落地），带最近对话上下文 */
+async function askDpAgent(question) {
+  setCollabDpStatus("🤖 DP 思考中…");
+  try {
+    const ctx = (collabChatRows || []).slice(-DP_CONTEXT_N)
+      .map((r) => ({ role: "user", content: (r.user || "用户") + "：" + (r.text || "") }));
+    const messages = [
+      { role: "system", content: "你是协作台里的 DP 智能体，协助团队推进任务、解答问题、整理要点。请用简体中文、简洁清晰地回答；不要使用 Markdown 标题，可用换行分段。" },
+      ...ctx,
+      { role: "user", content: question },
+    ];
+    const res = await callDeepSeek({ model: "deepseek-chat", messages, stream: false });
+    if (!res.ok) { setCollabDpStatus("⚠️ DP 调用失败（HTTP " + res.status + "）"); return; }
+    const data = await res.json();
+    const reply = ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "").trim();
+    if (!reply) { setCollabDpStatus("⚠️ DP 返回为空"); return; }
+    await postCollabMsg(DP_AGENT_NAME, reply);
+    setCollabDpStatus("");
+  } catch (e) {
+    console.error("[collab] DP:", e);
+    setCollabDpStatus("⚠️ DP 出错：" + (e && e.message ? e.message : e));
+  }
+}
+function setCollabDpStatus(text) {
+  const el = document.getElementById("collabDpStatus"); if (!el) return;
+  el.textContent = text || "";
+  el.style.display = text ? "" : "none";
 }
 function switchCollabId() {
   const id = window.prompt("切换身份（如 智能体1 / 智能体2 / 智能体3）", curCollabId());
