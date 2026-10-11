@@ -236,6 +236,7 @@ const MENUS = [
     { id: "work-coffee", label: "咖啡机", page: "coffee" },
     { id: "work-miaoda", label: "妙搭", page: "miaoda" },
     { id: "work-sticky", label: "便利贴", page: "sticky" },
+    { id: "work-collab", label: "协作台", page: "collab" },
   ]},
   { id: "system", label: "系统管理", children: [
     { id: "system-homemanage", label: "首页管理", page: "homeManage" },
