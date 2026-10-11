@@ -3863,6 +3863,8 @@ let collabBound = false;
 let collabCardsChan = null;
 let collabChatChan = null;
 const COLLAB_TEAM = "wb-team";
+let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} + 新选 {saved:false, file,...}
+let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
 
 function ensureCollabSb() {
   if (collabSb) return Promise.resolve(collabSb);
@@ -3932,7 +3934,7 @@ function bindCollabEvents() {
       if (actBtn.classList.contains("collab-card-del")) delCollabCard(card.dataset.id);
       else if (actBtn.classList.contains("collab-card-edit")) editCollabCard(card);
       else if (actBtn.classList.contains("collab-card-save")) saveCollabCard(card);
-      else if (actBtn.classList.contains("collab-card-cancel")) loadCollabCards();
+      else if (actBtn.classList.contains("collab-card-cancel")) { collabEditAttach.forEach((a) => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); }); collabEditAttach = []; loadCollabCards(); }
       else if (actBtn.dataset.to) moveCollabCard(card.dataset.id, actBtn.dataset.to);
       return;
     }
@@ -3968,6 +3970,19 @@ function collabCardEl(r, st) {
   if (r.note) {
     const note = document.createElement("div"); note.className = "collab-card-note"; note.textContent = r.note; el.appendChild(note);
   }
+  if (r.attachments && r.attachments.length) {
+    const att = document.createElement("div"); att.className = "collab-card-attach";
+    r.attachments.forEach((a) => {
+      const isImg = (a.type || "").startsWith("image/");
+      const a1 = document.createElement("a");
+      a1.className = isImg ? "collab-card-img" : "collab-card-file";
+      a1.href = a.url; a1.target = "_blank"; a1.rel = "noopener"; a1.title = a.name;
+      if (isImg) { const im = document.createElement("img"); im.src = a.url; im.alt = a.name; a1.appendChild(im); }
+      else { a1.textContent = "📄 " + a.name; }
+      att.appendChild(a1);
+    });
+    el.appendChild(att);
+  }
   const meta = document.createElement("div"); meta.className = "collab-card-meta";
   const parts = [];
   if (r.owner) parts.push("负责人 " + r.owner);
@@ -3982,6 +3997,7 @@ function collabCardEl(r, st) {
   const edit = document.createElement("button"); edit.className = "collab-card-edit"; edit.textContent = "✏ 编辑"; acts.appendChild(edit);
   const del = document.createElement("button"); del.className = "collab-card-del"; del.textContent = "✕"; acts.appendChild(del);
   el.appendChild(acts);
+  el.dataset.attachments = JSON.stringify(r.attachments || []);
   return el;
 }
 function addCollabCard(status) {
@@ -4006,17 +4022,28 @@ function editCollabCard(card) {
   const noteEl = card.querySelector(".collab-card-note");
   const content = contentEl ? contentEl.textContent : "";
   const note = noteEl ? noteEl.textContent : "";
+  let existing = [];
+  try { existing = JSON.parse(card.dataset.attachments || "[]"); } catch (e) {}
+  collabEditOrig = existing.slice();
+  collabEditAttach = existing.map((a) => Object.assign({ saved: true }, a));
   card.classList.add("editing");
   card.innerHTML = "";
   const cLab = document.createElement("label"); cLab.className = "collab-edit-lab"; cLab.textContent = "任务内容";
   const cTa = document.createElement("textarea"); cTa.className = "collab-edit-ta collab-edit-content"; cTa.rows = 2; cTa.value = content;
   const nLab = document.createElement("label"); nLab.className = "collab-edit-lab"; nLab.textContent = "长备注";
   const nTa = document.createElement("textarea"); nTa.className = "collab-edit-ta collab-edit-note"; nTa.rows = 3; nTa.placeholder = "可填较长的备注…"; nTa.value = note;
+  const aLab = document.createElement("label"); aLab.className = "collab-edit-lab"; aLab.textContent = "附件（图片 / 文件，可多选）";
+  const aInput = document.createElement("input"); aInput.type = "file"; aInput.className = "collab-edit-file"; aInput.multiple = true; aInput.accept = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.ppt,.pptx";
+  const aList = document.createElement("div"); aList.className = "collab-attach-list";
+  aInput.addEventListener("change", (ev) => { pickCollabAttach(ev.target.files, aList); ev.target.value = ""; });
   const ops = document.createElement("div"); ops.className = "collab-card-actions";
   const save = document.createElement("button"); save.className = "collab-card-save"; save.textContent = "保存";
   const cancel = document.createElement("button"); cancel.className = "collab-card-cancel"; cancel.textContent = "取消";
   ops.appendChild(save); ops.appendChild(cancel);
-  card.appendChild(cLab); card.appendChild(cTa); card.appendChild(nLab); card.appendChild(nTa); card.appendChild(ops);
+  card.appendChild(cLab); card.appendChild(cTa); card.appendChild(nLab); card.appendChild(nTa);
+  card.appendChild(aLab); card.appendChild(aInput); card.appendChild(aList);
+  card.appendChild(ops);
+  renderCollabAttachList(aList);
   cTa.focus();
 }
 function saveCollabCard(card) {
@@ -4025,15 +4052,65 @@ function saveCollabCard(card) {
   const note = (card.querySelector(".collab-edit-note").value || "").trim();
   if (!content) { window.alert("任务内容不能为空"); return; }
   const stamp = { updated_by: curCollabId(), updated_at: new Date().toISOString() };
-  ensureCollabSb().then((sb) => sb.from("team_task_cards").update(Object.assign({ content: content, note: note }, stamp)).eq("id", cid))
-    .then(({ error }) => {
-      if (error) {
-        console.warn("[collab] 含 note 更新失败，回退仅更新内容:", error.message);
-        return sb.from("team_task_cards").update(Object.assign({ content: content }, stamp)).eq("id", cid);
+  ensureCollabSb().then((sb) => {
+    // 1) 删除「本次被移除」的原始附件（云端文件）
+    collabEditOrig.filter((o) => !collabEditAttach.some((a) => a.saved && a.path === o.path))
+      .forEach((o) => { try { sb.storage.from("collab-attachments").remove([o.path]); } catch (e) {} });
+    // 2) 上传新选附件
+    const kept = collabEditAttach.filter((a) => a.saved).map((a) => ({ name: a.name, type: a.type, size: a.size, url: a.url, path: a.path }));
+    const newOnes = collabEditAttach.filter((a) => !a.saved);
+    return Promise.all(newOnes.map((a) => {
+      const path = COLLAB_TEAM + "/" + cid + "/" + Date.now() + "_" + a.name;
+      return sb.storage.from("collab-attachments").upload(path, a.file, { upsert: false, cacheControl: "3600" })
+        .then(({ data, error }) => {
+          if (error) throw error;
+          const url = sb.storage.from("collab-attachments").getPublicUrl(path).data.publicUrl;
+          return { name: a.name, type: a.type, size: a.size, url: url, path: path };
+        });
+    })).then((uploaded) => {
+      const finalAttach = kept.concat(uploaded);
+      return sb.from("team_task_cards").update(Object.assign({ content: content, note: note, attachments: finalAttach }, stamp)).eq("id", cid);
+    });
+  })
+    .then((res) => {
+      if (res && res.error) {
+        console.warn("[collab] 含附件更新失败，回退仅更新内容/备注:", res.error.message);
+        return ensureCollabSb().then((sb) => sb.from("team_task_cards").update(Object.assign({ content: content, note: note }, stamp)).eq("id", cid));
       }
     })
     .then(() => loadCollabCards())
     .catch((e) => console.error("[collab] 编辑卡:", e));
+}
+function pickCollabAttach(fileList, attList) {
+  Array.from(fileList).forEach((file) => {
+    const item = { name: file.name, type: file.type, size: file.size, file: file, saved: false,
+      previewUrl: (file.type || "").startsWith("image/") ? URL.createObjectURL(file) : "" };
+    collabEditAttach.push(item);
+  });
+  renderCollabAttachList(attList);
+}
+function renderCollabAttachList(attList) {
+  attList.innerHTML = "";
+  collabEditAttach.forEach((it, i) => {
+    const chip = document.createElement("div"); chip.className = "collab-attach";
+    const isImg = (it.type || "").startsWith("image/");
+    const thumb = document.createElement(isImg ? "img" : "div");
+    if (isImg) { thumb.className = "collab-attach-thumb"; thumb.src = it.previewUrl || it.url; thumb.alt = it.name; }
+    else { thumb.className = "collab-attach-ic"; thumb.textContent = "📄"; }
+    chip.appendChild(thumb);
+    const info = document.createElement("div"); info.className = "collab-attach-info";
+    const nm = document.createElement("div"); nm.className = "collab-attach-name"; nm.textContent = it.name + (it.saved ? "" : "（待上传）"); info.appendChild(nm);
+    const sz = document.createElement("div"); sz.className = "collab-attach-size"; sz.textContent = fmtSize(it.size); info.appendChild(sz);
+    chip.appendChild(info);
+    const rm = document.createElement("button"); rm.className = "collab-attach-rm"; rm.type = "button"; rm.textContent = "✕";
+    rm.addEventListener("click", () => {
+      if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+      collabEditAttach.splice(i, 1);
+      renderCollabAttachList(attList);
+    });
+    chip.appendChild(rm);
+    attList.appendChild(chip);
+  });
 }
 
 function loadCollabChat() {

@@ -1530,6 +1530,20 @@ html.pn-fs .topbar { display: none; }
 .collab-edit-lab { display: block; font-size: 11.5px; color: var(--text-faint); margin-top: 8px; margin-bottom: 3px; }
 .collab-edit-ta { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; line-height: 1.5; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; resize: vertical; }
 .collab-edit-ta:focus { outline: none; border-color: var(--accent); }
+.collab-edit-file { display: block; margin-top: 6px; font-size: 12px; color: var(--text-soft); max-width: 100%; }
+.collab-attach-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.collab-attach { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+.collab-attach-thumb { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
+.collab-attach-ic { width: 38px; height: 38px; border-radius: 6px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(125,125,125,0.15); }
+.collab-attach-info { flex: 1; min-width: 0; }
+.collab-attach-name { font-size: 12.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.collab-attach-size { font-size: 11px; color: var(--text-faint); }
+.collab-attach-rm { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(224,106,106,0.4); background: transparent; color: #e06a6a; cursor: pointer; font-size: 12px; line-height: 1; }
+.collab-attach-rm:hover { background: rgba(224,106,106,0.12); }
+.collab-card-attach { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.collab-card-img { display: block; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.collab-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.collab-card-file { display: inline-flex; align-items: center; max-width: 180px; font-size: 12px; color: var(--accent); background: var(--accent-dim); padding: 6px 9px; border-radius: 8px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .collab-chat { flex: 0 0 36%; display: flex; flex-direction: column; background: rgba(125,125,125,0.08); border: 1px solid var(--border); border-radius: 14px; padding: 12px; min-width: 280px; max-height: calc(100vh - 184px); }
 .collab-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
