@@ -1485,7 +1485,9 @@ function switchPage(page) {
       if (targetId === "pageHome") { loadData(); loadPet(); } // 切回首页即拉取最新（数据未变则跳过重渲染）
       else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
       else if (targetId === "pageModulePerm") loadModulePerm(); // 进入模块权限即拉取列表
+      else if (targetId === "pageCollab") initCollab(); // 进入协作台即初始化（身份+加载+实时订阅）
     } else {
+      if (p.id === "pageCollab") leaveCollab(); // 离开协作台，退订实时通道释放资源
       scheduleRelease(p);       // 离开延时释放
     }
   });
@@ -3853,3 +3855,179 @@ window.__infiniteRefresh = infRefresh;
   // 点浮层任意处立即关闭
   msgWall.addEventListener('click', hideMsgWall);
 })();
+
+/* ===================== 协作台（团队任务看板 + 团队对话 · 实时同步） ===================== */
+let collabSb = null;
+let collabInited = false;
+let collabBound = false;
+let collabCardsChan = null;
+let collabChatChan = null;
+const COLLAB_TEAM = "wb-team";
+
+function ensureCollabSb() {
+  if (collabSb) return Promise.resolve(collabSb);
+  if (window.supabase && window.supabase.createClient) {
+    collabSb = window.supabase.createClient(SUPABASE_URL, API_KEY);
+    return Promise.resolve(collabSb);
+  }
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "supabase-umd.js";
+    s.onload = () => {
+      if (window.supabase && window.supabase.createClient) {
+        collabSb = window.supabase.createClient(SUPABASE_URL, API_KEY);
+        resolve(collabSb);
+      } else reject(new Error("supabase sdk 未就绪"));
+    };
+    s.onerror = () => reject(new Error("supabase-umd.js 加载失败"));
+    document.head.appendChild(s);
+  });
+}
+
+function curCollabId() { return localStorage.getItem("wb_collab_identity") || "智能体1"; }
+function labelOf(s) { return s === "doing" ? "进行中" : s === "done" ? "完成" : "待办"; }
+function fmtCollabTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts); const p = (n) => String(n).padStart(2, "0");
+  return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function initCollab() {
+  const idEl = document.getElementById("collabIdentity");
+  if (idEl) idEl.textContent = "身份：" + curCollabId();
+  ensureCollabSb().then((sb) => {
+    collabSb = sb;
+    loadCollabCards();
+    loadCollabChat();
+    bindCollabEvents();
+    if (!collabInited) {
+      collabInited = true;
+      collabCardsChan = sb.channel("collab-cards-v1")
+        .on("postgres_changes", { event: "*", schema: "public", table: "team_task_cards" }, () => loadCollabCards())
+        .subscribe();
+      collabChatChan = sb.channel("collab-chat-v1")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_chat_messages" }, () => loadCollabChat())
+        .subscribe();
+    }
+  }).catch((e) => { console.error("[collab] 初始化失败:", e); if (idEl) idEl.textContent = "协作台加载失败"; });
+}
+
+function leaveCollab() {
+  try { if (collabCardsChan && collabSb) collabSb.removeChannel(collabCardsChan); } catch (e) {}
+  try { if (collabChatChan && collabSb) collabSb.removeChannel(collabChatChan); } catch (e) {}
+  collabCardsChan = null; collabChatChan = null; collabInited = false;
+}
+
+function bindCollabEvents() {
+  if (collabBound) return; collabBound = true;
+  const page = document.getElementById("pageCollab");
+  if (!page) return;
+  page.addEventListener("click", (e) => {
+    const addBtn = e.target.closest && e.target.closest(".collab-add");
+    if (addBtn) { addCollabCard(addBtn.dataset.status); return; }
+    const actBtn = e.target.closest && e.target.closest(".collab-card-actions button");
+    if (actBtn) {
+      const card = e.target.closest(".collab-card");
+      if (!card) return;
+      if (actBtn.classList.contains("collab-card-del")) delCollabCard(card.dataset.id);
+      else moveCollabCard(card.dataset.id, actBtn.dataset.to);
+      return;
+    }
+    if (e.target.id === "collabSend") { sendCollabMsg(); return; }
+    if (e.target.id === "collabSwitchId") { switchCollabId(); return; }
+  });
+  const input = document.getElementById("collabInput");
+  if (input) input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCollabMsg(); }
+  });
+}
+
+function loadCollabCards() {
+  ensureCollabSb().then((sb) => sb.from("team_task_cards").select("*").eq("team_id", COLLAB_TEAM).order("created_at", { ascending: true }))
+    .then(({ data, error }) => { if (error) console.error("[collab] 读卡:", error); else renderCollabCards(data || []); })
+    .catch((e) => console.error("[collab] 读卡:", e));
+}
+function renderCollabCards(rows) {
+  const box = { todo: document.getElementById("colCardsTodo"), doing: document.getElementById("colCardsDoing"), done: document.getElementById("colCardsDone") };
+  Object.values(box).forEach((b) => { if (b) b.innerHTML = ""; });
+  (rows || []).forEach((r) => {
+    const st = r.status === "doing" || r.status === "done" ? r.status : "todo";
+    const b = box[st]; if (!b) return;
+    b.appendChild(collabCardEl(r, st));
+  });
+}
+function collabCardEl(r, st) {
+  const el = document.createElement("div");
+  el.className = "collab-card " + st;
+  el.dataset.id = r.id;
+  const text = document.createElement("div"); text.className = "collab-card-text"; text.textContent = r.content; el.appendChild(text);
+  const meta = document.createElement("div"); meta.className = "collab-card-meta";
+  const parts = [];
+  if (r.owner) parts.push("负责人 " + r.owner);
+  if (r.updated_by && r.updated_by !== r.owner) parts.push(r.updated_by + " 操作");
+  parts.push(fmtCollabTime(r.created_at));
+  meta.textContent = parts.join(" · ");
+  el.appendChild(meta);
+  const acts = document.createElement("div"); acts.className = "collab-card-actions";
+  (st === "todo" ? ["doing", "done"] : st === "doing" ? ["todo", "done"] : ["todo", "doing"]).forEach((t) => {
+    const b = document.createElement("button"); b.textContent = "→ " + labelOf(t); b.dataset.to = t; acts.appendChild(b);
+  });
+  const del = document.createElement("button"); del.className = "collab-card-del"; del.textContent = "✕"; acts.appendChild(del);
+  el.appendChild(acts);
+  return el;
+}
+function addCollabCard(status) {
+  const content = window.prompt("任务内容（" + labelOf(status) + "）：");
+  if (!content || !content.trim()) return;
+  const id = curCollabId();
+  ensureCollabSb().then((sb) => sb.from("team_task_cards").insert({
+    team_id: COLLAB_TEAM, content: content.trim(), status: status, owner: id, created_by: id, updated_by: id,
+  })).then(({ error }) => { if (error) console.error("[collab] 加卡:", error); }).catch((e) => console.error("[collab] 加卡:", e));
+}
+function moveCollabCard(cid, to) {
+  ensureCollabSb().then((sb) => sb.from("team_task_cards").update({ status: to, updated_by: curCollabId(), updated_at: new Date().toISOString() }).eq("id", cid))
+    .then(({ error }) => { if (error) console.error("[collab] 改状态:", error); }).catch((e) => console.error("[collab] 改状态:", e));
+}
+function delCollabCard(cid) {
+  if (!window.confirm("删除这张任务卡？")) return;
+  ensureCollabSb().then((sb) => sb.from("team_task_cards").delete().eq("id", cid))
+    .then(({ error }) => { if (error) console.error("[collab] 删卡:", error); }).catch((e) => console.error("[collab] 删卡:", e));
+}
+
+function loadCollabChat() {
+  ensureCollabSb().then((sb) => sb.from("team_chat_messages").select("*").eq("team_id", COLLAB_TEAM).order("created_at", { ascending: true }).limit(200))
+    .then(({ data, error }) => { if (error) console.error("[collab] 读消息:", error); else renderCollabChat(data || []); })
+    .catch((e) => console.error("[collab] 读消息:", e));
+}
+function renderCollabChat(rows) {
+  const box = document.getElementById("collabMsgs"); if (!box) return;
+  box.innerHTML = "";
+  (rows || []).forEach((m) => box.appendChild(collabMsgEl(m)));
+  box.scrollTop = box.scrollHeight;
+}
+function collabMsgEl(m) {
+  const el = document.createElement("div"); el.className = "collab-msg";
+  const av = document.createElement("div"); av.className = "collab-avatar"; av.textContent = (m.user || "?").slice(0, 1); el.appendChild(av);
+  const body = document.createElement("div"); body.className = "collab-msg-body";
+  const meta = document.createElement("div"); meta.className = "collab-msg-meta";
+  const au = document.createElement("span"); au.className = "collab-msg-author"; au.textContent = m.user || "匿名"; meta.appendChild(au);
+  const tm = document.createElement("span"); tm.textContent = fmtCollabTime(m.created_at); meta.appendChild(tm);
+  body.appendChild(meta);
+  const tx = document.createElement("div"); tx.className = "collab-msg-text"; tx.textContent = m.text; body.appendChild(tx);
+  el.appendChild(body);
+  return el;
+}
+function sendCollabMsg() {
+  const input = document.getElementById("collabInput"); if (!input) return;
+  const text = input.value.trim(); if (!text) return;
+  ensureCollabSb().then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: text, user: curCollabId() }))
+    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); else input.value = ""; })
+    .catch((e) => console.error("[collab] 发消息:", e));
+}
+function switchCollabId() {
+  const id = window.prompt("切换身份（如 智能体1 / 智能体2 / 智能体3）", curCollabId());
+  if (id && id.trim()) {
+    localStorage.setItem("wb_collab_identity", id.trim());
+    const el = document.getElementById("collabIdentity"); if (el) el.textContent = "身份：" + id.trim();
+  }
+}

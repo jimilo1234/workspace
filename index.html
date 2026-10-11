@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261007c" />
+  <link rel="stylesheet" href="style.css?v=20261011a" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -68,6 +68,9 @@
           </button>
           <button class="nav-item nav-child" data-page="sticky" data-menu-id="work-sticky">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg></span><span class="nav-label">便利贴</span>
+          </button>
+          <button class="nav-item nav-child" data-page="collab" data-menu-id="work-collab">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15 20a4.5 4.5 0 0 1 6-4.2"/></svg></span><span class="nav-label">协作台</span>
           </button>
         </div>
         <button class="nav-item nav-parent open" data-toggle="study" data-menu-id="study">
@@ -517,6 +520,43 @@
         <div id="stickyBoard" class="sticky-board"></div>
       </div>
 
+      <!-- 协作台（团队任务卡片看板 + 团队对话 · 实时同步） -->
+      <div id="pageCollab" class="page hidden">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="page-bar-title">🤝 协作台</span>
+            <span class="page-bar-hint">团队任务与对话 · 实时同步</span>
+          </div>
+          <div class="page-bar-right">
+            <span id="collabIdentity" class="sync-pill"></span>
+            <button id="collabSwitchId" class="open-new" type="button">切换身份</button>
+          </div>
+        </div>
+        <div class="collab-wrap">
+          <section class="collab-board">
+            <div class="collab-col" data-status="todo">
+              <h3>待办 <button class="collab-add" data-status="todo" type="button" title="添加任务">+</button></h3>
+              <div class="collab-cards" id="colCardsTodo"></div>
+            </div>
+            <div class="collab-col" data-status="doing">
+              <h3>进行中 <button class="collab-add" data-status="doing" type="button" title="添加任务">+</button></h3>
+              <div class="collab-cards" id="colCardsDoing"></div>
+            </div>
+            <div class="collab-col" data-status="done">
+              <h3>完成 <button class="collab-add" data-status="done" type="button" title="添加任务">+</button></h3>
+              <div class="collab-cards" id="colCardsDone"></div>
+            </div>
+          </section>
+          <section class="collab-chat">
+            <div class="collab-msgs" id="collabMsgs"></div>
+            <div class="collab-input">
+              <textarea id="collabInput" class="pn-record-text" placeholder="说点什么…（Enter 发送 / Shift+Enter 换行）"></textarea>
+              <button id="collabSend" class="pn-record-send" type="button">发送</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
       <!-- 首页管理（模块显隐 + 拖拽排序） -->
       <div id="pageHomeManage" class="page hidden">
         <div class="page-bar">
@@ -730,6 +770,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261007d"></script>
+  <script src="script.js?v=20261011a"></script>
 </body>
 </html>
