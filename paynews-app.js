@@ -959,31 +959,66 @@ function setPendingImage(file) {
 
 // PC 端 Ctrl+V 粘贴：把剪贴板里的图片/视频/音频直接作为待发布内容
 // 绑定在 comment-panel（文本框聚焦粘贴时事件会冒泡到这里，单点绑定避免重复触发）
+// PC 端 Ctrl+V 粘贴：把剪贴板里的图片/视频/音频直接作为待发布内容
+// 兼容多种来源：标准 image/* file、非标准 MIME 图片（微信/QQ/钉钉截图等）、cd.files 兜底、网页复制的内联 base64 图片
 function handlePaste(e) {
   const cd = e.clipboardData || window.clipboardData;
-  if (!cd || !cd.items) return;
+  if (!cd) return;
   let imageFile = null;
   let mediaFile = null;
-  for (let i = 0; i < cd.items.length; i++) {
-    const it = cd.items[i];
-    if (it.kind !== 'file') continue;
-    const f = it.getAsFile();
-    if (!f) continue;
-    if (it.type.startsWith('image/')) {
-      if (!imageFile) imageFile = f;
-    } else if (it.type.startsWith('video/') || it.type.startsWith('audio/')) {
-      if (!mediaFile) mediaFile = f;
+  const isImgName = (n) => /\.(png|jpe?g|gif|webp|bmp|svg|heic|avif)$/i.test(n || "");
+  // 1) items：优先标准 file 类型，覆盖 image/video/audio，同时兼容非标准 MIME 的图片
+  if (cd.items) {
+    for (let i = 0; i < cd.items.length; i++) {
+      const it = cd.items[i];
+      if (it.kind !== "file") continue;
+      const f = it.getAsFile();
+      if (!f) continue;
+      const t = f.type || "";
+      if (t.startsWith("image/") || isImgName(f.name) || (t === "" && f.size > 0)) {
+        if (!imageFile) imageFile = f;
+      } else if (t.startsWith("video/") || t.startsWith("audio/")) {
+        if (!mediaFile) mediaFile = f;
+      }
     }
+  }
+  // 2) files 兜底：部分来源（如 Firefox、某些应用）图片只出现在 cd.files
+  if (!imageFile && !mediaFile && cd.files && cd.files.length) {
+    for (let i = 0; i < cd.files.length; i++) {
+      const f = cd.files[i];
+      const t = f.type || "";
+      if (t.startsWith("image/") || isImgName(f.name)) { imageFile = f; break; }
+      if (t.startsWith("video/") || t.startsWith("audio/")) { mediaFile = f; break; }
+    }
+  }
+  // 3) text/html 内联 base64 图片：从网页/富文本编辑器复制的图片
+  if (!imageFile && typeof cd.getData === "function") {
+    try {
+      const html = cd.getData("text/html");
+      if (html) {
+        const m = html.match(/<img\b[^>]*\bsrc=["'](data:image\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/i);
+        if (m) {
+          const dataUrl = m[1];
+          const c = dataUrl.indexOf(",");
+          const meta = dataUrl.slice(0, c);
+          const bin = atob(dataUrl.slice(c + 1));
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          const ext = (meta.match(/image\/([a-zA-Z0-9.+-]+)/) || [])[1] || "png";
+          imageFile = new File([arr], "pasted." + ext, { type: "image/" + ext });
+        }
+      }
+    } catch (err) { /* 某些浏览器对 getData('text/html') 有限制，忽略即可 */ }
   }
   if (imageFile) {
     e.preventDefault();
     setPendingImage(imageFile);
-    showToast('已粘贴图片，点击预览图可移除');
+    showToast("已粘贴图片，点击预览图可移除");
   } else if (mediaFile) {
     e.preventDefault();
     pendingVideoFile = mediaFile;
     renderPendingPreview();
-    showToast('已粘贴视频/音频：' + (mediaFile.name || mediaFile.type));
+    showToast("已粘贴视频/音频：" + (mediaFile.name || mediaFile.type));
   }
 }
 
@@ -1621,6 +1656,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // PC 端粘贴上传：在发布弹窗内 Ctrl+V 直接把剪贴板图片设为待发布图片
   const _pnPanel = document.getElementById('comment-panel');
   if (_pnPanel) _pnPanel.addEventListener('paste', handlePaste);
+  // 双保险：textarea 自身也监听（兼容个别浏览器冒泡差异）
+  const _pnTa = document.getElementById('msg-text');
+  if (_pnTa) _pnTa.addEventListener('paste', handlePaste);
   document.getElementById('voice-btn').addEventListener('click', startRecording);
   document.getElementById('rec-stop').addEventListener('click', stopRecording);
   document.getElementById('voice-del').addEventListener('click', cancelVoice);
