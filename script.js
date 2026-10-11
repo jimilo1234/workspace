@@ -3930,7 +3930,10 @@ function bindCollabEvents() {
       const card = e.target.closest(".collab-card");
       if (!card) return;
       if (actBtn.classList.contains("collab-card-del")) delCollabCard(card.dataset.id);
-      else moveCollabCard(card.dataset.id, actBtn.dataset.to);
+      else if (actBtn.classList.contains("collab-card-edit")) editCollabCard(card);
+      else if (actBtn.classList.contains("collab-card-save")) saveCollabCard(card);
+      else if (actBtn.classList.contains("collab-card-cancel")) loadCollabCards();
+      else if (actBtn.dataset.to) moveCollabCard(card.dataset.id, actBtn.dataset.to);
       return;
     }
     if (e.target.id === "collabSend") { sendCollabMsg(); return; }
@@ -3962,6 +3965,9 @@ function collabCardEl(r, st) {
   el.className = "collab-card " + st;
   el.dataset.id = r.id;
   const text = document.createElement("div"); text.className = "collab-card-text"; text.textContent = r.content; el.appendChild(text);
+  if (r.note) {
+    const note = document.createElement("div"); note.className = "collab-card-note"; note.textContent = r.note; el.appendChild(note);
+  }
   const meta = document.createElement("div"); meta.className = "collab-card-meta";
   const parts = [];
   if (r.owner) parts.push("负责人 " + r.owner);
@@ -3973,6 +3979,7 @@ function collabCardEl(r, st) {
   (st === "todo" ? ["doing", "done"] : st === "doing" ? ["todo", "done"] : ["todo", "doing"]).forEach((t) => {
     const b = document.createElement("button"); b.textContent = "→ " + labelOf(t); b.dataset.to = t; acts.appendChild(b);
   });
+  const edit = document.createElement("button"); edit.className = "collab-card-edit"; edit.textContent = "✏ 编辑"; acts.appendChild(edit);
   const del = document.createElement("button"); del.className = "collab-card-del"; del.textContent = "✕"; acts.appendChild(del);
   el.appendChild(acts);
   return el;
@@ -3993,6 +4000,40 @@ function delCollabCard(cid) {
   if (!window.confirm("删除这张任务卡？")) return;
   ensureCollabSb().then((sb) => sb.from("team_task_cards").delete().eq("id", cid))
     .then(({ error }) => { if (error) console.error("[collab] 删卡:", error); }).catch((e) => console.error("[collab] 删卡:", e));
+}
+function editCollabCard(card) {
+  const contentEl = card.querySelector(".collab-card-text");
+  const noteEl = card.querySelector(".collab-card-note");
+  const content = contentEl ? contentEl.textContent : "";
+  const note = noteEl ? noteEl.textContent : "";
+  card.classList.add("editing");
+  card.innerHTML = "";
+  const cLab = document.createElement("label"); cLab.className = "collab-edit-lab"; cLab.textContent = "任务内容";
+  const cTa = document.createElement("textarea"); cTa.className = "collab-edit-ta collab-edit-content"; cTa.rows = 2; cTa.value = content;
+  const nLab = document.createElement("label"); nLab.className = "collab-edit-lab"; nLab.textContent = "长备注";
+  const nTa = document.createElement("textarea"); nTa.className = "collab-edit-ta collab-edit-note"; nTa.rows = 3; nTa.placeholder = "可填较长的备注…"; nTa.value = note;
+  const ops = document.createElement("div"); ops.className = "collab-card-actions";
+  const save = document.createElement("button"); save.className = "collab-card-save"; save.textContent = "保存";
+  const cancel = document.createElement("button"); cancel.className = "collab-card-cancel"; cancel.textContent = "取消";
+  ops.appendChild(save); ops.appendChild(cancel);
+  card.appendChild(cLab); card.appendChild(cTa); card.appendChild(nLab); card.appendChild(nTa); card.appendChild(ops);
+  cTa.focus();
+}
+function saveCollabCard(card) {
+  const cid = card.dataset.id;
+  const content = (card.querySelector(".collab-edit-content").value || "").trim();
+  const note = (card.querySelector(".collab-edit-note").value || "").trim();
+  if (!content) { window.alert("任务内容不能为空"); return; }
+  const stamp = { updated_by: curCollabId(), updated_at: new Date().toISOString() };
+  ensureCollabSb().then((sb) => sb.from("team_task_cards").update(Object.assign({ content: content, note: note }, stamp)).eq("id", cid))
+    .then(({ error }) => {
+      if (error) {
+        console.warn("[collab] 含 note 更新失败，回退仅更新内容:", error.message);
+        return sb.from("team_task_cards").update(Object.assign({ content: content }, stamp)).eq("id", cid);
+      }
+    })
+    .then(() => loadCollabCards())
+    .catch((e) => console.error("[collab] 编辑卡:", e));
 }
 
 function loadCollabChat() {

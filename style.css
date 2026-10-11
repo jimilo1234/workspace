@@ -1521,6 +1521,15 @@ html.pn-fs .topbar { display: none; }
 .collab-card-actions button:hover { border-color: var(--accent); color: var(--accent); }
 .collab-card-del { margin-left: auto; color: #e06a6a !important; border-color: rgba(224,106,106,0.4) !important; }
 .collab-card-del:hover { background: rgba(224,106,106,0.12); }
+.collab-card-note { font-size: 12px; line-height: 1.55; color: var(--text-soft); margin-top: 6px; padding: 6px 8px; background: rgba(125,125,125,0.1); border-radius: 7px; white-space: pre-wrap; word-break: break-word; }
+.collab-card-edit { color: var(--accent) !important; border-color: var(--accent-dim) !important; }
+.collab-card-save { color: #36c08a !important; border-color: rgba(54,192,138,0.4) !important; }
+.collab-card-save:hover { background: rgba(54,192,138,0.12); }
+.collab-card-cancel { color: var(--text-soft) !important; }
+.collab-card.editing { cursor: default; }
+.collab-edit-lab { display: block; font-size: 11.5px; color: var(--text-faint); margin-top: 8px; margin-bottom: 3px; }
+.collab-edit-ta { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; line-height: 1.5; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; resize: vertical; }
+.collab-edit-ta:focus { outline: none; border-color: var(--accent); }
 
 .collab-chat { flex: 0 0 36%; display: flex; flex-direction: column; background: rgba(125,125,125,0.08); border: 1px solid var(--border); border-radius: 14px; padding: 12px; min-width: 280px; max-height: calc(100vh - 184px); }
 .collab-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
