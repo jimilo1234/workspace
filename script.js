@@ -3935,6 +3935,7 @@ function bindCollabEvents() {
     }
     if (e.target.id === "collabSend") { sendCollabMsg(); return; }
     if (e.target.id === "collabSwitchId") { switchCollabId(); return; }
+    if (e.target.id === "collabClearChat") { clearCollabChat(); return; }
   });
   const input = document.getElementById("collabInput");
   if (input) input.addEventListener("keydown", (e) => {
@@ -4030,4 +4031,13 @@ function switchCollabId() {
     localStorage.setItem("wb_collab_identity", id.trim());
     const el = document.getElementById("collabIdentity"); if (el) el.textContent = "身份：" + id.trim();
   }
+}
+function clearCollabChat() {
+  if (!window.confirm("确定清空协作台聊天记录？将删除所有人的聊天消息，且不可恢复。")) return;
+  ensureCollabSb().then((sb) => sb.from("team_chat_messages").delete().eq("team_id", COLLAB_TEAM))
+    .then(({ error }) => {
+      if (error) { console.error("[collab] 清空聊天:", error); window.alert("清空失败：" + (error.message || error)); }
+      else loadCollabChat();
+    })
+    .catch((e) => { console.error("[collab] 清空聊天:", e); window.alert("清空失败：" + (e && e.message ? e.message : e)); });
 }
