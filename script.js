@@ -3867,6 +3867,7 @@ const COLLAB_TEAM = "wb-team";
 let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} + 新选 {saved:false, file,...}
 let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
 let collabChatRows = [];     // 最近一次拉取的聊天记录（供 @DP智能体 取上下文）
+let collabChatAttach = [];   // 发送前待上传的聊天附件（Ctrl+V 粘贴 / 选文件）
 const DP_AGENT_NAME = "DP智能体";
 const DP_CONTEXT_N = 10;     // @DP 时带入的最近对话条数
 
@@ -3949,6 +3950,21 @@ function bindCollabEvents() {
   const input = document.getElementById("collabInput");
   if (input) input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendCollabMsg(); }
+  });
+  // PC 端 Ctrl+V：剪贴板里的图片直接作为待发送附件（textarea 原生不接收图片，拦截后走上传）
+  if (input) input.addEventListener("paste", (e) => {
+    const cd = e.clipboardData || window.clipboardData;
+    if (!cd || !cd.items) return;
+    let got = false;
+    for (let i = 0; i < cd.items.length; i++) {
+      const it = cd.items[i];
+      if (it.kind !== "file") continue;
+      const f = it.getAsFile();
+      if (!f || !f.type.startsWith("image/")) continue;
+      collabChatAttach.push({ name: f.name || ("pasted-" + Date.now() + ".png"), type: f.type, size: f.size, file: f, saved: false, previewUrl: URL.createObjectURL(f) });
+      got = true;
+    }
+    if (got) { e.preventDefault(); renderCollabChatAttach(); }
   });
 }
 
@@ -4141,23 +4157,88 @@ function collabMsgEl(m) {
   const tm = document.createElement("span"); tm.textContent = fmtCollabTime(m.created_at); meta.appendChild(tm);
   body.appendChild(meta);
   const tx = document.createElement("div"); tx.className = "collab-msg-text"; tx.textContent = m.text; body.appendChild(tx);
+  if (m.attachments && m.attachments.length) {
+    const att = document.createElement("div"); att.className = "collab-msg-attach";
+    m.attachments.forEach((a) => {
+      const isImg = (a.type || "").startsWith("image/");
+      const a1 = document.createElement("a");
+      a1.className = isImg ? "collab-msg-img" : "collab-msg-file";
+      a1.href = a.url; a1.target = "_blank"; a1.rel = "noopener"; a1.title = a.name || "附件";
+      if (isImg) { const im = document.createElement("img"); im.src = a.url; im.alt = a.name || "图片"; a1.appendChild(im); }
+      else { a1.textContent = "📄 " + (a.name || "附件"); }
+      att.appendChild(a1);
+    });
+    body.appendChild(att);
+  }
   el.appendChild(body);
   return el;
 }
 function sendCollabMsg() {
   const input = document.getElementById("collabInput"); if (!input) return;
-  const raw = input.value.trim(); if (!raw) return;
+  const raw = input.value.trim();
+  const hasAtt = collabChatAttach.length > 0;
+  if (!raw && !hasAtt) return;
   input.value = "";
-  // 1. 照常发出用户消息（保留 @DP智能体 原文，便于他人看清被呼叫的是谁）
-  ensureCollabSb().then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: raw, user: curCollabId() }))
-    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); })
-    .catch((e) => console.error("[collab] 发消息:", e));
-  // 2. 若 @ 了 DP 智能体，则呼叫 DeepSeek 并把回复写回同一条聊天
+  // 1. 照常发出用户消息（含粘贴的图片附件；保留 @DP智能体 原文，便于他人看清被呼叫的是谁）
+  sendCollabWithAttach(raw).then(() => {
+    collabChatAttach = [];
+    renderCollabChatAttach();
+  }).catch((e) => console.error("[collab] 发消息:", e));
+  // 2. 若 @ 了 DP 智能体，则呼叫 DeepSeek 并把回复写回同一条聊天（DP 仅文本回复）
   const mention = raw.match(/@DP智能体|@DP/i);
   if (mention) {
     const q = raw.replace(/@DP智能体|@DP/gi, "").trim();
     if (q) askDpAgent(q);
   }
+}
+/* 发送聊天消息：有附件则先上传到 collab-attachments 桶，再带 attachments 入库（列未建则降级仅正文） */
+async function sendCollabWithAttach(text) {
+  const newOnes = collabChatAttach.filter((a) => !a.saved);
+  const kept = collabChatAttach.filter((a) => a.saved).map((a) => ({ name: a.name, type: a.type, size: a.size, url: a.url, path: a.path }));
+  let finalAttach = kept;
+  if (newOnes.length) {
+    const sb = await ensureCollabSb();
+    const up = await Promise.all(newOnes.map((a) => {
+      const path = COLLAB_TEAM + "/chat/" + Date.now() + "_" + a.name;
+      return sb.storage.from("collab-attachments").upload(path, a.file, { upsert: false, cacheControl: "3600" })
+        .then(({ error }) => { if (error) throw error; const url = sb.storage.from("collab-attachments").getPublicUrl(path).data.publicUrl; return { name: a.name, type: a.type, size: a.size, url: url, path: path }; });
+    }));
+    finalAttach = kept.concat(up);
+  }
+  const payload = { team_id: COLLAB_TEAM, text: text, user: curCollabId() };
+  if (finalAttach.length) payload.attachments = finalAttach;
+  const sb = await ensureCollabSb();
+  const { error } = await sb.from("team_chat_messages").insert(payload);
+  if (error && /attachments/i.test(error.message || "")) {
+    delete payload.attachments;            // attachments 列尚未建立 → 降级仅保存正文
+    await sb.from("team_chat_messages").insert(payload);
+  }
+}
+/* 渲染发送前的待上传附件预览（Ctrl+V 粘贴 / 选文件） */
+function renderCollabChatAttach() {
+  const box = document.getElementById("collabAttachPrev"); if (!box) return;
+  box.innerHTML = "";
+  collabChatAttach.forEach((it, i) => {
+    const chip = document.createElement("div"); chip.className = "collab-attach";
+    const isImg = (it.type || "").startsWith("image/");
+    const thumb = document.createElement(isImg ? "img" : "div");
+    if (isImg) { thumb.className = "collab-attach-thumb"; thumb.src = it.previewUrl || it.url; thumb.alt = it.name; }
+    else { thumb.className = "collab-attach-ic"; thumb.textContent = "📄"; }
+    chip.appendChild(thumb);
+    const info = document.createElement("div"); info.className = "collab-attach-info";
+    const nm = document.createElement("div"); nm.className = "collab-attach-name"; nm.textContent = it.name + (it.saved ? "" : "（待发送）"); info.appendChild(nm);
+    const sz = document.createElement("div"); sz.className = "collab-attach-size"; sz.textContent = fmtSize(it.size); info.appendChild(sz);
+    chip.appendChild(info);
+    const rm = document.createElement("button"); rm.className = "collab-attach-rm"; rm.type = "button"; rm.textContent = "✕";
+    rm.addEventListener("click", () => {
+      if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+      collabChatAttach.splice(i, 1);
+      renderCollabChatAttach();
+    });
+    chip.appendChild(rm);
+    box.appendChild(chip);
+  });
+  box.style.display = collabChatAttach.length ? "" : "none";
 }
 /* 以指定身份写一条聊天消息（DP 回复复用） */
 function postCollabMsg(user, text) {

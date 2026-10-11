@@ -1566,6 +1566,14 @@ html.pn-fs .topbar { display: none; }
 @keyframes dpPulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
 .collab-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
 .collab-hint b { color: var(--accent); font-weight: 600; }
+/* 发送前待上传附件预览（Ctrl+V 粘贴） */
+.collab-attach-prev { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* 消息内的附件展示 */
+.collab-msg-attach { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.collab-msg-img { display: block; width: 132px; max-height: 132px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.collab-msg-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.collab-msg-file { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--accent); text-decoration: none; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; }
+.collab-msg-file:hover { background: rgba(109,131,242,0.10); }
 
 @media (max-width: 860px) {
   .collab-wrap { flex-direction: column; min-height: auto; padding: 12px; }
