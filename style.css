@@ -1590,6 +1590,18 @@ html.pn-fs .topbar { display: none; }
 .collab-msg-file { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--accent); text-decoration: none; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; }
 .collab-msg-file:hover { background: rgba(109,131,242,0.10); }
 
+/* 协作台移动端标签栏（≤640 显示）：任务 / 对话 切换 */
+.collab-tabs { display: none; }
+.collab-tab { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--text-soft); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.collab-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+/* 协作台内联弹窗（替代原生 prompt/confirm） */
+.collab-modal-input { width: 100%; box-sizing: border-box; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: 15px; line-height: 1.5; resize: vertical; margin-bottom: 16px; outline: none; }
+.collab-modal-input:focus { border-color: var(--accent); }
+.collab-modal-btns { display: flex; gap: 10px; }
+.collab-modal-btns .open-new { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text-soft); font-size: 14px; cursor: pointer; transition: border-color 0.15s; }
+.collab-modal-btns .open-new:hover { border-color: var(--accent); color: var(--accent); }
+.collab-modal-btns .collab-modal-ok { flex: 1; margin-top: 0; }
+
 @media (max-width: 860px) {
   .collab-wrap { flex-direction: column; min-height: auto; padding: 12px; }
   .collab-board { overflow-x: auto; flex: none; padding-bottom: 4px; }
@@ -1598,16 +1610,24 @@ html.pn-fs .topbar { display: none; }
   .collab-msgs { max-height: 50vh; }
 }
 
-/* 协作台手机端（≤640）：看板改纵向单列、整块可滚动、锁屏输入框加宽加大，交互尽量简单 */
+/* 协作台手机端（≤640）：任务/对话 标签切换，每视图填满屏幕、输入框常驻，交互简单 */
 @media (max-width: 640px) {
   #pageCollab { overflow: hidden; }
-  .collab-wrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; flex-direction: column; gap: 12px; padding: 10px; }
-  .collab-board { flex: none; flex-direction: column; gap: 10px; overflow: visible; }
+  .collab-tabs { display: flex; gap: 4px; flex: 0 0 auto; background: rgba(125,125,125,0.08); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
+  .collab-wrap { flex: 1 1 auto; min-height: 0; overflow: hidden; flex-direction: column; gap: 10px; padding: 10px; }
+  /* 标签切换：默认显示任务，隐藏另一视图 */
+  .collab-wrap:not(.m-tab-chat) .collab-chat { display: none; }
+  .collab-wrap.m-tab-chat .collab-board { display: none; }
+  /* 任务视图：看板填满，三列纵向堆叠、内部滚动 */
+  .collab-board { flex: 1 1 auto; min-height: 0; flex-direction: column; gap: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .collab-col { width: 100%; min-width: 0; max-height: none; }
-  .collab-cards { max-height: 230px; }
-  .collab-chat { flex: none; min-width: 0; max-height: none; }
-  .collab-msgs { max-height: 52vh; }
+  .collab-cards { max-height: none; }
+  /* 对话视图：聊天填满，消息滚动、输入框常驻底部 */
+  .collab-chat { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .collab-msgs { flex: 1; min-height: 0; max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .collab-input { flex: 0 0 auto; }
   .collab-input .pn-record-text { font-size: 16px; }
+  .collab-hint { display: none; }
   /* 锁屏：让输入框恢复整行可用宽度（否则被 .pn-record-send{width:100%} 挤成细条） */
   .collab-lock-box { width: min(340px, 92vw); padding: 22px 18px; }
   .collab-lock-row { flex-direction: column; }

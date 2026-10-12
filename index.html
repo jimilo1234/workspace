@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261011o" />
+  <link rel="stylesheet" href="style.css?v=20261011p" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -533,8 +533,13 @@
             <button id="collabClearChat" class="open-new" type="button">切换服务</button>
           </div>
         </div>
-        <div class="collab-wrap">
-          <section class="collab-board">
+        <div class="collab-wrap" id="collabWrap">
+          <!-- 移动端标签栏（≤640 显示）：任务 / 对话 切换 -->
+          <div class="collab-tabs" id="collabTabs">
+            <button class="collab-tab active" data-tab="board" type="button">📋 任务</button>
+            <button class="collab-tab" data-tab="chat" type="button">💬 对话</button>
+          </div>
+          <section class="collab-board" data-pane="board">
             <div class="collab-col" data-status="todo">
               <h3>待办 <button class="collab-add" data-status="todo" type="button" title="添加任务">+</button></h3>
               <div class="collab-cards" id="colCardsTodo"></div>
@@ -548,7 +553,7 @@
               <div class="collab-cards" id="colCardsDone"></div>
             </div>
           </section>
-          <section class="collab-chat">
+          <section class="collab-chat" data-pane="chat">
             <div class="collab-msgs" id="collabMsgs"></div>
             <div class="collab-input">
               <textarea id="collabInput" class="pn-record-text" placeholder="说点什么…（Enter 发送 / Shift+Enter 换行；输入 @DP智能体 可呼叫 AI 助手；Ctrl+V 可粘贴图片）"></textarea>
@@ -569,6 +574,18 @@
               <button id="collabLockBtn" class="pn-record-send" type="button">进入</button>
             </div>
             <small id="collabLockMsg" class="collab-lock-msg"></small>
+          </div>
+        </div>
+        <!-- 协作台内联弹窗：替代 window.prompt / window.confirm（移动端原生弹窗不可用） -->
+        <div id="collabModal" class="modal-overlay collab-modal-overlay" hidden>
+          <div class="modal collab-modal">
+            <h2 id="collabModalTitle">提示</h2>
+            <p class="modal-tip" id="collabModalMsg"></p>
+            <textarea id="collabModalInput" class="collab-modal-input" rows="3" placeholder="请输入…"></textarea>
+            <div class="collab-modal-btns">
+              <button id="collabModalCancel" class="open-new" type="button">取消</button>
+              <button id="collabModalOk" class="modal-btn collab-modal-ok" type="button">确定</button>
+            </div>
           </div>
         </div>
       </div>
@@ -786,6 +803,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261011o"></script>
+  <script src="script.js?v=20261011p"></script>
 </body>
 </html>

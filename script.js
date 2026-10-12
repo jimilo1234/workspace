@@ -4029,6 +4029,8 @@ function leaveCollab() {
 
 function bindCollabEvents() {
   if (collabBound) return; collabBound = true;
+  bindCollabModal();
+  bindCollabTabs();
   const page = document.getElementById("pageCollab");
   if (!page) return;
   page.addEventListener("click", (e) => {
@@ -4067,6 +4069,20 @@ function bindCollabEvents() {
       got = true;
     }
     if (got) { e.preventDefault(); renderCollabChatAttach(); }
+  });
+}
+
+/* 移动端（≤640）任务/对话 标签切换：默认任务，点对话切到聊天视图 */
+function bindCollabTabs() {
+  const tabs = document.getElementById("collabTabs");
+  const wrap = document.getElementById("collabWrap");
+  if (!tabs || !wrap) return;
+  tabs.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest(".collab-tab");
+    if (!btn) return;
+    const tab = btn.dataset.tab;
+    Array.from(tabs.querySelectorAll(".collab-tab")).forEach((b) => b.classList.toggle("active", b === btn));
+    wrap.classList.toggle("m-tab-chat", tab === "chat");
   });
 }
 
@@ -4122,8 +4138,77 @@ function collabCardEl(r, st) {
   el.dataset.attachments = JSON.stringify(r.attachments || []);
   return el;
 }
-function addCollabCard(status) {
-  const content = window.prompt("任务内容（" + labelOf(status) + "）：");
+/* ---------- 协作台内联弹窗：替代 window.prompt / window.confirm / window.alert ----------
+   移动端（尤其 iOS Safari）原生弹窗不可用或行为异常，改用页面内弹窗，保证建任务/删任务/编辑都可用 */
+let collabModalResolve = null;
+let collabModalIsInput = false;
+function bindCollabModal() {
+  const ok = document.getElementById("collabModalOk");
+  const cancel = document.getElementById("collabModalCancel");
+  const input = document.getElementById("collabModalInput");
+  const close = (val) => {
+    const r = collabModalResolve; collabModalResolve = null;
+    const m = document.getElementById("collabModal"); if (m) m.hidden = true;
+    if (r) r(val);
+  };
+  if (ok) ok.addEventListener("click", () => { const v = collabModalIsInput ? (input ? input.value : "") : true; close(v); });
+  if (cancel) cancel.addEventListener("click", () => close(collabModalIsInput ? null : false));
+  if (input) input.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (ok) ok.click(); } });
+}
+function collabPrompt(title, def) {
+  return new Promise((resolve) => {
+    collabModalResolve = resolve; collabModalIsInput = true;
+    const m = document.getElementById("collabModal");
+    const t = document.getElementById("collabModalTitle");
+    const msg = document.getElementById("collabModalMsg");
+    const input = document.getElementById("collabModalInput");
+    const ok = document.getElementById("collabModalOk");
+    const cancel = document.getElementById("collabModalCancel");
+    if (t) t.textContent = title || "请输入";
+    if (msg) msg.textContent = "";
+    if (input) { input.style.display = ""; input.value = def || ""; }
+    if (ok) ok.textContent = "确定";
+    if (cancel) { cancel.textContent = "取消"; cancel.style.display = ""; }
+    if (m) m.hidden = false;
+    if (input) setTimeout(() => { try { input.focus(); } catch (e) {} }, 50);
+  });
+}
+function collabConfirm(title) {
+  return new Promise((resolve) => {
+    collabModalResolve = resolve; collabModalIsInput = false;
+    const m = document.getElementById("collabModal");
+    const t = document.getElementById("collabModalTitle");
+    const msg = document.getElementById("collabModalMsg");
+    const input = document.getElementById("collabModalInput");
+    const ok = document.getElementById("collabModalOk");
+    const cancel = document.getElementById("collabModalCancel");
+    if (t) t.textContent = "请确认";
+    if (msg) msg.textContent = title || "";
+    if (input) input.style.display = "none";
+    if (ok) ok.textContent = "确定";
+    if (cancel) { cancel.textContent = "取消"; cancel.style.display = ""; }
+    if (m) m.hidden = false;
+  });
+}
+function collabAlert(title) {
+  return new Promise((resolve) => {
+    collabModalResolve = resolve; collabModalIsInput = false;
+    const m = document.getElementById("collabModal");
+    const t = document.getElementById("collabModalTitle");
+    const msg = document.getElementById("collabModalMsg");
+    const input = document.getElementById("collabModalInput");
+    const ok = document.getElementById("collabModalOk");
+    const cancel = document.getElementById("collabModalCancel");
+    if (t) t.textContent = "提示";
+    if (msg) msg.textContent = title || "";
+    if (input) input.style.display = "none";
+    if (ok) ok.textContent = "知道了";
+    if (cancel) cancel.style.display = "none";
+    if (m) m.hidden = false;
+  });
+}
+async function addCollabCard(status) {
+  const content = await collabPrompt("新建任务（" + labelOf(status) + "）", "");
   if (!content || !content.trim()) return;
   const id = curCollabId();
   ensureCollabSb().then((sb) => sb.from("team_task_cards").insert({
@@ -4134,8 +4219,8 @@ function moveCollabCard(cid, to) {
   ensureCollabSb().then((sb) => sb.from("team_task_cards").update({ status: to, updated_by: curCollabId(), updated_at: new Date().toISOString() }).eq("id", cid))
     .then(({ error }) => { if (error) console.error("[collab] 改状态:", error); }).catch((e) => console.error("[collab] 改状态:", e));
 }
-function delCollabCard(cid) {
-  if (!window.confirm("删除这张任务卡？")) return;
+async function delCollabCard(cid) {
+  if (!(await collabConfirm("删除这张任务卡？此操作不可撤销"))) return;
   ensureCollabSb().then((sb) => sb.from("team_task_cards").delete().eq("id", cid))
     .then(({ error }) => { if (error) console.error("[collab] 删卡:", error); }).catch((e) => console.error("[collab] 删卡:", e));
 }
@@ -4172,7 +4257,7 @@ function saveCollabCard(card) {
   const cid = card.dataset.id;
   const content = (card.querySelector(".collab-edit-content").value || "").trim();
   const note = (card.querySelector(".collab-edit-note").value || "").trim();
-  if (!content) { window.alert("任务内容不能为空"); return; }
+  if (!content) { collabAlert("任务内容不能为空"); return; }
   const stamp = { updated_by: curCollabId(), updated_at: new Date().toISOString() };
   ensureCollabSb().then((sb) => {
     // 1) 删除「本次被移除」的原始附件（云端文件）
