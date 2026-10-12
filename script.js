@@ -3755,8 +3755,8 @@ window.__infiniteRefresh = infRefresh;
       const time = infTime(m.created_at);
       let media = '';
       if (m.image_url) media += '<div class="pn-msg-media"><img src="' + infEsc(m.image_url) + '" alt="图片" loading="lazy"></div>';
-      if (m.video_url) media += '<div class="pn-msg-tag">🎬 视频消息</div>';
-      if (m.audio_url) media += '<div class="pn-msg-tag">🎙 语音消息</div>';
+      if (m.video_url) media += '<div class="pn-msg-tag">🎬 视频消息</div><div class="pn-msg-media"><video src="' + infEsc(m.video_url) + '" controls preload="metadata" playsinline></video></div>';
+      if (m.audio_url) media += '<div class="pn-msg-tag">🎙 语音消息</div><div class="pn-msg-media"><audio src="' + infEsc(m.audio_url) + '" controls preload="metadata"></audio></div>';
       const text = infEsc(m.text || '');
       return '<div class="pn-msg-item">'
         + '<div class="pn-msg-meta"><span>' + time + '</span></div>'
