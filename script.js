@@ -2266,7 +2266,7 @@ if (ifBtn) ifBtn.addEventListener("click", async () => {
    ===================================================================== */
 
 /* ---------- PayNews 应用：原生嵌入首页模块（Shadow DOM，非 iframe） ---------- */
-const PAYNEWS_VER = "20261011i";
+const PAYNEWS_VER = "20261011j";
 let _paynewsMounted = false;
 
 function _pnLoadScript(src) {
@@ -3612,6 +3612,65 @@ window.__infiniteRefresh = infRefresh;
     renderPreview();
   });
 
+  // PC 端 Ctrl+V 粘贴图片/视频/音频：等价于点击「🖼 图片 / 🎬 视频」按钮
+  // 兼容标准 image/* file、非标准 MIME（微信/QQ/钉钉截图等 type 为空）、cd.files 兜底、网页内联 base64 图片
+  function handleRecordPaste(e) {
+    if (modal && modal.hidden) return;            // 弹窗未打开时不处理
+    const cd = e.clipboardData || window.clipboardData;
+    if (!cd) return;
+    let imageFile = null, mediaFile = null;
+    const isImgName = (n) => /\.(png|jpe?g|gif|webp|bmp|svg|heic|avif)$/i.test(n || '');
+    if (cd.items) {
+      for (let i = 0; i < cd.items.length; i++) {
+        const it = cd.items[i];
+        if (it.kind !== 'file') continue;
+        const f = it.getAsFile();
+        if (!f) continue;
+        const t = f.type || '';
+        if (t.indexOf('image/') === 0 || isImgName(f.name) || (t === '' && f.size > 0)) { if (!imageFile) imageFile = f; }
+        else if (t.indexOf('video/') === 0 || t.indexOf('audio/') === 0) { if (!mediaFile) mediaFile = f; }
+      }
+    }
+    if (!imageFile && !mediaFile && cd.files && cd.files.length) {
+      for (let i = 0; i < cd.files.length; i++) {
+        const f = cd.files[i]; const t = f.type || '';
+        if (t.indexOf('image/') === 0 || isImgName(f.name)) { imageFile = f; break; }
+        if (t.indexOf('video/') === 0 || t.indexOf('audio/') === 0) { mediaFile = f; break; }
+      }
+    }
+    if (!imageFile && typeof cd.getData === 'function') {
+      try {
+        const html = cd.getData('text/html');
+        if (html) {
+          const m = html.match(/<img\b[^>]*\bsrc=["'](data:image\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/i);
+          if (m) {
+            const dataUrl = m[1]; const c = dataUrl.indexOf(',');
+            const meta = dataUrl.slice(0, c);
+            const bin = atob(dataUrl.slice(c + 1));
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            const ext = (meta.match(/image\/([a-zA-Z0-9.+-]+)/) || [])[1] || 'png';
+            imageFile = new File([arr], 'pasted.' + ext, { type: 'image/' + ext });
+          }
+        }
+      } catch (err) { /* 某些浏览器对 getData('text/html') 有限制，忽略 */ }
+    }
+    if (imageFile) {
+      e.preventDefault();
+      if (pendingImage && pendingImage.url) URL.revokeObjectURL(pendingImage.url);
+      pendingImage = { file: imageFile, url: URL.createObjectURL(imageFile) };
+      renderPreview();
+      if (rTip) rTip.textContent = '已粘贴图片，点 ✕ 可移除';
+    } else if (mediaFile) {
+      e.preventDefault();
+      pendingVideo = { file: mediaFile };
+      renderPreview();
+      if (rTip) rTip.textContent = '已粘贴视频/音频：' + infEsc(mediaFile.name || mediaFile.type);
+    }
+  }
+  // 绑定在弹窗整体（文本框聚焦时 paste 会冒泡到这里），单点绑定避免重复触发
+  if (modal) modal.addEventListener('paste', handleRecordPaste);
+
   // 录音：点一次开始，再点一次结束
   if (rVoice) rVoice.addEventListener('click', async () => {
     if (rec && rec.state === 'recording') { try { rec.stop(); } catch (e) {} return; }
@@ -3727,10 +3786,10 @@ window.__infiniteRefresh = infRefresh;
     });
   }
 
-  // 消息浮层：autoSec 秒后自动关闭；点击浮层任意处可立即关闭
+  // 消息浮层：autoSec 秒后自动关闭；点击弹窗内部不关闭，仅点击外部遮罩关闭
   function showMsgWall(autoSec) {
     autoSec = autoSec || 5;
-    if (wallHint) wallHint.textContent = autoSec + ' 秒后自动关闭 · 点击立即关闭';
+    if (wallHint) wallHint.textContent = autoSec + ' 秒后自动关闭 · 点击空白处关闭';
     const reveal = () => {
       msgWall.hidden = false;
       clearTimeout(wallTimer);
@@ -3853,8 +3912,14 @@ window.__infiniteRefresh = infRefresh;
     noteHeadEl.addEventListener('click', (e) => { if (justHeld) { e.stopPropagation(); justHeld = false; } });
   }
 
-  // 点浮层任意处立即关闭
-  msgWall.addEventListener('click', hideMsgWall);
+  // 点弹窗内部不关闭（便于查看图片/语音）；仅点击外部遮罩才关闭
+  msgWall.addEventListener('click', (e) => {
+    if (e.target === msgWall) { hideMsgWall(); return; }   // 命中背景遮罩 → 关闭
+    // 在弹窗内部交互（查看图片/语音等）→ 取消自动关闭，保持在眼前
+    clearTimeout(wallTimer);
+    wallTimer = null;
+    if (wallHint) wallHint.textContent = '点击空白处关闭';
+  });
 })();
 
 /* ===================== 协作台（团队任务看板 + 团队对话 · 实时同步） ===================== */

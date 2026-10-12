@@ -1656,9 +1656,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // PC 端粘贴上传：在发布弹窗内 Ctrl+V 直接把剪贴板图片设为待发布图片
   const _pnPanel = document.getElementById('comment-panel');
   if (_pnPanel) _pnPanel.addEventListener('paste', handlePaste);
-  // 双保险：textarea 自身也监听（兼容个别浏览器冒泡差异）
-  const _pnTa = document.getElementById('msg-text');
-  if (_pnTa) _pnTa.addEventListener('paste', handlePaste);
   document.getElementById('voice-btn').addEventListener('click', startRecording);
   document.getElementById('rec-stop').addEventListener('click', stopRecording);
   document.getElementById('voice-del').addEventListener('click', cancelVoice);
