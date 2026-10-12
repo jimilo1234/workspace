@@ -1128,10 +1128,11 @@ html.pn-fs .topbar { display: none; }
 .pet-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
 .pet-mood-time { font-size: 10px; }
 .pet-controls { flex: none; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-.pet-row { display: flex; align-items: center; gap: 8px; }
-.pet-select { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px; color: var(--text-soft); }
+.pet-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pet-select { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 13px; color: var(--text-soft); }
 .pet-select select {
-  flex: 1; padding: 8px 10px; border-radius: 10px;
+  flex: 1; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  padding: 8px 10px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--card-hover); color: var(--text);
   font-size: 13px; font-family: var(--sans); outline: none;
   transition: border-color 0.2s, background 0.2s;
