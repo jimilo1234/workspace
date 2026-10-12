@@ -1597,3 +1597,20 @@ html.pn-fs .topbar { display: none; }
   .collab-chat { min-width: 0; max-height: none; }
   .collab-msgs { max-height: 50vh; }
 }
+
+/* 协作台手机端（≤640）：看板改纵向单列、整块可滚动、锁屏输入框加宽加大，交互尽量简单 */
+@media (max-width: 640px) {
+  #pageCollab { overflow: hidden; }
+  .collab-wrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; flex-direction: column; gap: 12px; padding: 10px; }
+  .collab-board { flex: none; flex-direction: column; gap: 10px; overflow: visible; }
+  .collab-col { width: 100%; min-width: 0; max-height: none; }
+  .collab-cards { max-height: 230px; }
+  .collab-chat { flex: none; min-width: 0; max-height: none; }
+  .collab-msgs { max-height: 52vh; }
+  .collab-input .pn-record-text { font-size: 16px; }
+  /* 锁屏：让输入框恢复整行可用宽度（否则被 .pn-record-send{width:100%} 挤成细条） */
+  .collab-lock-box { width: min(340px, 92vw); padding: 22px 18px; }
+  .collab-lock-row { flex-direction: column; }
+  .collab-lock-row .pn-record-send { width: 100%; }
+  .collab-lock-input { font-size: 16px; padding: 11px 12px; }
+}
