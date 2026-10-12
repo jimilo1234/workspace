@@ -1569,6 +1569,18 @@ html.pn-fs .topbar { display: none; }
 @keyframes dpPulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
 .collab-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
 .collab-hint b { color: var(--accent); font-weight: 600; }
+
+/* ===== 协作台密码锁（前端遮挡级：防误入/随手进，非真安全） ===== */
+#pageCollab { position: relative; }
+.collab-lock { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.collab-lock[hidden] { display: none; }
+.collab-lock-box { width: min(340px, 86vw); padding: 26px 24px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); text-align: center; }
+.collab-lock-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.collab-lock-tip { font-size: 12px; color: var(--text-faint); margin: 0 0 16px; }
+.collab-lock-row { display: flex; gap: 8px; }
+.collab-lock-input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+.collab-lock-input:focus { border-color: var(--accent); }
+.collab-lock-msg { display: block; margin-top: 10px; min-height: 14px; font-size: 12px; color: #ff6b5b; }
 /* 发送前待上传附件预览（Ctrl+V 粘贴） */
 .collab-attach-prev { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 /* 消息内的附件展示 */

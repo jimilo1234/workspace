@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261011m" />
+  <link rel="stylesheet" href="style.css?v=20261011n" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -559,6 +559,18 @@
             <p class="collab-hint">💡 在消息里 <b>@DP智能体</b>（或 <b>@DP</b>）提问，DP 会调用 DeepSeek 在同频道回复，并参考最近聊天上下文。</p>
           </section>
         </div>
+        <!-- 协作台密码锁：未解锁时覆盖整个协作台内容（前端遮挡级） -->
+        <div id="collabLock" class="collab-lock" hidden>
+          <div class="collab-lock-box">
+            <div class="collab-lock-title">🔒 协作台已上锁</div>
+            <p class="collab-lock-tip">请输入访问密码后进入</p>
+            <div class="collab-lock-row">
+              <input id="collabLockInput" class="collab-lock-input" type="password" placeholder="访问密码" maxlength="24" autocomplete="off" />
+              <button id="collabLockBtn" class="pn-record-send" type="button">进入</button>
+            </div>
+            <small id="collabLockMsg" class="collab-lock-msg"></small>
+          </div>
+        </div>
       </div>
 
       <!-- 首页管理（模块显隐 + 拖拽排序） -->
@@ -774,6 +786,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261011m"></script>
+  <script src="script.js?v=20261011n"></script>
 </body>
 </html>

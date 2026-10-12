@@ -1486,7 +1486,7 @@ function switchPage(page) {
       if (targetId === "pageHome") { loadData(); loadPet(); } // 切回首页即拉取最新（数据未变则跳过重渲染）
       else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
       else if (targetId === "pageModulePerm") loadModulePerm(); // 进入模块权限即拉取列表
-      else if (targetId === "pageCollab") initCollab(); // 进入协作台即初始化（身份+加载+实时订阅）
+      else if (targetId === "pageCollab") openCollab(); // 进入协作台：先过密码锁，通过才初始化
     } else {
       if (p.id === "pageCollab") leaveCollab(); // 离开协作台，退订实时通道释放资源
       scheduleRelease(p);       // 离开延时释放
@@ -3929,6 +3929,9 @@ let collabBound = false;
 let collabCardsChan = null;
 let collabChatChan = null;
 const COLLAB_TEAM = "wb-team";
+const COLLAB_PASS = "0713";                 // 协作台访问密码（前端遮挡级，非真安全）
+const COLLAB_UNLOCK_KEY = "wb_collab_unlocked";
+let collabLockBound = false;                // 锁屏事件是否已绑定（懒绑定一次）
 let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} + 新选 {saved:false, file,...}
 let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
 let collabChatRows = [];     // 最近一次拉取的聊天记录（供 @DP智能体 取上下文）
@@ -3962,6 +3965,40 @@ function fmtCollabTime(ts) {
   if (!ts) return "";
   const d = new Date(ts); const p = (n) => String(n).padStart(2, "0");
   return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function openCollab() {
+  if (localStorage.getItem(COLLAB_UNLOCK_KEY) === "1") { initCollab(); return; }
+  showCollabLock();
+}
+function showCollabLock() {
+  const lock = document.getElementById("collabLock");
+  if (!lock) { initCollab(); return; }
+  lock.hidden = false;
+  if (!collabLockBound) {
+    collabLockBound = true;
+    const btn = document.getElementById("collabLockBtn");
+    if (btn) btn.addEventListener("click", tryCollabUnlock);
+    const inp = document.getElementById("collabLockInput");
+    if (inp) inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); tryCollabUnlock(); } });
+  }
+  const msg = document.getElementById("collabLockMsg"); if (msg) msg.textContent = "";
+  const inp = document.getElementById("collabLockInput");
+  if (inp) { inp.value = ""; setTimeout(() => inp.focus(), 30); }
+}
+function tryCollabUnlock() {
+  const inp = document.getElementById("collabLockInput");
+  const msg = document.getElementById("collabLockMsg");
+  const val = (inp && inp.value || "").trim();
+  if (val === COLLAB_PASS) {
+    localStorage.setItem(COLLAB_UNLOCK_KEY, "1");
+    const lock = document.getElementById("collabLock");
+    if (lock) lock.hidden = true;
+    initCollab();
+  } else {
+    if (msg) msg.textContent = "密码错误，请重试";
+    if (inp) { inp.value = ""; inp.focus(); }
+  }
 }
 
 function initCollab() {
