@@ -3938,6 +3938,7 @@ let collabChatRows = [];     // 最近一次拉取的聊天记录（供 @DP智�
 let collabChatAttach = [];   // 发送前待上传的聊天附件（Ctrl+V 粘贴 / 选文件）
 const DP_AGENT_NAME = "DP智能体";
 const DP_CONTEXT_N = 10;     // @DP 时带入的最近对话条数
+let _collabBucket = null;    // 协作台附件桶：优先 collab-attachments，缺失则回退到已有的 sticky 桶
 
 function ensureCollabSb() {
   if (collabSb) return Promise.resolve(collabSb);
@@ -4253,40 +4254,60 @@ function editCollabCard(card) {
   renderCollabAttachList(aList);
   cTa.focus();
 }
-function saveCollabCard(card) {
+/* 上传单个协作台附件：优先 collab-attachments 桶，若该桶不存在则回退到已有的 sticky 桶，
+   返回带 bucket 字段的元数据（便于后续删除/渲染）。失败直接抛错，由调用方降级处理。 */
+async function collabUploadFile(file, dir) {
+  const sb = await ensureCollabSb();
+  const ext = (file.name || "").split(".").pop();
+  const safeName = Date.now() + "_" + Math.random().toString(36).slice(2, 8) + (ext ? "." + ext.replace(/[^a-zA-Z0-9]/g, "") : "");
+  const path = dir + "/" + safeName;   // 对象名用 ASCII，避免中文 key 被存储拒绝；显示名仍用原始中文名
+  if (_collabBucket === null) {
+    // list() 在桶不存在时也会返回 {data:[],error:null}（无法区分），改用「上传探针」可靠判定
+    const probePath = COLLAB_TEAM + "/_probe_" + Date.now() + ".txt";
+    const pr = await sb.storage.from("collab-attachments").upload(probePath, new Blob(["probe"]), { upsert: true, cacheControl: "3600" });
+    if (pr.error) { _collabBucket = "sticky"; }   // 桶未建 → 复用已存在的 sticky 桶
+    else { _collabBucket = "collab-attachments"; try { await sb.storage.from("collab-attachments").remove([probePath]); } catch (e) {} }
+  }
+  const bucket = _collabBucket;
+  const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: false, cacheControl: "3600" });
+  if (error) throw error;
+  const url = sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  return { name: file.name, type: file.type, size: file.size, url: url, path: path, bucket: bucket };
+}
+async function saveCollabCard(card) {
   const cid = card.dataset.id;
   const content = (card.querySelector(".collab-edit-content").value || "").trim();
   const note = (card.querySelector(".collab-edit-note").value || "").trim();
-  if (!content) { collabAlert("任务内容不能为空"); return; }
+  if (!content) { await collabAlert("任务内容不能为空"); return; }
   const stamp = { updated_by: curCollabId(), updated_at: new Date().toISOString() };
-  ensureCollabSb().then((sb) => {
-    // 1) 删除「本次被移除」的原始附件（云端文件）
-    collabEditOrig.filter((o) => !collabEditAttach.some((a) => a.saved && a.path === o.path))
-      .forEach((o) => { try { sb.storage.from("collab-attachments").remove([o.path]); } catch (e) {} });
-    // 2) 上传新选附件
-    const kept = collabEditAttach.filter((a) => a.saved).map((a) => ({ name: a.name, type: a.type, size: a.size, url: a.url, path: a.path }));
-    const newOnes = collabEditAttach.filter((a) => !a.saved);
-    return Promise.all(newOnes.map((a) => {
-      const path = COLLAB_TEAM + "/" + cid + "/" + Date.now() + "_" + a.name;
-      return sb.storage.from("collab-attachments").upload(path, a.file, { upsert: false, cacheControl: "3600" })
-        .then(({ data, error }) => {
-          if (error) throw error;
-          const url = sb.storage.from("collab-attachments").getPublicUrl(path).data.publicUrl;
-          return { name: a.name, type: a.type, size: a.size, url: url, path: path };
-        });
-    })).then((uploaded) => {
-      const finalAttach = kept.concat(uploaded);
-      return sb.from("team_task_cards").update(Object.assign({ content: content, note: note, attachments: finalAttach }, stamp)).eq("id", cid);
-    });
-  })
-    .then((res) => {
-      if (res && res.error) {
-        console.warn("[collab] 含附件更新失败，回退仅更新内容/备注:", res.error.message);
-        return ensureCollabSb().then((sb) => sb.from("team_task_cards").update(Object.assign({ content: content, note: note }, stamp)).eq("id", cid));
-      }
-    })
-    .then(() => loadCollabCards())
-    .catch((e) => console.error("[collab] 编辑卡:", e));
+  const sb = await ensureCollabSb();
+  // 1) 删除「本次被移除」的原始附件（云端文件）
+  collabEditOrig.filter((o) => !collabEditAttach.some((a) => a.saved && a.path === o.path))
+    .forEach((o) => { try { sb.storage.from(o.bucket || "collab-attachments").remove([o.path]); } catch (e) {} });
+  // 2) 上传新选附件（失败仅影响附件，不阻塞文字保存）
+  const kept = collabEditAttach.filter((a) => a.saved).map((a) => ({ name: a.name, type: a.type, size: a.size, url: a.url, path: a.path, bucket: a.bucket }));
+  const newOnes = collabEditAttach.filter((a) => !a.saved);
+  let uploaded = [];
+  let attachErr = null;
+  if (newOnes.length) {
+    try { uploaded = await Promise.all(newOnes.map((a) => collabUploadFile(a.file, COLLAB_TEAM + "/" + cid))); }
+    catch (e) { attachErr = e; }
+  }
+  const finalAttach = kept.concat(uploaded);
+  // 3) 保存（优先带附件；supabase-js 出错返回 {error} 而不 reject，需用返回值的 error 判断）
+  const upRes = await sb.from("team_task_cards").update(Object.assign({ content: content, note: note, attachments: finalAttach }, stamp)).eq("id", cid);
+  if (upRes && upRes.error) {
+    const msg = upRes.error.message || "";
+    if (/attachments/i.test(msg)) {   // attachments 列未建 → 仅存文字，并提示用户补列
+      const up2 = await sb.from("team_task_cards").update(Object.assign({ content: content, note: note }, stamp)).eq("id", cid);
+      if (up2 && up2.error) { attachErr = attachErr || new Error("保存失败：" + (up2.error.message || "")); console.error("[collab] 纯文字保存也失败:", up2.error); }
+      else attachErr = attachErr || new Error("attachments 列未创建");
+    } else { attachErr = attachErr || new Error(msg); console.error("[collab] 保存失败:", upRes.error); }
+  }
+  await loadCollabCards();
+  if (attachErr) {
+    await collabAlert("文字已保存成功。" + (uploaded.length < newOnes.length ? "但附件上传失败（存储未就绪）。" : "但附件未保存：数据库缺少 attachments 列。请在 Supabase SQL Editor 执行一行：alter table team_task_cards add column if not exists attachments jsonb not null default '[]'::jsonb;"));
+  }
 }
 function pickCollabAttach(fileList, attList) {
   Array.from(fileList).forEach((file) => {
@@ -4378,19 +4399,16 @@ function sendCollabMsg() {
     if (q) askDpAgent(q);
   }
 }
-/* 发送聊天消息：有附件则先上传到 collab-attachments 桶，再带 attachments 入库（列未建则降级仅正文） */
+/* 发送聊天消息：有附件则先上传（回退 sticky 桶），再带 attachments 入库（列未建则降级仅正文） */
 async function sendCollabWithAttach(text) {
   const newOnes = collabChatAttach.filter((a) => !a.saved);
   const kept = collabChatAttach.filter((a) => a.saved).map((a) => ({ name: a.name, type: a.type, size: a.size, url: a.url, path: a.path }));
   let finalAttach = kept;
   if (newOnes.length) {
-    const sb = await ensureCollabSb();
-    const up = await Promise.all(newOnes.map((a) => {
-      const path = COLLAB_TEAM + "/chat/" + Date.now() + "_" + a.name;
-      return sb.storage.from("collab-attachments").upload(path, a.file, { upsert: false, cacheControl: "3600" })
-        .then(({ error }) => { if (error) throw error; const url = sb.storage.from("collab-attachments").getPublicUrl(path).data.publicUrl; return { name: a.name, type: a.type, size: a.size, url: url, path: path }; });
-    }));
-    finalAttach = kept.concat(up);
+    try {
+      const up = await Promise.all(newOnes.map((a) => collabUploadFile(a.file, COLLAB_TEAM + "/chat")));
+      finalAttach = kept.concat(up);
+    } catch (e) { console.warn("[collab] 聊天附件上传失败，降级仅发正文:", e); }
   }
   const payload = { team_id: COLLAB_TEAM, text: text, user: curCollabId() };
   if (finalAttach.length) payload.attachments = finalAttach;
