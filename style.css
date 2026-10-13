@@ -1543,10 +1543,13 @@ html.pn-fs .topbar { display: none; }
 .collab-attach-size { font-size: 11px; color: var(--text-faint); }
 .collab-attach-rm { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(224,106,106,0.4); background: transparent; color: #e06a6a; cursor: pointer; font-size: 12px; line-height: 1; }
 .collab-attach-rm:hover { background: rgba(224,106,106,0.12); }
-.collab-card-attach { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.collab-card-img { display: block; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
-.collab-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.collab-card-file { display: inline-flex; align-items: center; max-width: 180px; font-size: 12px; color: var(--accent); background: var(--accent-dim); padding: 6px 9px; border-radius: 8px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 编辑态：音视频内嵌播放器（与便利贴一致）；图片缩略图点击放大看 */
+.collab-attach-media { flex-direction: column; align-items: stretch; gap: 6px; }
+.collab-attach-player { width: 100%; max-height: 200px; border-radius: 8px; background: #000; }
+.collab-attach-row { display: flex; align-items: center; gap: 8px; }
+.collab-attach-row .collab-attach-info { flex: 1; min-width: 0; }
+/* 卡片正面：附件不可见，仅显示数量角标（点编辑才看得到内容） */
+.collab-card-attach-badge { display: inline-flex; align-items: center; gap: 3px; align-self: flex-start; margin-top: 8px; padding: 3px 9px; font-size: 12px; color: var(--text-soft); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; cursor: default; }
 
 .collab-chat { flex: 0 0 36%; display: flex; flex-direction: column; background: rgba(125,125,125,0.08); border: 1px solid var(--border); border-radius: 14px; padding: 12px; min-width: 280px; max-height: calc(100vh - 184px); }
 .collab-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }

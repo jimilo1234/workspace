@@ -1931,7 +1931,11 @@ function bindStickyFiles(el, shared, noteId) {
   });
 }
 function openStickyPreview(att) {
-  const kind = att.type || stickyKindOf("", att.name);
+  const t = att.type || "";
+  const kind = (t.indexOf("image/") === 0 || t === "image") ? "image"
+    : (t.indexOf("video/") === 0 || t === "video") ? "video"
+    : (t.indexOf("audio/") === 0 || t === "audio") ? "audio"
+    : stickyKindOf("", att.name);   // 兼容完整 MIME（image/jpeg）与 kind 简写（image），并兜底按扩展名
   let inner = "";
   if (kind === "image") inner = '<img src="' + esc(att.url) + '" alt="" />';
   else if (kind === "video") inner = '<video src="' + esc(att.url) + '" controls autoplay playsinline></video>';
@@ -4110,17 +4114,12 @@ function collabCardEl(r, st) {
     const note = document.createElement("div"); note.className = "collab-card-note"; note.textContent = r.note; el.appendChild(note);
   }
   if (r.attachments && r.attachments.length) {
-    const att = document.createElement("div"); att.className = "collab-card-attach";
-    r.attachments.forEach((a) => {
-      const isImg = (a.type || "").startsWith("image/");
-      const a1 = document.createElement("a");
-      a1.className = isImg ? "collab-card-img" : "collab-card-file";
-      a1.href = a.url; a1.target = "_blank"; a1.rel = "noopener"; a1.title = a.name;
-      if (isImg) { const im = document.createElement("img"); im.src = a.url; im.alt = a.name; a1.appendChild(im); }
-      else { a1.textContent = "📄 " + a.name; }
-      att.appendChild(a1);
-    });
-    el.appendChild(att);
+    const n = r.attachments.length;
+    const badge = document.createElement("span");
+    badge.className = "collab-card-attach-badge";
+    badge.textContent = "📎 " + n;
+    badge.title = n + " 个附件（图片/音视频），点「编辑」查看与放大";
+    el.appendChild(badge);
   }
   const meta = document.createElement("div"); meta.className = "collab-card-meta";
   const parts = [];
@@ -4241,7 +4240,7 @@ function editCollabCard(card) {
   const nLab = document.createElement("label"); nLab.className = "collab-edit-lab"; nLab.textContent = "长备注";
   const nTa = document.createElement("textarea"); nTa.className = "collab-edit-ta collab-edit-note"; nTa.rows = 3; nTa.placeholder = "可填较长的备注…"; nTa.value = note;
   const aLab = document.createElement("label"); aLab.className = "collab-edit-lab"; aLab.textContent = "附件（图片 / 文件，可多选）";
-  const aInput = document.createElement("input"); aInput.type = "file"; aInput.className = "collab-edit-file"; aInput.multiple = true; aInput.accept = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.ppt,.pptx";
+  const aInput = document.createElement("input"); aInput.type = "file"; aInput.className = "collab-edit-file"; aInput.multiple = true; aInput.accept = "image/*,video/*,audio/*";
   const aList = document.createElement("div"); aList.className = "collab-attach-list";
   aInput.addEventListener("change", (ev) => { pickCollabAttach(ev.target.files, aList); ev.target.value = ""; });
   const ops = document.createElement("div"); ops.className = "collab-card-actions";
@@ -4320,23 +4319,38 @@ function pickCollabAttach(fileList, attList) {
 function renderCollabAttachList(attList) {
   attList.innerHTML = "";
   collabEditAttach.forEach((it, i) => {
-    const chip = document.createElement("div"); chip.className = "collab-attach";
-    const isImg = (it.type || "").startsWith("image/");
-    const thumb = document.createElement(isImg ? "img" : "div");
-    if (isImg) { thumb.className = "collab-attach-thumb"; thumb.src = it.previewUrl || it.url; thumb.alt = it.name; }
-    else { thumb.className = "collab-attach-ic"; thumb.textContent = "📄"; }
-    chip.appendChild(thumb);
+    const type = it.type || "";
+    const isImg = type.indexOf("image/") === 0;
+    const isVideo = type.indexOf("video/") === 0;
+    const isAudio = type.indexOf("audio/") === 0;
+    const src = it.url || it.previewUrl;          // 已存用云端 url，未存用本地预览 blob
+    const chip = document.createElement("div");
+    chip.className = "collab-attach" + ((isVideo || isAudio) ? " collab-attach-media" : "");
     const info = document.createElement("div"); info.className = "collab-attach-info";
     const nm = document.createElement("div"); nm.className = "collab-attach-name"; nm.textContent = it.name + (it.saved ? "" : "（待上传）"); info.appendChild(nm);
-    const sz = document.createElement("div"); sz.className = "collab-attach-size"; sz.textContent = fmtSize(it.size); info.appendChild(sz);
-    chip.appendChild(info);
+    if (it.size) { const sz = document.createElement("div"); sz.className = "collab-attach-size"; sz.textContent = fmtSize(it.size); info.appendChild(sz); }
     const rm = document.createElement("button"); rm.className = "collab-attach-rm"; rm.type = "button"; rm.textContent = "✕";
     rm.addEventListener("click", () => {
       if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
       collabEditAttach.splice(i, 1);
       renderCollabAttachList(attList);
     });
-    chip.appendChild(rm);
+    if (isImg) {
+      const thumb = document.createElement("img");
+      thumb.className = "collab-attach-thumb"; thumb.src = src; thumb.alt = it.name; thumb.title = "点击放大";
+      thumb.addEventListener("click", () => openStickyPreview({ url: src, type: it.type, name: it.name }));
+      chip.appendChild(thumb); chip.appendChild(info); chip.appendChild(rm);
+    } else if (isVideo || isAudio) {
+      const player = document.createElement(isVideo ? "video" : "audio");
+      player.className = "collab-attach-player"; player.src = src; player.controls = true;
+      if (isVideo) player.setAttribute("playsinline", "");
+      chip.appendChild(player);
+      const row = document.createElement("div"); row.className = "collab-attach-row";
+      row.appendChild(info); row.appendChild(rm); chip.appendChild(row);
+    } else {
+      const ic = document.createElement("div"); ic.className = "collab-attach-ic"; ic.textContent = "📄";
+      chip.appendChild(ic); chip.appendChild(info); chip.appendChild(rm);
+    }
     attList.appendChild(chip);
   });
 }
