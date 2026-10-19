@@ -1487,6 +1487,7 @@ function switchPage(page) {
       else if (targetId === "pageOperators") loadOperators(); // 进入操作员管理即拉取列表
       else if (targetId === "pageModulePerm") loadModulePerm(); // 进入模块权限即拉取列表
       else if (targetId === "pageCollab") openCollab(); // 进入协作台：先过密码锁，通过才初始化
+      else if (targetId === "pageLifeguide") openLifeguide(); // 进入高性价比人生阅读器
     } else {
       if (p.id === "pageCollab") leaveCollab(); // 离开协作台，退订实时通道释放资源
       scheduleRelease(p);       // 离开延时释放
@@ -4509,4 +4510,252 @@ function clearCollabChat() {
       else loadCollabChat();
     })
     .catch((e) => { console.error("[collab] 清空聊天:", e); window.alert("清空失败：" + (e && e.message ? e.message : e)); });
+}
+
+/* ============ 高性价比人生 · 阅读器 ============ */
+/* 内容来源：eternity4719/HowToLiveBetter（CC BY 4.0），34 章 765 条建议，已由 build 脚本转成 lifeguide-data.js */
+const LIFEGUIDE_DATA_VER = "20261016a";
+const LIFEGUIDE_TABLE = "lifeguide_reads";
+let _lgLoaded = false;
+let _lgChapters = [];
+let _lgCurrent = 0;
+let _lgLastRecord = { num: null, ts: 0 };
+
+function loadLifeguideData() {
+  return new Promise((resolve, reject) => {
+    if (window.LIFEGUIDE_CHAPTERS) { _lgChapters = window.LIFEGUIDE_CHAPTERS; return resolve(); }
+    const s = document.createElement("script");
+    s.src = "lifeguide-data.js?v=" + LIFEGUIDE_DATA_VER;
+    s.onload = () => { _lgChapters = window.LIFEGUIDE_CHAPTERS || []; resolve(); };
+    s.onerror = () => reject(new Error("数据脚本加载失败"));
+    document.head.appendChild(s);
+  });
+}
+
+async function openLifeguide() {
+  const page = document.getElementById("pageLifeguide");
+  if (!page) return;
+  if (!_lgLoaded) {
+    page.innerHTML = '<div class="lg-loading">📖 正在加载人生指南…</div>';
+    try { await loadLifeguideData(); }
+    catch (e) { page.innerHTML = '<div class="lg-loading">加载失败：' + e.message + '</div>'; return; }
+    if (!_lgChapters.length) { page.innerHTML = '<div class="lg-loading">没有可阅读的内容。</div>'; return; }
+    _lgLoaded = true;
+    buildLifeguideUI(page);
+    await refreshLifeguideHistory();
+  }
+  const last = await getLastReadChapter();
+  gotoLifeguideChapter(last != null ? last : 0, false);
+}
+
+function buildLifeguideUI(page) {
+  page.innerHTML = `
+    <div class="lg-wrap">
+      <div class="lg-topbar">
+        <div class="lg-brand">
+          <div class="lg-brand-title">📘 高性价比人生</div>
+          <div class="lg-brand-sub">备选单，不是任务清单 · 来源 eternity4719（CC BY 4.0）</div>
+        </div>
+        <div class="lg-actions">
+          <button id="lgContinue" class="lg-btn lg-btn-primary" style="display:none">⏯ 继续阅读</button>
+          <button id="lgTrack" class="lg-btn">📊 阅读轨迹</button>
+        </div>
+      </div>
+      <div class="lg-body">
+        <aside class="lg-toc">
+          <div class="lg-toc-head">目录 · <span id="lgReadCount">0</span>/${_lgChapters.length} 章已读</div>
+          <div class="lg-toc-list" id="lgTocList"></div>
+        </aside>
+        <section class="lg-reader" id="lgReader">
+          <div class="lg-chap-head">
+            <div class="lg-chap-num" id="lgChapNum"></div>
+            <h2 class="lg-chap-title" id="lgChapTitle"></h2>
+            <div class="lg-chap-meta" id="lgChapMeta"></div>
+          </div>
+          <div class="lg-chap-intro" id="lgChapIntro"></div>
+          <div class="lg-items" id="lgItems"></div>
+        </section>
+      </div>
+      <div class="lg-pager">
+        <button class="lg-btn" id="lgPrev">← 上一章</button>
+        <div class="lg-pager-pos" id="lgPagerPos"></div>
+        <button class="lg-btn lg-btn-primary" id="lgNext">下一章 →</button>
+      </div>
+      <div class="lg-track-panel" id="lgTrackPanel" style="display:none">
+        <div class="lg-track-head"><span>📊 阅读轨迹</span><button class="lg-btn lg-btn-ghost" id="lgTrackClose">收起</button></div>
+        <div class="lg-track-list" id="lgTrackList"></div>
+      </div>
+    </div>`;
+
+  const toc = page.querySelector("#lgTocList");
+  _lgChapters.forEach((c, idx) => {
+    const b = document.createElement("button");
+    b.className = "lg-toc-item";
+    b.dataset.idx = idx;
+    b.innerHTML = `<span class="lg-toc-no">${c.num}</span><span class="lg-toc-title">${c.title}</span><span class="lg-toc-dot" data-read="0"></span>`;
+    b.addEventListener("click", () => gotoLifeguideChapter(idx, true));
+    toc.appendChild(b);
+  });
+  page.querySelector("#lgPrev").addEventListener("click", () => gotoLifeguideChapter(_lgCurrent - 1, true));
+  page.querySelector("#lgNext").addEventListener("click", () => gotoLifeguideChapter(_lgCurrent + 1, true));
+  page.querySelector("#lgContinue").addEventListener("click", () => {
+    getLastReadChapter().then((n) => { if (n != null) gotoLifeguideChapter(n, true); });
+  });
+  const trackPanel = page.querySelector("#lgTrackPanel");
+  page.querySelector("#lgTrack").addEventListener("click", () => {
+    trackPanel.style.display = trackPanel.style.display === "none" ? "block" : "none";
+    if (trackPanel.style.display === "block") refreshLifeguideHistory();
+  });
+  page.querySelector("#lgTrackClose").addEventListener("click", () => { trackPanel.style.display = "none"; });
+
+  // 手机端：reader 区域左右滑动翻章
+  const reader = page.querySelector("#lgReader");
+  let sx = 0, sy = 0, st = 0;
+  reader.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+  reader.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - st < 800) {
+      gotoLifeguideChapter(_lgCurrent + (dx < 0 ? 1 : -1), true);
+    }
+  }, { passive: true });
+}
+
+function gotoLifeguideChapter(idx, record) {
+  idx = Math.max(0, Math.min(_lgChapters.length - 1, idx));
+  _lgCurrent = idx;
+  const c = _lgChapters[idx];
+  const page = document.getElementById("pageLifeguide");
+  page.querySelector("#lgChapNum").textContent = `第 ${idx + 1} / ${_lgChapters.length} 章`;
+  page.querySelector("#lgChapTitle").textContent = c.title;
+  page.querySelector("#lgChapMeta").textContent = `${c.items.length} 条建议`;
+  const intro = page.querySelector("#lgChapIntro");
+  intro.innerHTML = c.intro || "";
+  intro.style.display = c.intro ? "block" : "none";
+  const box = page.querySelector("#lgItems");
+  box.innerHTML = "";
+  c.items.forEach((it) => box.appendChild(renderLifeguideItem(it)));
+  page.querySelector("#lgPagerPos").textContent = `${idx + 1} / ${_lgChapters.length}`;
+  page.querySelector("#lgPrev").disabled = idx === 0;
+  page.querySelector("#lgNext").disabled = idx === _lgChapters.length - 1;
+  page.querySelectorAll(".lg-toc-item").forEach((el) => el.classList.toggle("active", +el.dataset.idx === idx));
+  page.querySelector("#lgReader").scrollTop = 0;
+  if (record) recordLifeguideRead(c);
+}
+
+function renderLifeguideItem(it) {
+  const art = document.createElement("article");
+  art.className = "lg-item";
+  const ev = (it.fields["证据等级"] || "").trim();
+  const evCls = "lg-ev-" + (ev || "na");
+  const tagLabel = { "钱": "💰", "时间": "⏱", "毅力": "💪", "收益": "📈", "口径": "🎯" };
+  let tagsHtml = "";
+  Object.keys(it.tags || {}).forEach((k) => { tagsHtml += `<span class="lg-tag">${tagLabel[k] || ""}${k}:${it.tags[k]}</span>`; });
+  const fieldHtml = (label) => it.fields[label]
+    ? `<div class="lg-field"><span class="lg-field-k">${label}</span><div class="lg-field-v">${it.fields[label]}</div></div>` : "";
+  art.innerHTML = `
+    <div class="lg-item-head">
+      <span class="lg-item-no">第 ${it.num} 条</span>
+      <h3 class="lg-item-title">${it.title}</h3>
+      <span class="lg-ev ${evCls}" title="证据等级">${ev || "?"}</span>
+    </div>
+    <div class="lg-tags">${tagsHtml}</div>
+    ${fieldHtml("成本")}
+    ${fieldHtml("说人话")}
+    ${fieldHtml("收益")}
+    <div class="lg-item-more" data-open="0">
+      <button class="lg-more-btn" type="button">展开来源与备注 ▾</button>
+      <div class="lg-more-body" style="display:none">
+        ${fieldHtml("来源")}
+        ${fieldHtml("备注")}
+      </div>
+    </div>`;
+  const more = art.querySelector(".lg-item-more");
+  more.querySelector(".lg-more-btn").addEventListener("click", () => {
+    const open = more.dataset.open === "1";
+    more.dataset.open = open ? "0" : "1";
+    more.querySelector(".lg-more-body").style.display = open ? "none" : "block";
+    more.querySelector(".lg-more-btn").textContent = open ? "展开来源与备注 ▾" : "收起来源与备注 ▴";
+  });
+  return art;
+}
+
+/* ---------- 阅读记录（Supabase 云端 + 本机兜底） ---------- */
+function _lgLocalKey() { return "lifeguide_reads_v1"; }
+function _lgLocalGet() { try { return JSON.parse(localStorage.getItem(_lgLocalKey()) || "[]"); } catch (e) { return []; } }
+function _lgLocalAdd(entry) {
+  const arr = _lgLocalGet();
+  arr.push(entry);
+  try { localStorage.setItem(_lgLocalKey(), JSON.stringify(arr.slice(-500))); } catch (e) {}
+}
+function markLifeguideRead(num) {
+  const page = document.getElementById("pageLifeguide");
+  if (!page) return;
+  const i = _lgChapters.findIndex((c) => c.num === num);
+  const el = page.querySelectorAll(".lg-toc-item")[i];
+  if (el) { el.querySelector(".lg-toc-dot").dataset.read = "1"; el.classList.add("read"); }
+}
+function recordLifeguideRead(chapter) {
+  const now = Date.now();
+  if (_lgLastRecord.num === chapter.num && now - _lgLastRecord.ts < 5000) return; // 防抖：同一章 5 秒内不重复写
+  _lgLastRecord = { num: chapter.num, ts: now };
+  const entry = { chapter_num: chapter.num, chapter_title: chapter.title, read_at: new Date().toISOString() };
+  _lgLocalAdd(entry);
+  markLifeguideRead(chapter.num);
+  const cont = document.getElementById("lgContinue");
+  if (cont) cont.style.display = "";
+  fetch(`${REST_BASE}/${LIFEGUIDE_TABLE}`, {
+    method: "POST",
+    headers: Object.assign({}, API_HEADERS, { "Content-Type": "application/json", "Prefer": "return=minimal" }),
+    body: JSON.stringify([entry])
+  }).catch((e) => console.warn("[lifeguide] 云端记录失败，已用本机兜底:", e));
+}
+async function loadLifeguideHistory() {
+  try {
+    const res = await fetch(`${REST_BASE}/${LIFEGUIDE_TABLE}?select=chapter_num,chapter_title,read_at&order=read_at.desc&limit=300`, { headers: API_HEADERS, cache: "no-store" });
+    if (!res.ok) throw new Error("http " + res.status);
+    return await res.json();
+  } catch (e) {
+    console.warn("[lifeguide] 云端轨迹读取失败，回退本机:", e);
+    return _lgLocalGet();
+  }
+}
+async function getLastReadChapter() {
+  const hist = await loadLifeguideHistory();
+  if (!hist || !hist.length) return null;
+  const num = hist[0].chapter_num;
+  const idx = _lgChapters.findIndex((c) => c.num === num);
+  return idx >= 0 ? idx : null;
+}
+async function refreshLifeguideHistory() {
+  const page = document.getElementById("pageLifeguide");
+  if (!page || !page.querySelector("#lgTrackList")) return;
+  const hist = await loadLifeguideHistory();
+  const readNums = new Set((hist || []).map((h) => h.chapter_num));
+  page.querySelectorAll(".lg-toc-item").forEach((el) => {
+    const c = _lgChapters[+el.dataset.idx];
+    const read = readNums.has(c.num);
+    el.querySelector(".lg-toc-dot").dataset.read = read ? "1" : "0";
+    el.classList.toggle("read", read);
+  });
+  const rc = page.querySelector("#lgReadCount");
+  if (rc) rc.textContent = readNums.size;
+  const cont = page.querySelector("#lgContinue");
+  if (cont) cont.style.display = (hist && hist.length) ? "" : "none";
+  const list = page.querySelector("#lgTrackList");
+  if (!hist || !hist.length) {
+    list.innerHTML = '<div class="lg-track-empty">还没有阅读记录，打开任意一章就会自动记录。</div>';
+    return;
+  }
+  list.innerHTML = hist.slice(0, 60).map((h) => {
+    const i = _lgChapters.findIndex((c) => c.num === h.chapter_num);
+    const t = new Date(h.read_at);
+    const pad = (n) => String(n).padStart(2, "0");
+    const tt = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+    return `<button class="lg-track-row" type="button" data-idx="${i >= 0 ? i : 0}"><span class="lg-track-no">${h.chapter_num}</span><span class="lg-track-title">${h.chapter_title}</span><span class="lg-track-time">${tt}</span></button>`;
+  }).join("");
+  list.querySelectorAll(".lg-track-row").forEach((b) => b.addEventListener("click", () => {
+    gotoLifeguideChapter(+b.dataset.idx, false);
+    page.querySelector("#lgTrackPanel").style.display = "none";
+  }));
 }
