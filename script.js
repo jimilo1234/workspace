@@ -227,6 +227,7 @@ const MENUS = [
     { id: "study-crossborder", label: "跨境", page: "crossborder" },
     { id: "study-vcc", label: "VCC账户", page: "vcc" },
     { id: "study-acquiring", label: "外卡收单", page: "acquiring" },
+    { id: "study-lifeguide", label: "高性价比人生", page: "lifeguide" },
   ]},
   { id: "ai", label: "AI", children: [
     { id: "ai-doujie", label: "豆姐", page: "doujie" },
