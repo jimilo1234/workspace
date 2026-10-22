@@ -4469,13 +4469,28 @@ function postCollabMsg(user, text) {
     .catch((e) => console.error("[collab] 发消息:", e));
 }
 /* DP 智能体：复用既有的 Supabase Edge Function 代理（密钥不落地），带最近对话上下文 */
+/* 模型本身没有时间/联网能力，这里把「当前时间」注入 system，避免它说"拿不到当前日期" */
+function dpSystemPrompt() {
+  const now = new Date();
+  const wk = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][now.getDay()];
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = now.getFullYear() + "年" + (now.getMonth() + 1) + "月" + now.getDate() + "日 " + wk +
+    " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+  return [
+    "你是协作台里的 DP 智能体，协助团队推进任务、解答问题、整理要点。请用简体中文、简洁清晰地回答；不要使用 Markdown 标题，可用换行分段。",
+    "当前时间（北京时间 GMT+8）：" + stamp + "。涉及今天/明天/星期几/日期推算时，一律以此为准，不要说自己拿不到当前日期。",
+    "你可以基于自身知识正常回答问题；但不具备实时联网检索能力——遇到需要最新资讯、实时行情、具体网页内容的问题，先直接说明这一点，再尽量用已有知识给出有价值的部分，不要因为无法联网就拒绝回答。",
+  ].join("\n");
+}
 async function askDpAgent(question) {
   setCollabDpStatus("🤖 DP 思考中…");
   try {
     const ctx = (collabChatRows || []).slice(-DP_CONTEXT_N)
-      .map((r) => ({ role: "user", content: (r.user || "用户") + "：" + (r.text || "") }));
+      .map((r) => (r.user === DP_AGENT_NAME
+        ? { role: "assistant", content: r.text || "" }
+        : { role: "user", content: (r.user || "用户") + "：" + (r.text || "") }));
     const messages = [
-      { role: "system", content: "你是协作台里的 DP 智能体，协助团队推进任务、解答问题、整理要点。请用简体中文、简洁清晰地回答；不要使用 Markdown 标题，可用换行分段。" },
+      { role: "system", content: dpSystemPrompt() },
       ...ctx,
       { role: "user", content: question },
     ];
@@ -4496,21 +4511,22 @@ function setCollabDpStatus(text) {
   el.textContent = text || "";
   el.style.display = text ? "" : "none";
 }
-function switchCollabId() {
-  const id = window.prompt("切换身份（如 智能体1 / 智能体2 / 智能体3）", curCollabId());
+async function switchCollabId() {
+  const id = await collabPrompt("切换身份（如 智能体1 / 智能体2 / 智能体3）", curCollabId());
   if (id && id.trim()) {
     localStorage.setItem("wb_collab_identity", id.trim());
     const el = document.getElementById("collabIdentity"); if (el) el.textContent = "身份：" + id.trim();
   }
 }
 function clearCollabChat() {
-  if (!window.confirm("确定清空协作台聊天记录？将删除所有人的聊天消息，且不可恢复。")) return;
-  ensureCollabSb().then((sb) => sb.from("team_chat_messages").delete().eq("team_id", COLLAB_TEAM))
-    .then(({ error }) => {
-      if (error) { console.error("[collab] 清空聊天:", error); window.alert("清空失败：" + (error.message || error)); }
-      else loadCollabChat();
-    })
-    .catch((e) => { console.error("[collab] 清空聊天:", e); window.alert("清空失败：" + (e && e.message ? e.message : e)); });
+  return collabConfirm("确定清空协作台聊天记录？将删除所有人的聊天消息，且不可恢复。").then((ok) => {
+    if (!ok) return;
+    return ensureCollabSb().then((sb) => sb.from("team_chat_messages").delete().eq("team_id", COLLAB_TEAM))
+      .then(({ error }) => {
+        if (error) { console.error("[collab] 清空聊天:", error); collabAlert("清空失败：" + (error.message || error)); }
+        else loadCollabChat();
+      });
+  }).catch((e) => { console.error("[collab] 清空聊天:", e); collabAlert("清空失败：" + (e && e.message ? e.message : e)); });
 }
 
 /* ============ 高性价比人生 · 阅读器 ============ */
