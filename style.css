@@ -1723,3 +1723,11 @@ html.pn-fs .topbar { display: none; }
   .lg-pager { padding: 12px 0 0; }
   .lg-pager .lg-btn { flex: 1; }
 }
+
+/* ============ 协作台单条消息操作菜单 ============ */
+.collab-msg { cursor: pointer; transition: background .12s; }
+.collab-msg:hover { background: var(--bg-soft); }
+.collab-msg-menu { position: fixed; z-index: 9999; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 4px; display: flex; flex-direction: column; min-width: 124px; }
+.collab-msg-menu[hidden] { display: none; }
+.collab-msg-menu-btn { border: none; background: transparent; color: var(--text); text-align: left; padding: 9px 12px; border-radius: 7px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.collab-msg-menu-btn:hover { background: var(--bg-soft); }

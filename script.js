@@ -4393,7 +4393,101 @@ function collabMsgEl(m) {
     body.appendChild(att);
   }
   el.appendChild(body);
+  el.style.cursor = "pointer";
+  el.title = "点击可复制或删除这条消息";
+  el.addEventListener("click", (e) => {
+    if (e.target.closest("a")) return; // 附件链接照常打开，不弹菜单
+    openCollabMsgMenu(m, el);
+  });
   return el;
+}
+/* ---------- 协作台单条消息操作（复制 / 删除） ---------- */
+let _collabMenuMsg = null;
+let _collabMenuSrc = null;
+let _collabMenuBound = false;
+function bindCollabMsgMenu() {
+  if (_collabMenuBound) return; _collabMenuBound = true;
+  const menu = document.getElementById("collabMsgMenu");
+  if (!menu) return;
+  menu.querySelectorAll(".collab-msg-menu-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if (act === "copy") collabCopyMsg();
+      else if (act === "delete") collabDeleteMsg();
+    });
+  });
+}
+function openCollabMsgMenu(m, srcEl) {
+  const menu = document.getElementById("collabMsgMenu");
+  if (!menu) return;
+  bindCollabMsgMenu();
+  _collabMenuMsg = m; _collabMenuSrc = srcEl;
+  menu.hidden = false;
+  const r = srcEl.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let left = r.left, top = r.bottom + 6;
+  if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+  if (top + mh > window.innerHeight - 8) top = r.top - mh - 6;
+  if (left < 8) left = 8;
+  if (top < 8) top = 8;
+  menu.style.left = left + "px";
+  menu.style.top = top + "px";
+  setTimeout(() => document.addEventListener("click", _closeCollabMenuOnOutside, true), 0);
+}
+function _closeCollabMenuOnOutside(e) {
+  const menu = document.getElementById("collabMsgMenu");
+  if (!menu) return;
+  if (menu.contains(e.target)) return;
+  if (_collabMenuSrc && _collabMenuSrc.contains(e.target)) return;
+  closeCollabMsgMenu();
+}
+function closeCollabMsgMenu() {
+  const menu = document.getElementById("collabMsgMenu");
+  if (menu) menu.hidden = true;
+  _collabMenuMsg = null; _collabMenuSrc = null;
+  document.removeEventListener("click", _closeCollabMenuOnOutside, true);
+}
+function collabCopyMsg() {
+  const m = _collabMenuMsg; closeCollabMsgMenu();
+  if (!m) return;
+  copyText(m.text || "").then((ok) => {
+    const btn = document.querySelector('#collabMsgMenu [data-act="copy"]');
+    if (btn) { const old = btn.textContent; btn.textContent = ok ? "✅ 已复制" : "复制失败"; setTimeout(() => { btn.textContent = old; }, 1200); }
+    if (!ok) collabAlert("复制失败，请手动长按选择文本后复制");
+  });
+}
+function collabDeleteMsg() {
+  const m = _collabMenuMsg; closeCollabMsgMenu();
+  if (!m || !m.id) { collabAlert("该消息缺少ID，无法删除"); return; }
+  collabConfirm("确定删除这条消息？删除后不可恢复。").then((ok) => {
+    if (!ok) return;
+    ensureCollabSb().then((sb) => sb.from("team_chat_messages").delete().eq("id", m.id))
+      .then(({ error }) => {
+        if (error) { console.error("[collab] 删消息:", error); collabAlert("删除失败：" + (error.message || error)); }
+        else loadCollabChat();
+      })
+      .catch((e) => { console.error("[collab] 删消息:", e); collabAlert("删除失败：" + (e && e.message ? e.message : e)); });
+  });
+}
+function copyText(t) {
+  return new Promise((resolve) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(() => resolve(true)).catch(() => resolve(fallbackCopy(t)));
+        return;
+      }
+    } catch (e) {}
+    resolve(fallbackCopy(t));
+  });
+}
+function fallbackCopy(t) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = t; ta.style.position = "fixed"; ta.style.top = "-9999px";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  } catch (e) { return false; }
 }
 function sendCollabMsg() {
   const input = document.getElementById("collabInput"); if (!input) return;

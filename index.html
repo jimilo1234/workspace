@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20261022c" />
+  <link rel="stylesheet" href="style.css?v=20261022d" />
 </head>
 <body>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -570,6 +570,11 @@
             <p class="collab-hint">💡 在消息里 <b>@DP智能体</b>（或 <b>@DP</b>）提问，DP 会调用 DeepSeek 在同频道回复，并参考最近聊天上下文。</p>
           </section>
         </div>
+        <!-- 协作台单条消息操作菜单：点击消息弹出（复制/删除） -->
+        <div id="collabMsgMenu" class="collab-msg-menu" hidden>
+          <button class="collab-msg-menu-btn" data-act="copy" type="button">📋 复制</button>
+          <button class="collab-msg-menu-btn" data-act="delete" type="button">🗑 删除</button>
+        </div>
         <!-- 协作台密码锁：未解锁时覆盖整个协作台内容（前端遮挡级） -->
         <div id="collabLock" class="collab-lock" hidden>
           <div class="collab-lock-box">
@@ -809,6 +814,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20261022c"></script>
+  <script src="script.js?v=20261022d"></script>
 </body>
 </html>
