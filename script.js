@@ -592,7 +592,6 @@ function exitSpace() {
   stopHomePolling();
   stopHeartbeat();
   localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(COLLAB_UNLOCK_KEY); // 退出登录同时清除协作台解锁，下次登录需重输密码
   $("#setupModal").classList.remove("hidden");
   $("#setupAccount").value = ""; $("#setupPass").value = "";
   setMsg(""); setStatus("未登录", "");
@@ -1340,7 +1339,7 @@ $("#setupAccount").addEventListener("keydown", (e) => { if (e.key === "Enter") h
     try {
       const user = await fetchUserByUsername(u);
       if (user && user.status !== "disabled") await enterWorkbench(user);
-      else { localStorage.removeItem(SESSION_KEY); localStorage.removeItem(COLLAB_UNLOCK_KEY); setStatus("未登录", ""); }
+      else { localStorage.removeItem(SESSION_KEY); setStatus("未登录", ""); }
     } catch (e) {
       /* 后端暂不可用（如冷启动中）：按用户名降级进入，功能操作时自会提示；权限按全量 */
       currentUser = { username: u, is_super: u === "jimilo", status: "active" };
@@ -3937,7 +3936,6 @@ let collabCardsChan = null;
 let collabChatChan = null;
 const COLLAB_TEAM = "wb-team";
 const COLLAB_PASS = "0713";                 // 协作台访问密码（前端遮挡级，非真安全）
-const COLLAB_UNLOCK_KEY = "wb_collab_unlocked_v2";  // 升版本号使旧"已解锁"失效，升级后强制重新输密码
 let collabLockBound = false;                // 锁屏事件是否已绑定（懒绑定一次）
 let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} + 新选 {saved:false, file,...}
 let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
@@ -3976,7 +3974,7 @@ function fmtCollabTime(ts) {
 }
 
 function openCollab() {
-  if (localStorage.getItem(COLLAB_UNLOCK_KEY) === "1") { initCollab(); return; }
+  // 每次进入都要求输密码（不持久化解锁状态）
   showCollabLock();
 }
 function showCollabLock() {
@@ -3999,7 +3997,6 @@ function tryCollabUnlock() {
   const msg = document.getElementById("collabLockMsg");
   const val = (inp && inp.value || "").trim();
   if (val === COLLAB_PASS) {
-    localStorage.setItem(COLLAB_UNLOCK_KEY, "1");
     const lock = document.getElementById("collabLock");
     if (lock) lock.hidden = true;
     initCollab();
