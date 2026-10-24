@@ -1582,6 +1582,8 @@ html.pn-fs .topbar { display: none; }
 .collab-lock-tip { font-size: 12px; color: var(--text-faint); margin: 0 0 16px; }
 .collab-lock-row { display: flex; gap: 8px; }
 .collab-lock-input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+/* 用文本输入框 + CSS 掩码代替 type=password，避免浏览器把它当登录密码弹「保存密码」 */
+.collab-lock-input { -webkit-text-security: disc; text-security: disc; letter-spacing: 2px; }
 .collab-lock-input:focus { border-color: var(--accent); }
 .collab-lock-msg { display: block; margin-top: 10px; min-height: 14px; font-size: 12px; color: #ff6b5b; }
 /* 发送前待上传附件预览（Ctrl+V 粘贴） */

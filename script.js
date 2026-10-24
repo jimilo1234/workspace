@@ -3941,6 +3941,8 @@ let collabEditAttach = [];   // 编辑中的附件：已保存 {saved:true,...} 
 let collabEditOrig = [];     // 进入编辑时的原始附件，用于保存时计算「被移除项」以删除云端文件
 let collabChatRows = [];     // 最近一次拉取的聊天记录（供 @DP智能体 取上下文）
 let collabChatAttach = [];   // 发送前待上传的聊天附件（Ctrl+V 粘贴 / 选文件）
+let collabChatSig = "";      // 聊天内容签名，用于轮询去重工（避免重复渲染/重置滚动）
+let collabChatPoll = null;   // 聊天兜底轮询定时器（realtime 抖动时保证最终一致）
 const DP_AGENT_NAME = "DP智能体";
 const DP_CONTEXT_N = 10;     // @DP 时带入的最近对话条数
 let _collabBucket = null;    // 协作台附件桶：优先 collab-attachments，缺失则回退到已有的 sticky 桶
@@ -4018,15 +4020,35 @@ function initCollab() {
       collabInited = true;
       collabCardsChan = sb.channel("collab-cards-v1")
         .on("postgres_changes", { event: "*", schema: "public", table: "team_task_cards" }, () => loadCollabCards())
-        .subscribe();
+        .subscribe((status) => {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.warn("[collab] 卡片实时通道异常，已重订阅:", status);
+            try { sb.removeChannel(collabCardsChan); } catch (e) {}
+            collabCardsChan = null; loadCollabCards();
+          }
+        });
       collabChatChan = sb.channel("collab-chat-v1")
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_chat_messages" }, () => loadCollabChat())
-        .subscribe();
+        .subscribe((status) => {
+          console.log("[collab] 聊天实时通道状态:", status);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.warn("[collab] 聊天实时通道异常，已重订阅:", status);
+            try { sb.removeChannel(collabChatChan); } catch (e) {}
+            collabChatChan = null; loadCollabChat();
+          }
+        });
     }
+    // 兜底轮询：realtime 抖动/掉线、或表未加入 realtime 发布时，定时拉取保证最终一致
+    if (collabChatPoll) clearInterval(collabChatPoll);
+    collabChatPoll = setInterval(() => {
+      if (document.hidden) return;                       // 后台标签页不轮询，省流量
+      loadCollabChat();
+    }, 6000);
   }).catch((e) => { console.error("[collab] 初始化失败:", e); if (idEl) idEl.textContent = "协作台加载失败"; });
 }
 
 function leaveCollab() {
+  if (collabChatPoll) { clearInterval(collabChatPoll); collabChatPoll = null; }
   try { if (collabCardsChan && collabSb) collabSb.removeChannel(collabCardsChan); } catch (e) {}
   try { if (collabChatChan && collabSb) collabSb.removeChannel(collabChatChan); } catch (e) {}
   collabCardsChan = null; collabChatChan = null; collabInited = false;
@@ -4361,11 +4383,15 @@ function loadCollabChat() {
     .catch((e) => console.error("[collab] 读消息:", e));
 }
 function renderCollabChat(rows) {
+  const sig = (rows || []).map((r) => r.id).join("|");
+  if (sig === collabChatSig) return;        // 内容未变则跳过（轮询不重复渲染、不重置滚动）
+  collabChatSig = sig;
   const box = document.getElementById("collabMsgs"); if (!box) return;
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;  // 用户是否贴近底部
   collabChatRows = rows || [];
   box.innerHTML = "";
   (rows || []).forEach((m) => box.appendChild(collabMsgEl(m)));
-  box.scrollTop = box.scrollHeight;
+  if (nearBottom) box.scrollTop = box.scrollHeight;   // 仅当用户本来就在底部时才自动跟随
 }
 function collabMsgEl(m) {
   const el = document.createElement("div"); el.className = "collab-msg";
@@ -4526,6 +4552,7 @@ async function sendCollabWithAttach(text) {
     delete payload.attachments;            // attachments 列尚未建立 → 降级仅保存正文
     await sb.from("team_chat_messages").insert(payload);
   }
+  loadCollabChat();   // 发件人本地立即刷新，不完全依赖 realtime（避免自己看不到刚发的）
 }
 /* 渲染发送前的待上传附件预览（Ctrl+V 粘贴 / 选文件） */
 function renderCollabChatAttach() {
@@ -4557,7 +4584,7 @@ function renderCollabChatAttach() {
 function postCollabMsg(user, text) {
   return ensureCollabSb()
     .then((sb) => sb.from("team_chat_messages").insert({ team_id: COLLAB_TEAM, text: text, user: user }))
-    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); })
+    .then(({ error }) => { if (error) console.error("[collab] 发消息:", error); else loadCollabChat(); })
     .catch((e) => console.error("[collab] 发消息:", e));
 }
 /* DP 智能体：复用既有的 Supabase Edge Function 代理（密钥不落地），带最近对话上下文 */
