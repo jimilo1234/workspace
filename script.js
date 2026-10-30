@@ -3464,7 +3464,7 @@ window.__infiniteRefresh = infRefresh;
   // 监听 paynews 登录/登出对外通知
   window.addEventListener('message', (e) => {
     const t = e.data && e.data.type;
-    if (t === 'paynews-login') setPnButtons(true);
+    if (t === 'paynews-login') { setPnButtons(true); tryAutoPublishPending(); }
     else if (t === 'paynews-session-invalid') setPnButtons(false);
   });
 
@@ -3733,6 +3733,18 @@ window.__infiniteRefresh = infRefresh;
       rSend.disabled = false; rSend.textContent = '发布新闻';
     }
   }
+  // 登录支付新闻后：若记录窗口里有未发布的本地内容（仅当前会话、未持久化，刷新页面会丢），
+  // 自动触发一次发布；无内容 / 弹窗正打开编辑 / 正在发布中 都不抢发。
+  function tryAutoPublishPending() {
+    if (!isPaynewsLoggedIn()) return;                 // 必须已登录
+    if (modal && !modal.hidden) return;               // 弹窗正打开（用户在编辑）不抢发
+    if (rSend && rSend.disabled) return;              // 正在发布中则跳过，避免重复触发
+    const hasText = rText && rText.value.trim();
+    const hasAttach = pendingImage || pendingVideo || voiceBlob;
+    if (!hasText && !hasAttach) return;               // 无本地内容则跳过
+    sendRecord();                                     // 自动发布一次（成功会清空并关闭弹窗）
+  }
+
   if (rSend) rSend.addEventListener('click', sendRecord);
   // PC 模式（精确指针）下：文本框内按 Enter 发送；Shift+Enter 仍换行；输入法组合态(isComposing)回车选词不发送；触摸设备不启用
   if (rText) {
