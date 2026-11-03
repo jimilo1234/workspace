@@ -677,49 +677,92 @@ const WMO_TXT = {
 };
 let weatherData = null;
 function loadWeather(lat, lon) {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const end = new Date(now); end.setDate(end.getDate() + 6);
+  const endKey = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
-    + `&current=temperature_2m,weather_code`
-    + `&hourly=temperature_2m,weather_code`
+    + `&current=temperature_2m,apparent_temperature,weather_code`
+    + `&hourly=temperature_2m,apparent_temperature,weather_code`
     + `&daily=weather_code,temperature_2m_max,temperature_2m_min`
-    + `&timezone=auto&forecast_days=7`;
+    + `&timezone=auto&start_date=${todayKey}&end_date=${endKey}`;
   fetch(url).then((r) => r.json()).then((d) => {
     weatherData = d;
     const t = Math.round(d.current.temperature_2m);
+    const feel = Math.round(d.current.apparent_temperature);
     const code = d.current.weather_code;
     $("#weather").innerHTML =
-      `${WMO[code] || "🌡️"} ${t}°C <span class="weather-hint">▾</span>`;
-    $("#weather").title = `${WMO_TXT[code] || "天气"} ${t}°C · 悬浮查看详情`;
+      `${WMO[code] || "🌡️"} ${t}°C <span class="wx-feel-top">· 体感${feel}°C</span> <span class="weather-hint">▾</span>`;
+    $("#weather").title = `${WMO_TXT[code] || "天气"} ${t}°C（体感${feel}°C）· 悬浮查看本周与今日详情`;
   }).catch(() => { $("#weather").textContent = "🌤️ 天气暂不可用"; });
 }
 
-/* 悬浮弹出：今日逐小时 + 未来 7 天 */
+/* 悬浮弹出：本周天气 + 今日 24 小时（分 6 段） */
 const WK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const WX_SEGS = [
+  { name: "凌晨", hrs: [0, 1, 2, 3, 4, 5] },
+  { name: "早晨", hrs: [6, 7, 8] },
+  { name: "上午", hrs: [9, 10, 11] },
+  { name: "午后", hrs: [12, 13, 14, 15, 16, 17] },
+  { name: "傍晚", hrs: [18, 19, 20, 21] },
+  { name: "深夜", hrs: [22, 23] },
+];
+const WX_BAD = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 95, 96, 99]); // 雨/雪/雷暴
 function buildWeatherPop() {
-  if (!weatherData) return;
+  if (!weatherData || !weatherData.hourly || !weatherData.daily) return;
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const curHour = now.getHours();
 
-  const hT = weatherData.hourly.time, hTmp = weatherData.hourly.temperature_2m, hCode = weatherData.hourly.weather_code;
-  const hourly = [];
-  for (let i = 0; i < hT.length; i++) {
-    if (!hT[i].startsWith(todayKey)) continue;
-    const hr = Number(hT[i].slice(11, 13));
-    if (hr < curHour) continue;
-    hourly.push(`<div class="wx-hour"><span class="wx-h">${hr}:00</span><span class="wx-ico">${WMO[hCode[i]] || "🌡️"}</span><span class="wx-t">${Math.round(hTmp[i])}°</span></div>`);
-  }
+  const hT = weatherData.hourly.time, hTmp = weatherData.hourly.temperature_2m,
+    hFeel = weatherData.hourly.apparent_temperature, hCode = weatherData.hourly.weather_code;
+  // 定位今天 0 点在 hourly 数组中的起始下标
+  let start = -1;
+  for (let i = 0; i < hT.length; i++) { if (hT[i].startsWith(todayKey)) { start = i; break; } }
+  if (start < 0) return;
+
+  const segs = WX_SEGS.map((s) => {
+    const idxs = s.hrs.map((h) => start + h).filter((i) => i < hT.length);
+    if (!idxs.length) return "";
+    const codes = idxs.map((i) => hCode[i]);
+    const tmps = idxs.map((i) => hTmp[i]);
+    const feels = idxs.map((i) => hFeel[i]);
+    const tmin = Math.round(Math.min.apply(null, tmps)), tmax = Math.round(Math.max.apply(null, tmps));
+    const fmin = Math.round(Math.min.apply(null, feels)), fmax = Math.round(Math.max.apply(null, feels));
+    const cnt = {}; codes.forEach((c) => (cnt[c] = (cnt[c] || 0) + 1));
+    const mainCode = codes.reduce((a, b) => (cnt[b] > cnt[a] ? b : a));
+    const past = Math.max.apply(null, s.hrs) < curHour;
+    let tip = "";
+    if (codes.some((c) => WX_BAD.has(c))) tip = "有降水·带伞";
+    else if (tmax >= 33) tip = "高温·防暑";
+    else if (tmin <= 0) tip = "低温·保暖";
+    else if (tmax - tmin >= 8) tip = "温差大";
+    const feelTxt = (Math.abs(fmax - tmax) >= 2 || Math.abs(fmin - tmin) >= 2)
+      ? `<span class="wx-feel">体感 ${fmin}~${fmax}°</span>` : "";
+    const rangeTxt = tmin === tmax ? `${tmin}°` : `${tmin}~${tmax}°`;
+    return `<div class="wx-seg${past ? " past" : ""}">`
+      + `<div class="wx-seg-h"><span class="wx-seg-name">${s.name}</span><span class="wx-seg-ico">${WMO[mainCode] || "🌡️"}</span></div>`
+      + `<div class="wx-seg-t">${rangeTxt}</div>`
+      + (tip ? `<div class="wx-seg-tip">${tip}</div>` : "")
+      + feelTxt
+      + `</div>`;
+  }).join("");
+
   const dT = weatherData.daily.time, dCode = weatherData.daily.weather_code,
     dMax = weatherData.daily.temperature_2m_max, dMin = weatherData.daily.temperature_2m_min;
   const daily = [];
   for (let i = 0; i < dT.length; i++) {
     const dt = new Date(dT[i] + "T00:00");
     const label = i === 0 ? "今天" : i === 1 ? "明天" : WK[dt.getDay()];
-    daily.push(`<div class="wx-day"><span class="wx-d">${label}</span><span class="wx-ico">${WMO[dCode[i]] || "🌡️"}</span><span class="wx-range"><span class="wx-lo">${Math.round(dMin[i])}°</span> ~ <span class="wx-hi">${Math.round(dMax[i])}°</span></span></div>`);
+    const md = `${dt.getMonth() + 1}/${dt.getDate()}`;
+    daily.push(`<div class="wx-day"><span class="wx-d">${label}<span class="wx-date">${md}</span></span><span class="wx-ico">${WMO[dCode[i]] || "🌡️"}</span><span class="wx-range"><span class="wx-lo">${Math.round(dMin[i])}°</span> ~ <span class="wx-hi">${Math.round(dMax[i])}°</span></span></div>`);
   }
+
   $("#weatherPop").innerHTML =
-    `<div class="wx-sec-title">今日逐小时</div><div class="wx-hourly">${hourly.join("")}</div>` +
-    `<div class="wx-sec-title">未来 7 天</div><div class="wx-daily">${daily.join("")}</div>`;
+    `<div class="wx-sec-title">本周天气</div><div class="wx-daily">${daily.join("")}</div>` +
+    `<div class="wx-sec-title">今日 24 小时（分 6 段）</div><div class="wx-segs">${segs}</div>`;
 }
 let wxPinned = false;
 function showWx() { if (!weatherData) return; buildWeatherPop(); $("#weatherPop").classList.add("show"); }
