@@ -676,6 +676,13 @@ const WMO_TXT = {
   81: "阵雨", 82: "强阵雨", 95: "雷阵雨", 96: "雷阵雨", 99: "雷阵雨",
 };
 let weatherData = null;
+/* 天气：城市偏好（localStorage 持久化） */
+const WX_LS = "wx_pref_v1";
+function loadWxPref() { try { return JSON.parse(localStorage.getItem(WX_LS)); } catch (e) { return null; } }
+function saveWxPref(o) { try { localStorage.setItem(WX_LS, JSON.stringify(o)); } catch (e) {} }
+let wxLat = 39.9042, wxLon = 116.4074, wxCity = "北京";
+let wxDetailDate = null, wxDayPin = null, wxCityTimer = null;
+
 function loadWeather(lat, lon) {
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
@@ -694,7 +701,9 @@ function loadWeather(lat, lon) {
     const code = d.current.weather_code;
     $("#weather").innerHTML =
       `${WMO[code] || "🌡️"} ${t}°C <span class="wx-feel-top">· 体感${feel}°C</span> <span class="weather-hint">▾</span>`;
-    $("#weather").title = `${WMO_TXT[code] || "天气"} ${t}°C（体感${feel}°C）· 悬浮查看本周与今日详情`;
+    $("#weather").title = `${WMO_TXT[code] || "天气"} ${t}°C（体感${feel}°C）· ${wxCity} · 悬浮查看本周与今日详情`;
+    const ce = document.createElement("span"); ce.className = "wx-city"; ce.textContent = " " + wxCity;
+    $("#weather").appendChild(ce);
   }).catch(() => { $("#weather").textContent = "🌤️ 天气暂不可用"; });
 }
 
@@ -714,41 +723,7 @@ function buildWeatherPop() {
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const curHour = now.getHours();
-
-  const hT = weatherData.hourly.time, hTmp = weatherData.hourly.temperature_2m,
-    hFeel = weatherData.hourly.apparent_temperature, hCode = weatherData.hourly.weather_code;
-  // 定位今天 0 点在 hourly 数组中的起始下标
-  let start = -1;
-  for (let i = 0; i < hT.length; i++) { if (hT[i].startsWith(todayKey)) { start = i; break; } }
-  if (start < 0) return;
-
-  const segs = WX_SEGS.map((s) => {
-    const idxs = s.hrs.map((h) => start + h).filter((i) => i < hT.length);
-    if (!idxs.length) return "";
-    const codes = idxs.map((i) => hCode[i]);
-    const tmps = idxs.map((i) => hTmp[i]);
-    const feels = idxs.map((i) => hFeel[i]);
-    const tmin = Math.round(Math.min.apply(null, tmps)), tmax = Math.round(Math.max.apply(null, tmps));
-    const fmin = Math.round(Math.min.apply(null, feels)), fmax = Math.round(Math.max.apply(null, feels));
-    const cnt = {}; codes.forEach((c) => (cnt[c] = (cnt[c] || 0) + 1));
-    const mainCode = codes.reduce((a, b) => (cnt[b] > cnt[a] ? b : a));
-    const past = Math.max.apply(null, s.hrs) < curHour;
-    let tip = "";
-    if (codes.some((c) => WX_BAD.has(c))) tip = "有降水·带伞";
-    else if (tmax >= 33) tip = "高温·防暑";
-    else if (tmin <= 0) tip = "低温·保暖";
-    else if (tmax - tmin >= 8) tip = "温差大";
-    const feelTxt = (Math.abs(fmax - tmax) >= 2 || Math.abs(fmin - tmin) >= 2)
-      ? `<span class="wx-feel">体感 ${fmin}~${fmax}°</span>` : "";
-    const rangeTxt = tmin === tmax ? `${tmin}°` : `${tmin}~${tmax}°`;
-    return `<div class="wx-seg${past ? " past" : ""}">`
-      + `<div class="wx-seg-h"><span class="wx-seg-name">${s.name}</span><span class="wx-seg-ico">${WMO[mainCode] || "🌡️"}</span></div>`
-      + `<div class="wx-seg-t">${rangeTxt}</div>`
-      + (tip ? `<div class="wx-seg-tip">${tip}</div>` : "")
-      + feelTxt
-      + `</div>`;
-  }).join("");
+  wxDetailDate = wxDayPin || todayKey;
 
   const dT = weatherData.daily.time, dCode = weatherData.daily.weather_code,
     dMax = weatherData.daily.temperature_2m_max, dMin = weatherData.daily.temperature_2m_min;
@@ -757,12 +732,108 @@ function buildWeatherPop() {
     const dt = new Date(dT[i] + "T00:00");
     const label = i === 0 ? "今天" : i === 1 ? "明天" : WK[dt.getDay()];
     const md = `${dt.getMonth() + 1}/${dt.getDate()}`;
-    daily.push(`<div class="wx-day"><span class="wx-d">${label}<span class="wx-date">${md}</span></span><span class="wx-ico">${WMO[dCode[i]] || "🌡️"}</span><span class="wx-range"><span class="wx-lo">${Math.round(dMin[i])}°</span> ~ <span class="wx-hi">${Math.round(dMax[i])}°</span></span></div>`);
+    const active = wxDayPin === dT[i] ? " active" : "";
+    daily.push(`<div class="wx-day${active}" data-date="${dT[i]}"><span class="wx-d">${label}<span class="wx-date">${md}</span></span><span class="wx-ico">${WMO[dCode[i]] || "🌡️"}</span><span class="wx-range"><span class="wx-lo">${Math.round(dMin[i])}°</span> ~ <span class="wx-hi">${Math.round(dMax[i])}°</span></span></div>`);
   }
 
-  $("#weatherPop").innerHTML =
-    `<div class="wx-sec-title">本周天气</div><div class="wx-daily">${daily.join("")}</div>` +
-    `<div class="wx-sec-title">今日 24 小时（分 6 段）</div><div class="wx-segs">${segs}</div>`;
+  const pop = $("#weatherPop");
+  pop.innerHTML =
+    `<div class="wx-city-bar"><span class="wx-pin">📍</span><span class="wx-city-name">${wxCity}</span><button class="wx-city-btn" id="wxCityBtn" type="button">切换城市</button></div>` +
+    `<div class="wx-city-search" id="wxCitySearch" style="display:none">` +
+      `<input id="wxCityInput" class="wx-city-input" type="text" placeholder="输入城市，如 上海" autocomplete="off" />` +
+      `<div class="wx-city-list" id="wxCityList"></div>` +
+    `</div>` +
+    `<div class="wx-sec-title">本周天气（悬浮某天看详情）</div><div class="wx-daily" id="wxDaily">${daily.join("")}</div>` +
+    `<div class="wx-sec-title" id="wxDetailTitle"></div><div class="wx-segs" id="wxDetail"></div>`;
+
+  renderDetail(wxDetailDate);
+  const dailyEl = document.getElementById("wxDaily");
+  if (dailyEl) dailyEl.addEventListener("mouseleave", () => { if (!wxDayPin) renderDetail(todayKey); });
+}
+
+/* 渲染某一天的 24 小时（分 6 段）详情到 #wxDetail */
+function renderDetail(dateKey) {
+  const pop = document.getElementById("wxDetail");
+  const titleEl = document.getElementById("wxDetailTitle");
+  if (!pop || !titleEl || !weatherData || !weatherData.hourly) return;
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const tk = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const ch = now.getHours();
+  const dt = new Date(dateKey + "T00:00");
+  const isToday = dateKey === tk;
+  const label = isToday ? "今日" : `${dt.getMonth() + 1}/${dt.getDate()} ${WK[dt.getDay()]}`;
+  titleEl.textContent = `${label} 24 小时（分 6 段）`;
+  const hT = weatherData.hourly.time, hTmp = weatherData.hourly.temperature_2m,
+    hFeel = weatherData.hourly.apparent_temperature, hCode = weatherData.hourly.weather_code;
+  let start = -1;
+  for (let i = 0; i < hT.length; i++) { if (hT[i].startsWith(dateKey)) { start = i; break; } }
+  if (start < 0) { pop.innerHTML = '<div class="wx-empty">暂无数据</div>'; return; }
+  const segs = WX_SEGS.map((s) => {
+    const idxs = s.hrs.map((h) => start + h).filter((i) => i < hT.length);
+    if (!idxs.length) return "";
+    const codes = idxs.map((i) => hCode[i]), tmps = idxs.map((i) => hTmp[i]), feels = idxs.map((i) => hFeel[i]);
+    const tmin = Math.round(Math.min.apply(null, tmps)), tmax = Math.round(Math.max.apply(null, tmps));
+    const fmin = Math.round(Math.min.apply(null, feels)), fmax = Math.round(Math.max.apply(null, feels));
+    const cnt = {}; codes.forEach((c) => (cnt[c] = (cnt[c] || 0) + 1));
+    const mainCode = codes.reduce((a, b) => (cnt[b] > cnt[a] ? b : a));
+    const past = isToday && Math.max.apply(null, s.hrs) < ch;
+    let tip = "";
+    if (codes.some((c) => WX_BAD.has(c))) tip = "有降水·带伞";
+    else if (tmax >= 33) tip = "高温·防暑";
+    else if (tmin <= 0) tip = "低温·保暖";
+    else if (tmax - tmin >= 8) tip = "温差大";
+    const feelTxt = (Math.abs(fmax - tmax) >= 2 || Math.abs(fmin - tmin) >= 2) ? `<span class="wx-feel">体感 ${fmin}~${fmax}°</span>` : "";
+    const rangeTxt = tmin === tmax ? `${tmin}°` : `${tmin}~${tmax}°`;
+    return `<div class="wx-seg${past ? " past" : ""}">` +
+      `<div class="wx-seg-h"><span class="wx-seg-name">${s.name}</span><span class="wx-seg-ico">${WMO[mainCode] || "🌡️"}</span></div>` +
+      `<div class="wx-seg-t">${rangeTxt}</div>` +
+      (tip ? `<div class="wx-seg-tip">${tip}</div>` : "") + feelTxt + `</div>`;
+  }).join("");
+  pop.innerHTML = segs;
+}
+
+/* 城市搜索（Open-Meteo Geocoding） */
+async function searchCities(q) {
+  q = (q || "").trim();
+  if (!q) return [];
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=zh&format=json`;
+  try {
+    const r = await fetch(url); const d = await r.json();
+    return (d.results || []).map((x) => ({ name: x.name, country: x.country || "", admin: x.admin1 || "", lat: x.latitude, lon: x.longitude }));
+  } catch (e) { return []; }
+}
+function renderCityList(list) {
+  const el = document.getElementById("wxCityList"); if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="wx-city-empty">无匹配结果</div>'; return; }
+  el.innerHTML = list.map((c, i) => `<div class="wx-city-item" data-i="${i}">${c.name}${c.admin ? ` <span class="wx-city-sub">${c.admin}</span>` : ""}${c.country ? ` <span class="wx-city-sub">${c.country}</span>` : ""}</div>`).join("");
+  el._list = list;
+}
+function pickCity(i) {
+  const el = document.getElementById("wxCityList");
+  const list = (el && el._list) || [];
+  const c = list[i]; if (!c) return;
+  wxLat = c.lat; wxLon = c.lon; wxCity = c.name;
+  saveWxPref({ lat: wxLat, lon: wxLon, city: wxCity });
+  const box = document.getElementById("wxCitySearch"); if (box) box.style.display = "none";
+  loadWeather(wxLat, wxLon);
+}
+function toggleCitySearch() {
+  const box = document.getElementById("wxCitySearch"); if (!box) return;
+  const show = box.style.display === "none";
+  box.style.display = show ? "block" : "none";
+  if (show) {
+    const inp = document.getElementById("wxCityInput");
+    if (inp) { inp.value = ""; setTimeout(() => inp.focus(), 30); }
+    const l = document.getElementById("wxCityList"); if (l) l.innerHTML = "";
+  }
+}
+function handleCityInput(v) {
+  if (wxCityTimer) clearTimeout(wxCityTimer);
+  wxCityTimer = setTimeout(async () => {
+    const list = await searchCities(v);
+    renderCityList(list);
+  }, 300);
 }
 let wxPinned = false;
 let wxHideTimer = null;
@@ -798,18 +869,41 @@ wxWrap.addEventListener("mouseenter", showWx);
 wxWrap.addEventListener("mouseleave", scheduleHideWx);
 wxPop.addEventListener("mouseenter", cancelHideWx);   // 移到弹窗上：取消关闭
 wxPop.addEventListener("mouseleave", scheduleHideWx);  // 离开弹窗：关闭
-wxPop.addEventListener("click", (e) => e.stopPropagation()); // 点击弹窗内部不关闭 pin（移动端）
+wxPop.addEventListener("click", (e) => {
+  e.stopPropagation(); // 阻止冒泡到 document（防关闭 pin）
+  if (e.target.closest("#wxCityBtn")) { toggleCitySearch(); return; }
+  const item = e.target.closest(".wx-city-item");
+  if (item) { pickCity(+item.dataset.i); return; }
+  const day = e.target.closest(".wx-day");
+  if (day && day.dataset.date) { wxDayPin = day.dataset.date; renderDetail(wxDayPin); return; }
+});
+wxPop.addEventListener("input", (e) => { if (e.target.id === "wxCityInput") handleCityInput(e.target.value); });
+wxPop.addEventListener("mouseover", (e) => {
+  if (wxDayPin) return;
+  const day = e.target.closest(".wx-day");
+  if (day && day.dataset.date) { wxDetailDate = day.dataset.date; renderDetail(wxDetailDate); }
+});
 wxWrap.addEventListener("click", (e) => {
   e.stopPropagation();
   wxPinned = !wxPinned;
   if (wxPinned) { cancelHideWx(); showWx(); } else $("#weatherPop").classList.remove("show");
 });
 document.addEventListener("click", () => { if (wxPinned) { wxPinned = false; $("#weatherPop").classList.remove("show"); } });
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(
-    (p) => loadWeather(p.coords.latitude, p.coords.longitude),
-    () => loadWeather(39.9042, 116.4074), { timeout: 5000 });
-} else loadWeather(39.9042, 116.4074);
+function startWeather() {
+  const pref = loadWxPref();
+  if (pref && pref.lat && pref.lon) {
+    wxLat = pref.lat; wxLon = pref.lon; wxCity = pref.city || "北京";
+    loadWeather(wxLat, wxLon);
+    return;
+  }
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (p) => { wxLat = p.coords.latitude; wxLon = p.coords.longitude; wxCity = "当前位置"; loadWeather(wxLat, wxLon); },
+      () => { wxLat = 39.9042; wxLon = 116.4074; wxCity = "北京"; loadWeather(wxLat, wxLon); },
+      { timeout: 5000 });
+  } else { wxLat = 39.9042; wxLon = 116.4074; wxCity = "北京"; loadWeather(wxLat, wxLon); }
+}
+startWeather();
 
 /* ---------- 待办 ---------- */
 const todoForm = $("#todoForm"), todoInput = $("#todoInput"), todoList = $("#todoList");

@@ -194,6 +194,25 @@ body {
   text-align: left; animation: pop 0.22s ease;
 }
 .weather-pop.show { display: block; }
+.wx-city { font-size: 11px; color: var(--text-faint); margin-left: 2px; white-space: nowrap; }
+.wx-city-bar { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); margin-bottom: 10px; }
+.wx-pin { font-size: 12px; }
+.wx-city-name { font-weight: 600; }
+.wx-city-btn { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-soft); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+.wx-city-btn:hover { border-color: var(--accent); color: var(--accent); }
+.wx-city-search { margin-bottom: 10px; }
+.wx-city-input { width: 100%; box-sizing: border-box; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); font-size: 13px; outline: none; }
+.wx-city-input:focus { border-color: var(--accent); }
+.wx-city-list { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; max-height: 184px; overflow-y: auto; }
+.wx-city-item { padding: 7px 9px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.wx-city-item:hover { background: var(--bg-soft); color: var(--accent); }
+.wx-city-sub { font-size: 11px; color: var(--text-faint); }
+.wx-city-empty { padding: 7px 9px; font-size: 12px; color: var(--text-faint); }
+.wx-day { cursor: pointer; border-radius: 8px; padding: 2px 4px; transition: background 0.15s; }
+.wx-day:hover { background: var(--bg-soft); }
+.wx-day.active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.wx-day.active .wx-d { color: var(--accent); }
+.wx-empty { font-size: 12px; color: var(--text-faint); }
 .wx-sec-title { font-size: 12px; color: var(--text-soft); font-family: var(--mono); letter-spacing: 0.5px; margin: 2px 0 9px; }
 .wx-sec-title:not(:first-child) { margin-top: 16px; }
 .wx-hourly { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
