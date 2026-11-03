@@ -765,10 +765,12 @@ function buildWeatherPop() {
     `<div class="wx-sec-title">今日 24 小时（分 6 段）</div><div class="wx-segs">${segs}</div>`;
 }
 let wxPinned = false;
+let wxHideTimer = null;
 function showWx() {
   if (!weatherData) return;
   buildWeatherPop();
   const pop = $("#weatherPop");
+  if (wxHideTimer) { clearTimeout(wxHideTimer); wxHideTimer = null; }
   pop.classList.add("show");
   const r = $("#weather").getBoundingClientRect();
   const w = pop.offsetWidth || Math.min(330, window.innerWidth * 0.86);
@@ -780,14 +782,27 @@ function showWx() {
   pop.style.left = left + "px";
   pop.style.top = top + "px";
 }
-function hideWx() { if (!wxPinned) $("#weatherPop").classList.remove("show"); }
+// 延迟关闭：避免鼠标从天气摘要移动到弹窗途中（跨过 .weather-wrap 边界）被误关
+function scheduleHideWx() {
+  if (wxPinned) return;
+  if (wxHideTimer) clearTimeout(wxHideTimer);
+  wxHideTimer = setTimeout(() => { $("#weatherPop").classList.remove("show"); wxHideTimer = null; }, 220);
+}
+function cancelHideWx() { if (wxHideTimer) { clearTimeout(wxHideTimer); wxHideTimer = null; } }
 const wxWrap = $(".weather-wrap");
+const wxPop = $("#weatherPop");
+// 关键：把弹窗挂到 body 下，脱离 .card（其 :hover 带 transform）。
+// 否则 position:fixed 会相对带 transform 的祖先定位，导致弹窗错位、超出视口。
+if (wxPop && wxPop.parentElement !== document.body) document.body.appendChild(wxPop);
 wxWrap.addEventListener("mouseenter", showWx);
-wxWrap.addEventListener("mouseleave", hideWx);
+wxWrap.addEventListener("mouseleave", scheduleHideWx);
+wxPop.addEventListener("mouseenter", cancelHideWx);   // 移到弹窗上：取消关闭
+wxPop.addEventListener("mouseleave", scheduleHideWx);  // 离开弹窗：关闭
+wxPop.addEventListener("click", (e) => e.stopPropagation()); // 点击弹窗内部不关闭 pin（移动端）
 wxWrap.addEventListener("click", (e) => {
   e.stopPropagation();
   wxPinned = !wxPinned;
-  if (wxPinned) showWx(); else $("#weatherPop").classList.remove("show");
+  if (wxPinned) { cancelHideWx(); showWx(); } else $("#weatherPop").classList.remove("show");
 });
 document.addEventListener("click", () => { if (wxPinned) { wxPinned = false; $("#weatherPop").classList.remove("show"); } });
 if (navigator.geolocation) {
