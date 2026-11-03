@@ -765,7 +765,21 @@ function buildWeatherPop() {
     `<div class="wx-sec-title">今日 24 小时（分 6 段）</div><div class="wx-segs">${segs}</div>`;
 }
 let wxPinned = false;
-function showWx() { if (!weatherData) return; buildWeatherPop(); $("#weatherPop").classList.add("show"); }
+function showWx() {
+  if (!weatherData) return;
+  buildWeatherPop();
+  const pop = $("#weatherPop");
+  pop.classList.add("show");
+  const r = $("#weather").getBoundingClientRect();
+  const w = pop.offsetWidth || Math.min(330, window.innerWidth * 0.86);
+  const h = pop.offsetHeight || 380;
+  let left = r.right - w;
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  let top = r.bottom + 8;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 8);
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+}
 function hideWx() { if (!wxPinned) $("#weatherPop").classList.remove("show"); }
 const wxWrap = $(".weather-wrap");
 wxWrap.addEventListener("mouseenter", showWx);
